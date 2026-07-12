@@ -39,6 +39,9 @@ namespace ProjectI
             }
         }
 
+        /// <summary>해당 위치가 이 방 범위 안인지.</summary>
+        public bool Contains(Vector3 p) => zone != null && zone.bounds.Contains(p);
+
         void OnTriggerEnter(Collider other)
         {
             var ls = other.GetComponentInParent<LightSystem>();

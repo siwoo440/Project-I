@@ -28,17 +28,20 @@ namespace ProjectI
 
         void Update()
         {
-            // 손에 든(활성) 광원 찾기
-            LightSource carried = searchRoot != null ? searchRoot.GetComponentInChildren<LightSource>(false) : null;
-
-            // F: 손 광원 토글
+            // F: '손에 든' 광원만 토글 (카메라 하위 = 현재 든 아이템)
             var kb = Keyboard.current;
-            if (kb != null && kb.fKey.wasPressedThisFrame && carried != null)
-                carried.Toggle();
+            if (kb != null && kb.fKey.wasPressedThisFrame)
+            {
+                var held = searchRoot != null ? searchRoot.GetComponentInChildren<LightSource>(false) : null;
+                if (held != null) held.Toggle();
+            }
 
-            float carriedC = carried != null ? carried.Contribution : 0f;
+            // 기여: 플레이어가 소지한 모든 '켜진' 광원 합 (손 + 인벤토리 보관 포함)
+            float carriedC = 0f;
+            foreach (var ls in GetComponentsInChildren<LightSource>(true))
+                carriedC += ls.Contribution; // 꺼져 있으면 0
+
             float roomB = currentRoom != null ? currentRoom.FixedBrightness : 0f;
-
             CurrentBrightness = Mathf.Clamp(roomB + carriedC, 0f, 100f);
             Stage = StageOf(CurrentBrightness);
         }
