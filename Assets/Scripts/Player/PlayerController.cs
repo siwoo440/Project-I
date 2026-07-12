@@ -46,6 +46,7 @@ namespace ProjectI
         [SerializeField] bool showDebug = true;
 
         CharacterController controller;
+        InventorySystem inventory;
         Transform cam;
         float pitch;
         float verticalVelocity;
@@ -59,6 +60,7 @@ namespace ProjectI
         void Awake()
         {
             controller = GetComponent<CharacterController>();
+            inventory = GetComponent<InventorySystem>();
             var camComp = GetComponentInChildren<Camera>();
             if (camComp != null) cam = camComp.transform;
             controller.height = standHeight;
@@ -135,6 +137,7 @@ namespace ProjectI
             bool sprinting = kb.leftShiftKey.isPressed && moving && !isCrouching && z > 0f && stamina > 0f;
 
             float speed = isCrouching ? crouchSpeed : (sprinting ? runSpeed : walkSpeed);
+            if (inventory != null) speed *= inventory.SpeedMultiplier; // 무게 페널티
             Vector3 horizontal = transform.TransformDirection(input) * speed;
 
             // 스태미너: 달리기 소모 / 미사용 시 딜레이 후 회복
@@ -145,7 +148,8 @@ namespace ProjectI
             }
             else if (Time.time - lastStaminaUseTime >= staminaRegenDelay)
             {
-                stamina = Mathf.Min(maxStamina, stamina + staminaRegenPerSec * Time.deltaTime);
+                float regenMul = inventory != null ? inventory.StaminaRegenMultiplier : 1f; // 무게 페널티
+                stamina = Mathf.Min(maxStamina, stamina + staminaRegenPerSec * regenMul * Time.deltaTime);
             }
 
             // 중력 & 점프
