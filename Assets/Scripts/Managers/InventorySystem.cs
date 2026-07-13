@@ -93,6 +93,33 @@ namespace ProjectI
             else Select(Mathf.Clamp(selected, 0, items.Count - 1));
         }
 
+        /// <summary>현재 손에 든(두손 우선, 없으면 선택 슬롯) 것을 인벤토리에서 빼내 반환(월드로 안 던짐). 없으면 null. (마차 적재용)</summary>
+        public ICarryable TakeSelected()
+        {
+            if (twoHand != null)
+            {
+                var t = twoHand; twoHand = null; t.HideInHand();
+                if (items.Count > 0) Select(Mathf.Clamp(selected, 0, items.Count - 1));
+                return t;
+            }
+            if (selected < 0 || selected >= items.Count) return null;
+            var item = items[selected]; items.RemoveAt(selected); item.HideInHand();
+            if (items.Count == 0) selected = -1;
+            else Select(Mathf.Clamp(selected, 0, items.Count - 1));
+            return item;
+        }
+
+        /// <summary>인벤토리(슬롯 + 두손)의 모든 것을 꺼내 반환하고 비운다. (탈출 시 확보용)</summary>
+        public List<ICarryable> TakeAll()
+        {
+            var all = new List<ICarryable>();
+            if (twoHand != null) { twoHand.HideInHand(); all.Add(twoHand); twoHand = null; }
+            foreach (var i in items) { i.HideInHand(); all.Add(i); }
+            items.Clear();
+            selected = -1;
+            return all;
+        }
+
         void Toss(ICarryable c)
         {
             Vector3 dir = (hand != null && hand.Anchor != null) ? hand.Anchor.forward : transform.forward;
