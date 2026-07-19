@@ -285,6 +285,11 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             isDead = true; // 사망 상태 활성화
             health = 0f; // 현재 체력 0 고정
             verticalVelocity = 0f; // 수직 이동 정지
+           
+            if (inventory != null) // 인벤토리 존재 여부 확인
+            {
+                inventory.DropAll(transform.position); // 사망한 위치에 모든 소지품 드랍
+            }
 
             if (combat != null) // 전투 컴포넌트 존재 여부 확인
             {
