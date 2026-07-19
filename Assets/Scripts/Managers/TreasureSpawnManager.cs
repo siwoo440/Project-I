@@ -91,6 +91,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         {
             if (dungeonGenerator != null) // 던전 생성기가 존재하는지 확인
             {
+                dungeonGenerator.GenerationStarted += ClearSpawnedTreasures; // 새 던전 생성 전에 기존 보물과 미믹 정리
                 dungeonGenerator.GenerationCompleted += HandleDungeonGenerated; // 던전 생성 완료 시 보물 생성 메서드 연결
             }
         }
@@ -99,6 +100,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         {
             if (dungeonGenerator != null) // 던전 생성기가 존재하는지 확인
             {
+                dungeonGenerator.GenerationStarted -= ClearSpawnedTreasures; // 기존 보물 정리 이벤트 연결 해제
                 dungeonGenerator.GenerationCompleted -= HandleDungeonGenerated; // 등록했던 보물 생성 메서드 연결 해제
             }
         }
@@ -203,7 +205,8 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             {
                 if (treasure != null) // 보물이 아직 존재하는지 확인
                 {
-                    Destroy(treasure.gameObject); // 보물 게임 오브젝트 제거
+                    treasure.gameObject.SetActive(false); // 지연 삭제 전에 보물과 Collider 즉시 비활성화
+                    Destroy(treasure.gameObject); // 보물 게임 오브젝트 제거 예약
                 }
             }
 
@@ -213,7 +216,8 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             {
                 if (mimic != null) // 미믹 오브젝트가 아직 존재하는지 확인
                 {
-                    Destroy(mimic.gameObject); // 기존 미믹 게임 오브젝트 제거
+                    mimic.gameObject.SetActive(false); // 지연 삭제 전에 미믹과 Collider 즉시 비활성화
+                    Destroy(mimic.gameObject); // 미믹 게임 오브젝트 제거 예약
                 }
             }
 

@@ -59,6 +59,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         {
             if (dungeonGenerator != null) // 던전 생성기가 존재하는지 확인
             {
+                dungeonGenerator.GenerationStarted += ClearSpawnedStalkers; // 새 던전 생성 전에 기존 스토커 정리
                 dungeonGenerator.GenerationCompleted += HandleDungeonGenerated; // 던전 생성 완료 시 스토커 생성 메서드 연결
             }
         }
@@ -67,6 +68,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         {
             if (dungeonGenerator != null) // 던전 생성기가 존재하는지 확인
             {
+                dungeonGenerator.GenerationStarted -= ClearSpawnedStalkers; // 기존 스토커 정리 이벤트 연결 해제
                 dungeonGenerator.GenerationCompleted -= HandleDungeonGenerated; // 등록했던 스토커 생성 메서드 연결 해제
             }
         }
@@ -177,7 +179,8 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             {
                 if (stalker != null) // 스토커 오브젝트가 아직 존재하는지 확인
                 {
-                    Destroy(stalker.gameObject); // 기존 스토커 게임 오브젝트 제거
+                    stalker.gameObject.SetActive(false); // 지연 삭제 전에 스토커와 Collider 즉시 비활성화
+                    Destroy(stalker.gameObject); // 스토커 게임 오브젝트 제거 예약
                 }
             }
 

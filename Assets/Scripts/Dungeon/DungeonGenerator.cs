@@ -33,7 +33,12 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             }
         }
 
-        public event System.Action GenerationCompleted; // 던전 생성 완료 이벤트
+        public event System.Action GenerationStarted; // 기존 런타임 오브젝트 정리를 요청하는 생성 시작 이벤트
+        public event System.Action GenerationCompleted; // 새로운 던전 생성 완료 이벤트
+
+        public bool IsGenerating { get; private set; } // 현재 던전 생성 진행 여부
+        public int GenerationCount { get; private set; } // 현재 Play에서 완료한 던전 생성 횟수
+        public int CurrentSeed => seed; // 현재 던전 생성에 사용한 시드
 
         static readonly Vector2Int[] DirectionVectors = // 방 연결 방향별 격자 이동값
         {
@@ -50,17 +55,29 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
 
         public void Generate() // 방 생성과 연결 및 플레이어 배치 실행
         {
+            if (IsGenerating) // 이미 던전을 생성 중인지 확인
+            {
+                Debug.LogWarning("[Dungeon] 이미 던전을 생성 중입니다."); // 중복 생성 요청 경고 출력
+                return; // 중복 던전 생성 중단
+            } 
+            
+            IsGenerating = true; // 던전 생성 진행 상태 활성화
+            GenerationStarted?.Invoke(); // 스폰 매니저에 기존 오브젝트 정리 요청
+
             if (roomPrefabs == null || roomPrefabs.Length == 0) // 방 프리팹 등록 여부 확인
             {
                 Debug.LogError("[Dungeon] roomPrefabs가 비어 있습니다."); // 방 프리팹 오류 출력
                 return; // 던전 생성 중단
             }
+            
+           
 
             foreach (Room room in placed.Values) // 기존 생성 방 순회
             {
                 if (room != null) // 기존 방 오브젝트 존재 여부 확인
                 {
-                    Destroy(room.gameObject); // 기존 방 오브젝트 제거
+                    room.gameObject.SetActive(false); // 지연 삭제 전에 기존 방과 Collider 즉시 비활성화
+                    Destroy(room.gameObject); // 기존 방 오브젝트 제거 예약
                 }
             }
 
@@ -110,8 +127,11 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
                 }
             }
 
-            GenerationCompleted?.Invoke(); // 던전 생성 완료를 구독 중인 시스템에 전달
-            Debug.Log($"[Dungeon] 생성 완료 — 방 {placed.Count}개 (seed {seed})"); // 던전 생성 결과 출력
+            GenerationCount++; // 완료된 던전 생성 횟수 증가
+            IsGenerating = false; // 던전 생성 진행 상태 해제
+            GenerationCompleted?.Invoke(); // 모든 스폰 매니저에 생성 완료 전달
+            Debug.Log($"[Dungeon] 생성 완료 — 방 {placed.Count}개 (seed {seed}, 생성 {GenerationCount}회)"); 
+            // 던전 생성 결과 출력
         }
 
         void PlaceRoom(Vector2Int cell) // 지정한 격자 좌표에 방 생성

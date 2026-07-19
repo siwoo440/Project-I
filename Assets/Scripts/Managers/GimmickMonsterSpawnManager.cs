@@ -47,6 +47,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         {
             if (dungeonGenerator != null) // 던전 생성기 존재 여부 확인
             {
+                dungeonGenerator.GenerationStarted += ClearSpawnedMonsters; // 새 던전 생성 전에 기존 기믹 몬스터 정리
                 dungeonGenerator.GenerationCompleted += HandleDungeonGenerated; // 생성 완료 이벤트 연결
             }
         }
@@ -55,6 +56,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         {
             if (dungeonGenerator != null) // 던전 생성기 존재 여부 확인
             {
+                dungeonGenerator.GenerationStarted -= ClearSpawnedMonsters; // 기존 기믹 몬스터 정리 이벤트 연결 해제
                 dungeonGenerator.GenerationCompleted -= HandleDungeonGenerated; // 생성 완료 이벤트 연결 해제
             }
         }
@@ -206,12 +208,14 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         {
             if (spawnedGhost != null) // 기존 고스트 존재 여부 확인
             {
-                Destroy(spawnedGhost.gameObject); // 기존 고스트 제거
+                spawnedGhost.gameObject.SetActive(false); // 지연 삭제 전에 고스트와 Collider 즉시 비활성화
+                Destroy(spawnedGhost.gameObject); // 기존 고스트 제거 예약
             }
 
             if (spawnedStatue != null) // 기존 웃는 석상 존재 여부 확인
             {
-                Destroy(spawnedStatue.gameObject); // 기존 웃는 석상 제거
+                spawnedStatue.gameObject.SetActive(false); // 지연 삭제 전에 웃는 석상과 Collider 즉시 비활성화
+                Destroy(spawnedStatue.gameObject); // 기존 웃는 석상 제거 예약
             }
 
             spawnedGhost = null; // 고스트 참조 초기화

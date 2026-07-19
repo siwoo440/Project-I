@@ -34,7 +34,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         float lastAppearTime = -999f; // 마지막 출현 피드백 재생 시각
         float lastAttackTime = -999f; // 마지막 공격 피드백 재생 시각
         float lastHitTime = -999f; // 마지막 피격 피드백 재생 시각
-
+        static bool missingParticlePoolLogged; // 파티클 풀 누락 경고 중복 출력 방지
 
         MonsterAI monsterAI; // 자동 피격 이벤트 연결용 MonsterAI
 
@@ -144,12 +144,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             ParticleSystem effectPrefab, // 생성할 파티클 프리팹
             Vector3 position) // 피드백 발생 위치
         {
-            AudioManager audioManager = AudioManager.Instance; // 전역 AudioManager 가져오기
-
-            if (audioManager == null) // 전역 AudioManager 존재 여부 확인
-            {
-                audioManager = FindFirstObjectByType<AudioManager>(); // Scene에서 AudioManager 다시 검색
-            }
+            AudioManager audioManager = AudioManager.Instance; // 전역 AudioManager를 추가 검색 없이 가져오기
 
             if (audioManager != null) // AudioManager 검색 성공 여부 확인
             {
@@ -166,23 +161,27 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             SpawnEffect(effectPrefab, position); // 지정된 위치에 파티클 생성
         }
 
-        void SpawnEffect(ParticleSystem effectPrefab, Vector3 position) // 임시 파티클 생성과 자동 제거
+        void SpawnEffect(ParticleSystem effectPrefab, Vector3 position) // 파티클 풀을 이용해 임시 효과 재생
         {
             if (effectPrefab == null) // 파티클 프리팹 연결 여부 확인
             {
-                return; // 파티클 생성 중단
+                return; // 파티클 재생 중단
             }
 
-            ParticleSystem createdEffect = Instantiate( // 파티클 프리팹 생성
-                effectPrefab, // 생성할 파티클 프리팹
-                position, // 파티클 발생 위치
-                Quaternion.identity); // 월드 기본 회전 적용
+            ParticleEffectPool effectPool = ParticleEffectPool.Instance; // 전역 파티클 풀 가져오기
 
-            createdEffect.Play(); // 파티클 재생 시작
+            if (effectPool == null) // 파티클 풀 존재 여부 확인
+            {
+                if (!missingParticlePoolLogged) // 누락 경고를 아직 출력하지 않았는지 확인
+                {
+                    Debug.LogWarning("[ThreatFeedback] ParticleEffectPool이 Scene에 없습니다."); // 파티클 풀 누락 경고 출력
+                    missingParticlePoolLogged = true; // 경고 출력 상태 저장
+                }
 
-            ParticleSystem.MainModule mainModule = createdEffect.main; // 파티클 기본 설정 가져오기
-            float removeDelay = mainModule.duration + mainModule.startLifetime.constantMax + 0.2f; // 전체 파티클 종료시간 계산
-            Destroy(createdEffect.gameObject, Mathf.Max(0.2f, removeDelay)); // 파티클 종료 후 오브젝트 제거
+                return; // 풀 없이 파티클을 생성하지 않음
+            }
+
+            effectPool.Play(effectPrefab, position, Quaternion.identity); // 풀링된 파티클 재생
         }
     }
 }

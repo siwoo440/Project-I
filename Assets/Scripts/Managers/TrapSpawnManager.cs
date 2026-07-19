@@ -66,6 +66,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         {
             if (dungeonGenerator != null) // 던전 생성기가 존재하는지 확인
             {
+                dungeonGenerator.GenerationStarted += ClearSpawnedTraps; // 새 던전 생성 전에 기존 함정 정리
                 dungeonGenerator.GenerationCompleted += HandleDungeonGenerated; // 던전 생성 완료 시 함정 생성 연결
             }
         }
@@ -74,6 +75,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         {
             if (dungeonGenerator != null) // 던전 생성기가 존재하는지 확인
             {
+                dungeonGenerator.GenerationStarted -= ClearSpawnedTraps; // 기존 함정 정리 이벤트 연결 해제
                 dungeonGenerator.GenerationCompleted -= HandleDungeonGenerated; // 등록했던 함정 생성 연결 해제
             }
         }
@@ -162,7 +164,8 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             {
                 if (trap != null) // 함정이 아직 존재하는지 확인
                 {
-                    Destroy(trap.gameObject); // 함정 게임 오브젝트 제거
+                    trap.gameObject.SetActive(false); // 지연 삭제 전에 함정과 Collider 즉시 비활성화
+                    Destroy(trap.gameObject); // 함정 게임 오브젝트 제거 예약
                 }
             }
 
