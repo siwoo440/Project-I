@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 8621336958509919722}
   - component: {fileID: 510370000854639937}
   - component: {fileID: 1309729432766380328}
+  - component: {fileID: 6162913574910325104}
   m_Layer: 0
   m_Name: Monster_Basic
   m_TagString: Untagged
@@ -143,3 +144,30 @@ MonoBehaviour:
   fbAggressiveInDark: 1
   gravity: -20
   noiseToRadius: 1.5
+--- !u!114 &6162913574910325104
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6597957590868534051}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e6d472b857308ca45ae80131930e84ed, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectI.ThreatFeedback
+  warningClip: {fileID: 0}
+  appearClip: {fileID: 0}
+  attackClip: {fileID: 0}
+  hitClip: {fileID: 0}
+  warningEffectPrefab: {fileID: 0}
+  appearEffectPrefab: {fileID: 0}
+  attackEffectPrefab: {fileID: 6465323399515970904, guid: 69366ea4feeee5942afc8a0d301b07b3, type: 3}
+  hitEffectPrefab: {fileID: 6465323399515970904, guid: 69366ea4feeee5942afc8a0d301b07b3, type: 3}
+  volume: 0.7
+  maxDistance: 20
+  useFallbackTones: 1
+  warningTone: 180
+  appearTone: 340
+  attackTone: 100
+  hitTone: 520

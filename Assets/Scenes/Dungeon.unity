@@ -1067,7 +1067,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectI.StalkerSpawnManager
   dungeonGenerator: {fileID: 1894962786}
   stalkerPrefab: {fileID: 1843511728412445422, guid: 9424af19e4d73b942807780c79cb27ab, type: 3}
-  spawnChance: 1
+  spawnChance: 0
   skipStartingRoom: 1
   wallMargin: 1.5
   positionSearchHeight: 1.1
@@ -2067,6 +2067,63 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1045646862}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1 &1091222875
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1091222876}
+  - component: {fileID: 1091222877}
+  m_Layer: 0
+  m_Name: GimmickMonsterSpawnManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1091222876
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1091222875}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1849063523}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1091222877
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1091222875}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d107c533a009a7f48afc7ce0df7f40e7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectI.GimmickMonsterSpawnManager
+  dungeonGenerator: {fileID: 1894962786}
+  ghostPrefab: {fileID: 5718147948037806946, guid: 772253d57e7dda5449e229cf075f4176, type: 3}
+  smilingStatuePrefab: {fileID: 7909635160114117464, guid: 239b9804e9b9c2e4ba98c81cf2e3848a, type: 3}
+  ghostSpawnChance: 1
+  statueSpawnChance: 0
+  skipStartingRoom: 1
+  wallMargin: 1.5
+  positionSearchHeight: 1.2
+  groundOffset: 0
+  collisionCheckRadius: 0.5
+  positionSearchAttempts: 30
+  playerSafeDistance: 6
+  showDebug: 1
 --- !u!1 &1128145102
 GameObject:
   m_ObjectHideFlags: 0
@@ -2474,6 +2531,50 @@ Transform:
   m_Children:
   - {fileID: 62706764}
   m_Father: {fileID: 2066530005}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1336960403
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1336960405}
+  - component: {fileID: 1336960404}
+  m_Layer: 0
+  m_Name: AudioManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1336960404
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1336960403}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 29e33a543b6e1a94daeaaa92d2ea7f0d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectI.AudioManager
+--- !u!4 &1336960405
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1336960403}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1343476592
 GameObject:
@@ -3229,6 +3330,7 @@ Transform:
   - {fileID: 1940104194}
   - {fileID: 538285486}
   - {fileID: 429890101}
+  - {fileID: 1091222876}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1894962785
@@ -3788,6 +3890,7 @@ SceneRoots:
   m_Roots:
   - {fileID: 1894962787}
   - {fileID: 1128145107}
+  - {fileID: 1336960405}
   - {fileID: 1849063523}
   - {fileID: 2040092431}
   - {fileID: 1359721227}

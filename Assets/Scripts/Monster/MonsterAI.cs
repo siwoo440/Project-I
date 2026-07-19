@@ -37,6 +37,7 @@ namespace ProjectI
         PlayerController player;
         CharacterController playerCC;
         LightSystem playerLight;
+        ThreatFeedback threatFeedback; // 공격 피드백 재생용 공통 컴포넌트
 
         float health, vy, lastAttackTime, patrolTimer;
         public event System.Action Damaged; // 외부 기믹에 몬스터 피격 사실 전달
@@ -57,6 +58,7 @@ namespace ProjectI
         void Awake()
         {
             cc = GetComponent<CharacterController>();
+            threatFeedback = GetComponent<ThreatFeedback>(); // 같은 오브젝트의 공통 피드백 검색
             health = MaxHealth;
         }
 
@@ -171,6 +173,11 @@ namespace ProjectI
             if (Time.time - lastAttackTime < AttackCooldown) return;
             lastAttackTime = Time.time;
             player.TakeDamage(AttackDamage);
+            if (threatFeedback != null) // 공통 피드백 존재 여부 확인
+            {
+                threatFeedback.PlayAttack(); // 몬스터 공격 소리와 파티클 재생
+            }
+
             Debug.Log($"[{Name}] 공격! (-{AttackDamage:F0})");
         }
 
