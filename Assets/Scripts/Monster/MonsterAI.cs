@@ -16,6 +16,7 @@ namespace ProjectI
         [Header("Fallback 스탯 (data 없을 때 사용)")]
         [SerializeField] string fbName = "몬스터";
         [SerializeField] float fbMaxHealth = 80f;
+        [SerializeField] float fbDefense = 0f;
         [SerializeField] float fbMoveSpeed = 3.5f;
         [SerializeField] float fbAttackDamage = 20f;
         [SerializeField] float fbAttackRange = 1.6f;
@@ -42,6 +43,7 @@ namespace ProjectI
 
         string Name => data != null ? data.displayName : fbName;
         float MaxHealth => data != null ? data.maxHealth : fbMaxHealth;
+        public float Defense => data != null ? data.defense : fbDefense;
         float MoveSpeed => data != null ? data.moveSpeed : fbMoveSpeed;
         float AttackDamage => data != null ? data.attackDamage : fbAttackDamage;
         float AttackRange => data != null ? data.attackRange : fbAttackRange;

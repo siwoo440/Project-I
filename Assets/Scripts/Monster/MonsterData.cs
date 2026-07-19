@@ -12,6 +12,7 @@ namespace ProjectI
     {
         public string displayName = "몬스터";
         public float maxHealth = 80f;
+        public float defense = 0f;      // 받는 피해 감소 (데미지 공식)
         public float moveSpeed = 3.5f;
         public float attackDamage = 20f;
         public float attackRange = 1.6f;
