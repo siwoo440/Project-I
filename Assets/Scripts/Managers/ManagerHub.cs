@@ -20,6 +20,8 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         [SerializeField] AudioManager audioManager; // 효과음과 AudioSource 풀 관리
         [SerializeField] ParticleEffectPool particleEffectPool; // 파티클 풀 관리
         [SerializeField] RunResultManager runResultManager; // Scene 간 던전 결과 보관 매니저
+        [SerializeField] CampaignManager campaignManager; // 골드와 빚 및 날짜 관리 매니저
+
 
         [Header("검증 시스템")] // 개발용 검사 시스템 참조 구분
         [SerializeField] VerticalSliceValidator verticalSliceValidator; // 수직 슬라이스 구성 검사
@@ -39,6 +41,9 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         public VerticalSliceValidator VerticalSliceValidator => verticalSliceValidator; // 수직 슬라이스 검사기 공개 접근점
         public RuntimePerformanceMonitor PerformanceMonitor => performanceMonitor; // 성능 검사기 공개 접근점
         public RunResultManager RunResultManager => runResultManager; // 던전 결과 매니저 공개 접근점
+        public CampaignManager CampaignManager => campaignManager; // 캠페인 매니저 공개 접근점
+
+
         void Reset() // 컴포넌트를 처음 추가할 때 참조 자동 검색
         {
             ResolveReferences(); // 현재 Scene의 매니저 참조 연결
@@ -66,6 +71,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             verticalSliceValidator  ??= FindFirstObjectByType<VerticalSliceValidator>(); // 수직 슬라이스 검사기 검색
             performanceMonitor      ??= FindFirstObjectByType<RuntimePerformanceMonitor>(); // 성능 검사기 검색
             runResultManager        ??= FindFirstObjectByType<RunResultManager>(); // 던전 결과 매니저 검색
+            campaignManager         ??= FindFirstObjectByType<CampaignManager>(); // 캠페인 매니저 검색
         }
 
         [ContextMenu("매니저 참조 검사")]
@@ -85,6 +91,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             missingCount += CheckReference(verticalSliceValidator, "VerticalSliceValidator"); // 수직 슬라이스 검사기 검사
             missingCount += CheckReference(performanceMonitor    , "RuntimePerformanceMonitor"); // 성능 검사기 검사
             missingCount += CheckReference(runResultManager      , "RunResultManager"); // 던전 결과 매니저 검사
+            missingCount += CheckReference(campaignManager       , "CampaignManager"); // 캠페인 매니저 검사
 
             if (missingCount == 0) // 누락된 매니저가 없는지 확인
             {

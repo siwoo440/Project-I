@@ -1,6 +1,6 @@
 using UnityEngine; // Unity 기본 기능 사용
 using UnityEngine.SceneManagement; // Scene 전환 후 참조 재연결 기능 사용
-
+using UnityEngine.InputSystem; // F6 마을 이동 입력 사용
 namespace ProjectI // 프로젝트 공통 네임스페이스
 {
     public class RunResultManager : MonoBehaviour // 던전 종료 결과 생성과 Scene 간 보관 담당
@@ -9,6 +9,9 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
 
         [Header("임시 결과 화면")] // Inspector 결과 화면 설정 구분
         [SerializeField] bool showResultPanel = true; // OnGUI 결과 화면 표시 여부
+        [SerializeField] string villageSceneName = "Village"; // 정산을 진행할 마을 Scene 이름
+        [SerializeField] bool allowVillageTransition = true; // F6 마을 이동 허용 여부
+
 
         readonly RunResultData currentResult = new RunResultData(); // 현재 보관 중인 던전 결과
 
@@ -47,7 +50,20 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         {
             ConnectToCurrentScene(); // 현재 Scene의 결과 관련 시스템 검색
         }
+        void Update() // 던전 결과 화면의 마을 이동 입력 처리
+        {
+            if (!allowVillageTransition || !currentResult.HasResult) // 마을 이동 가능 여부 확인
+            {
+                return; // 입력 처리 중단
+            }
 
+            Keyboard keyboard = Keyboard.current; // 현재 키보드 입력 가져오기
+
+            if (keyboard != null && keyboard.f6Key.wasPressedThisFrame) // F6 입력 여부 확인
+            {
+                LoadVillage(); // 마을 정산 Scene으로 이동
+            }
+        }
         void OnDisable() // Scene 전환 이벤트 구독 해제
         {
             SceneManager.sceneLoaded -= HandleSceneLoaded; // Scene 로드 이벤트 연결 해제
@@ -171,7 +187,30 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
 
             Debug.Log($"[RunResult] 결과 확정 — {currentResult.GetEndReasonText()}, 보물 {securedTreasureCount}개, 가치 {securedValue}골드"); // 확정 결과 출력
         }
+        public void LoadVillage() // 확정된 던전 결과를 유지한 채 마을 Scene으로 이동
+        {
+            if (!currentResult.HasResult) // 이동할 던전 결과 존재 여부 확인
+            {
+                return; // 결과 없이 마을 이동 방지
+            }
 
+            if (string.IsNullOrWhiteSpace(villageSceneName)) // 마을 Scene 이름 입력 여부 확인
+            {
+                Debug.LogError("[RunResult] Village Scene 이름이 비어 있습니다."); // Scene 이름 누락 오류 출력
+                return; // 마을 이동 중단
+            }
+
+            if (!Application.CanStreamedLevelBeLoaded(villageSceneName)) // Build Profile에 마을 Scene이 등록됐는지 확인
+            {
+                Debug.LogError($"[RunResult] Build Profile에서 {villageSceneName} Scene을 찾을 수 없습니다."); // Scene 등록 누락 오류 출력
+                return; // 마을 이동 중단
+            }
+
+            Time.timeScale = 1f; // Scene 전환 전에 정지된 게임시간 복구
+            Cursor.lockState = CursorLockMode.None; // 마을 UI 조작을 위해 커서 잠금 해제
+            Cursor.visible = true; // 마우스 커서 표시
+            SceneManager.LoadScene(villageSceneName); // 마을 정산 Scene 로드
+        }
         public void ClearCurrentResult() // 28일차 정산 완료 후 현재 결과 초기화
         {
             currentResult.Clear(); // 보관 중인 결과 데이터 초기화
@@ -210,7 +249,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             GUI.Label(new Rect(x + 10f, y + 155f, width - 20f, 25f), $"확보 가치: {currentResult.SecuredValue}골드", centerStyle); // 확보 가치 표시
             GUI.Label(new Rect(x + 10f, y + 185f, width - 20f, 25f), $"진행시간: {totalMinutes:00}:{totalSeconds:00}", centerStyle); // 던전 진행시간 표시
             GUI.Label(new Rect(x + 10f, y + 215f, width - 20f, 25f), $"던전 시드: {currentResult.DungeonSeed}", centerStyle); // 던전 생성 시드 표시
-            GUI.Label(new Rect(x + 10f, y + 240f, width - 20f, 20f), "28일차에 마을 정산 화면과 연결", centerStyle); // 다음 작업 안내 표시
+            GUI.Label(new Rect(x + 10f, y + 240f, width - 20f, 20f), "[F6] 마을로 돌아가 보물 정산", centerStyle); // 다음 작업 안내 표시
         }
     }
 }
