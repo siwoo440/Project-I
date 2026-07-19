@@ -12,6 +12,7 @@ namespace ProjectI
     {
         [Header("데이터 (없으면 아래 fallback 사용)")]
         [SerializeField] ItemData data;
+        [SerializeField] WeaponData weaponData; // 무기일 경우 지정 (PlayerCombat이 참조)
         [SerializeField] string fallbackName = ""; // 비우면 오브젝트(GameObject) 이름 사용
         [SerializeField] float fallbackWeight = 1f;
         [SerializeField] int fallbackSlots = 1;
@@ -37,6 +38,7 @@ namespace ProjectI
         public int Slots => Mathf.Max(1, data != null ? data.inventorySlots : fallbackSlots);
         public int BonusSlots => data != null ? data.bonusSlots : 0;
         public bool TwoHanded => false; // 일반 아이템은 두손 아님
+        public WeaponData Weapon => weaponData; // 무기면 데이터, 아니면 null
 
         void Awake()
         {

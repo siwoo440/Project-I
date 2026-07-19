@@ -109,6 +109,24 @@ namespace ProjectI
             return item;
         }
 
+        /// <summary>이름이 일치하는 아이템 1개를 소모(제거)한다. (예: 활의 화살) 성공 시 true.</summary>
+        public bool ConsumeItemByName(string itemName)
+        {
+            for (int i = 0; i < items.Count; i++)
+            {
+                if (items[i] is PickupItem p && p.DisplayName == itemName)
+                {
+                    var mb = items[i] as MonoBehaviour;
+                    items.RemoveAt(i);
+                    if (mb != null) Destroy(mb.gameObject);
+                    if (items.Count == 0) selected = -1;
+                    else Select(Mathf.Clamp(selected, 0, items.Count - 1));
+                    return true;
+                }
+            }
+            return false;
+        }
+
         /// <summary>인벤토리(슬롯 + 두손)의 모든 것을 꺼내 반환하고 비운다. (탈출 시 확보용)</summary>
         public List<ICarryable> TakeAll()
         {

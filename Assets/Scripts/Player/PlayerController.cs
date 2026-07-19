@@ -47,6 +47,7 @@ namespace ProjectI
 
         CharacterController controller;
         InventorySystem inventory;
+        PlayerCombat combat;
         Transform cam;
         float pitch;
         float verticalVelocity;
@@ -61,6 +62,7 @@ namespace ProjectI
         {
             controller = GetComponent<CharacterController>();
             inventory = GetComponent<InventorySystem>();
+            combat = GetComponent<PlayerCombat>();
             var camComp = GetComponentInChildren<Camera>();
             if (camComp != null) cam = camComp.transform;
             controller.height = standHeight;
@@ -184,6 +186,8 @@ namespace ProjectI
         /// <summary>피해 적용. (물약 회복·전투는 이후 파트에서 연동)</summary>
         public void TakeDamage(float amount)
         {
+            if (combat != null && combat.CurrentBlockReduction > 0f)
+                amount *= (1f - combat.CurrentBlockReduction); // 방패 막기
             health = Mathf.Max(0f, health - amount);
             if (health <= 0f) Debug.Log("[Player] 사망 (체력 0)");
         }
