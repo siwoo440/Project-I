@@ -188,8 +188,17 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
 
                     Quaternion spawnRotation = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f); // 보물의 무작위 Y축 회전 계산
                     Treasure spawnedTreasure = Instantiate(selectedPrefab, spawnPosition, spawnRotation, transform); // 보물을 현재 매니저의 자식으로 생성
-                    float finalRiskMultiplier = Mathf.Max(0f, riskMultiplier); // 리스크 배율이 음수가 되지 않도록 제한
-                    spawnedTreasure.GenerateValue(brightnessMultiplier, finalRiskMultiplier); // 밝기와 리스크 배율을 적용해 보물 가치 결정
+                    DungeonRouteData selectedRoute = DungeonSelectionManager.Instance != null // 던전 선택 매니저 존재 여부 확인
+                        ? DungeonSelectionManager.Instance.SelectedRoute // 현재 선택한 던전 경로 가져오기
+                        : null; // 선택 경로 없음 처리
+
+                    float routeRewardMultiplier = selectedRoute != null // 선택 경로 존재 여부 확인
+                        ? Mathf.Max(0f, selectedRoute.RewardValueMultiplier) // 선택 경로의 보물 가치 배율 적용
+                        : 1f; // 기본 보물 가치 배율 적용
+
+                    float finalRiskMultiplier = Mathf.Max(0f, riskMultiplier) * routeRewardMultiplier; // 기존 리스크와 선택 경로 보상 배율 결합
+                    spawnedTreasure.GenerateValue(brightnessMultiplier, finalRiskMultiplier); // 최종 밝기와 보상 배율로 보물 가치 결정
+
                     spawnedTreasures.Add(spawnedTreasure); // 생성된 보물을 관리 목록에 추가
                     totalSpawned++; // 전체 생성 수 증가
                 }

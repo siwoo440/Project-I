@@ -81,10 +81,21 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             }
 
             placed.Clear(); // 기존 방 좌표 목록 초기화
+            DungeonRouteData selectedRoute = DungeonSelectionManager.Instance != null // 던전 선택 매니저 존재 여부 확인
+                ? DungeonSelectionManager.Instance.SelectedRoute // 마을에서 선택한 던전 경로 가져오기
+                : null; // 선택 매니저가 없으면 기본 던전 사용
+
+            int targetRoomCount = selectedRoute != null // 선택된 경로 존재 여부 확인
+                ? Mathf.Max(8, selectedRoute.RoomCount) // 선택 경로의 방 개수를 최소 8개로 제한
+                : roomCount; // 선택 경로가 없으면 기존 Inspector 방 개수 사용
 
             if (randomSeed) // 무작위 시드 사용 여부 확인
             {
                 seed = Random.Range(int.MinValue, int.MaxValue); // 새로운 무작위 시드 생성
+            }
+            if (selectedRoute != null) // 마을에서 던전 경로를 선택했는지 확인
+            {
+                seed = unchecked(seed + selectedRoute.SeedOffset); // 선택 경로별 시드 오프셋 적용
             }
 
             Random.InitState(seed); // 던전 생성용 무작위 상태 초기화
@@ -95,7 +106,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
 
             int guard = 0; // 무한 반복 방지 횟수 초기화
 
-            while (placed.Count < roomCount && guard++ < roomCount * 20) // 목표 방 수 또는 최대 시도 횟수까지 반복
+            while (placed.Count < targetRoomCount && guard++ < targetRoomCount * 20) // 선택 경로의 방 수 또는 최대 시도 횟수까지 반복
             {
                 int directionIndex = Random.Range(0, 4); // 무작위 이동 방향 선택
                 Vector2Int nextCell = currentCell + DirectionVectors[directionIndex]; // 다음 방 격자 좌표 계산
@@ -129,7 +140,8 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             GenerationCount++; // 완료된 던전 생성 횟수 증가
             IsGenerating = false; // 던전 생성 진행 상태 해제
             GenerationCompleted?.Invoke(); // 모든 스폰 매니저에 생성 완료 전달
-            Debug.Log($"[Dungeon] 생성 완료 — 방 {placed.Count}개 (seed {seed}, 생성 {GenerationCount}회)"); 
+            string routeName = selectedRoute != null ? selectedRoute.DisplayName : "기본 던전"; // 생성한 던전 경로 이름 계산
+            Debug.Log($"[Dungeon] {routeName} 생성 완료 — 방 {placed.Count}개 (seed {seed}, 생성 {GenerationCount}회)"); // 경로와 방 및 시드 결과 출력
             // 던전 생성 결과 출력
         }
 

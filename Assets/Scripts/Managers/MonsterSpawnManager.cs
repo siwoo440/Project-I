@@ -117,7 +117,15 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
                 int safeMinimum = Mathf.Max(0, minMonstersPerRoom); // 최소 몬스터 수가 음수가 되지 않도록 제한
                 int safeMaximum = Mathf.Max(safeMinimum, maxMonstersPerRoom); // 최대값이 최소값보다 작지 않도록 제한
                 int baseCount = Random.Range(safeMinimum, safeMaximum + 1); // 방의 기본 몬스터 수 무작위 결정
-                int spawnCount = Mathf.CeilToInt(baseCount * brightnessMultiplier); // 밝기 배율을 적용한 최종 몬스터 수 계산
+                DungeonRouteData selectedRoute = DungeonSelectionManager.Instance != null // 던전 선택 매니저 존재 여부 확인
+                    ? DungeonSelectionManager.Instance.SelectedRoute // 현재 선택한 던전 경로 가져오기
+                    : null; // 선택 경로 없음 처리
+
+                float routeMonsterMultiplier = selectedRoute != null // 선택 경로 존재 여부 확인
+                    ? Mathf.Max(0f, selectedRoute.MonsterSpawnMultiplier) // 선택 경로의 몬스터 생성 배율 적용
+                    : 1f; // 기본 몬스터 생성 배율 적용
+
+                int spawnCount = Mathf.CeilToInt(baseCount * brightnessMultiplier * routeMonsterMultiplier); // 밝기와 선택 경로를 적용한 몬스터 수 계산
 
                 for (int i = 0; i < spawnCount; i++) // 최종 몬스터 수만큼 생성 반복
                 {

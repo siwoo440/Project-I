@@ -1,6 +1,7 @@
 using UnityEngine; // Unity 기본 기능 사용
 using UnityEngine.SceneManagement; // Scene 전환 후 참조 재연결 기능 사용
 using UnityEngine.InputSystem; // F6 마을 이동 입력 사용
+using System.Collections; // 마을 자동 이동 대기 코루틴 사용
 namespace ProjectI // 프로젝트 공통 네임스페이스
 {
     public class RunResultManager : MonoBehaviour // 던전 종료 결과 생성과 Scene 간 보관 담당
@@ -10,7 +11,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         [Header("임시 결과 화면")] // Inspector 결과 화면 설정 구분
         [SerializeField] bool showResultPanel = true; // OnGUI 결과 화면 표시 여부
         [SerializeField] string villageSceneName = "Village"; // 정산을 진행할 마을 Scene 이름
-        [SerializeField] bool allowVillageTransition = true; // F6 마을 이동 허용 여부
+        [SerializeField][Min(0f)] float villageTransitionDelay = 10f; // 결과 확정 후 마을로 이동할 실제 대기시간
 
 
         readonly RunResultData currentResult = new RunResultData(); // 현재 보관 중인 던전 결과
@@ -22,6 +23,9 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
 
         bool runActive; // 현재 던전 탐험 결과를 받을 수 있는 상태
         float fallbackStartTime; // 시간 시스템 누락 시 사용할 실시간 시작 시각
+        Coroutine villageTransitionCoroutine; // 마을 자동 이동 코루틴 참조
+        float villageTransitionRemaining; // 결과 화면에 표시할 남은 대기시간
+
         GUIStyle titleStyle; // 결과 제목 표시 스타일
         GUIStyle centerStyle; // 결과 상세 표시 스타일
 
@@ -50,20 +54,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         {
             ConnectToCurrentScene(); // 현재 Scene의 결과 관련 시스템 검색
         }
-        void Update() // 던전 결과 화면의 마을 이동 입력 처리
-        {
-            if (!allowVillageTransition || !currentResult.HasResult) // 마을 이동 가능 여부 확인
-            {
-                return; // 입력 처리 중단
-            }
-
-            Keyboard keyboard = Keyboard.current; // 현재 키보드 입력 가져오기
-
-            if (keyboard != null && keyboard.f6Key.wasPressedThisFrame) // F6 입력 여부 확인
-            {
-                LoadVillage(); // 마을 정산 Scene으로 이동
-            }
-        }
+        
         void OnDisable() // Scene 전환 이벤트 구독 해제
         {
             SceneManager.sceneLoaded -= HandleSceneLoaded; // Scene 로드 이벤트 연결 해제
@@ -135,6 +126,14 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
 
         void BeginRun() // 새로운 던전 탐험 결과 기록 시작
         {
+            if (villageTransitionCoroutine != null) // 이전 자동 이동 코루틴 실행 여부 확인
+            {
+                StopCoroutine(villageTransitionCoroutine); // 이전 자동 이동 코루틴 중단
+                villageTransitionCoroutine = null; // 코루틴 참조 초기화
+            }
+
+            villageTransitionRemaining = 0f; // 남아 있던 마을 이동 대기시간 초기화
+
             currentResult.Clear(); // 이전 던전 결과 초기화
             fallbackStartTime = Time.realtimeSinceStartup; // 실시간 시작 시각 저장
             runActive = true; // 결과 기록 가능 상태 활성화
@@ -184,9 +183,40 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             Cursor.lockState = CursorLockMode.None; // 결과 확인을 위해 커서 잠금 해제
             Cursor.visible = true; // 마우스 커서 표시
             Time.timeScale = 0f; // 던전 진행 정지
+            StartAutomaticVillageTransition(); // 실제시간 10초 후 마을 자동 이동 시작
 
             Debug.Log($"[RunResult] 결과 확정 — {currentResult.GetEndReasonText()}, 보물 {securedTreasureCount}개, 가치 {securedValue}골드"); // 확정 결과 출력
         }
+        void StartAutomaticVillageTransition() // 기존 자동 이동을 정리하고 새 대기 코루틴 시작
+        {
+            if (villageTransitionCoroutine != null) // 기존 자동 이동 코루틴 실행 여부 확인
+            {
+                StopCoroutine(villageTransitionCoroutine); // 중복 자동 이동 코루틴 중단
+            }
+
+            villageTransitionCoroutine = StartCoroutine(AutomaticVillageTransitionRoutine()); // 마을 자동 이동 코루틴 시작
+        }
+
+        IEnumerator AutomaticVillageTransitionRoutine() // Time.timeScale이 0이어도 실제시간으로 10초 대기
+        {
+            villageTransitionRemaining = Mathf.Max(0f, villageTransitionDelay); // 설정된 대기시간 안전값 저장
+
+            while (villageTransitionRemaining > 0f) // 남은 대기시간이 있는 동안 반복
+            {
+                villageTransitionRemaining = Mathf.Max( // 남은 대기시간 갱신
+                    0f, // 최소 대기시간 설정
+                    villageTransitionRemaining - Time.unscaledDeltaTime); // 정지 상태와 무관한 실제 프레임 시간 차감
+
+                yield return null; // 다음 프레임까지 대기
+            }
+
+            villageTransitionCoroutine = null; // 완료된 코루틴 참조 초기화
+            LoadVillage(); // 확정된 결과를 유지하며 Village Scene 로드
+        }
+
+
+
+
         public void LoadVillage() // 확정된 던전 결과를 유지한 채 마을 Scene으로 이동
         {
             if (!currentResult.HasResult) // 이동할 던전 결과 존재 여부 확인
@@ -249,7 +279,11 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             GUI.Label(new Rect(x + 10f, y + 155f, width - 20f, 25f), $"확보 가치: {currentResult.SecuredValue}골드", centerStyle); // 확보 가치 표시
             GUI.Label(new Rect(x + 10f, y + 185f, width - 20f, 25f), $"진행시간: {totalMinutes:00}:{totalSeconds:00}", centerStyle); // 던전 진행시간 표시
             GUI.Label(new Rect(x + 10f, y + 215f, width - 20f, 25f), $"던전 시드: {currentResult.DungeonSeed}", centerStyle); // 던전 생성 시드 표시
-            GUI.Label(new Rect(x + 10f, y + 240f, width - 20f, 20f), "[F6] 마을로 돌아가 보물 정산", centerStyle); // 다음 작업 안내 표시
+            int remainingSeconds = Mathf.CeilToInt(villageTransitionRemaining); // 화면에 표시할 남은 초 계산
+            GUI.Label( // 마을 자동 이동 남은시간 표시
+                new Rect(x + 10f, y + 240f, width - 20f, 20f), // 안내 문구 위치와 크기
+                $"{remainingSeconds}초 후 마을 마차로 돌아갑니다.", // 자동 이동 안내 문구
+                centerStyle); // 중앙 정렬 스타일 적용
         }
     }
 }

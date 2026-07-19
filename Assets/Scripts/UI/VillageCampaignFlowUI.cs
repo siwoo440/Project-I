@@ -11,6 +11,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
 
         [Header("임시 화면")] // Inspector OnGUI 설정 구분
         [SerializeField] bool showFlowPanel = true; // 날짜와 출발 안내 패널 표시 여부
+        bool selectionUnlocked; // 마차 도착 후 던전 선택 허용 여부
 
         CampaignManager campaignManager; // 캠페인 날짜와 빚 상태 관리 매니저
         VillageSettlementUI settlementUI; // 정산 창 표시 상태 확인용 UI
@@ -18,6 +19,23 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         GUIStyle titleStyle; // 마을 진행 제목 스타일
         GUIStyle centerStyle; // 마을 진행 상세 스타일
         GUIStyle warningStyle; // 마지막 날과 마감 경고 스타일
+        void Awake() // 마을 시작 시 던전 선택 창 잠금
+        {
+            selectionUnlocked = false; // 마차가 목적지에 도착하기 전까지 선택 차단
+        }
+        public void LockSelection() // 마차 출발 전 던전 선택 창 잠금
+        {
+            selectionUnlocked = false; // 선택 입력과 화면 표시 차단
+        }
+
+        public void UnlockSelection() // 마차 도착 후 던전 선택 창 활성화
+        {
+            selectionUnlocked = true; // 선택 입력과 화면 표시 허용
+            Cursor.lockState = CursorLockMode.None; // 던전 선택 버튼 조작을 위해 커서 잠금 해제
+            Cursor.visible = true; // 마우스 커서 표시
+            Debug.Log("[DungeonSelection] 마차 도착으로 던전 선택이 활성화됐습니다."); // 선택 활성화 결과 출력
+        }
+
 
         void Start() // 마을 캠페인 진행 참조와 커서 상태 초기화
         {
@@ -40,8 +58,12 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             }
         }
 
-        void Update() // F5 다음 던전 출발 입력 처리
+        void Update() // 던전 선택 키 입력 처리
         {
+            if (!selectionUnlocked) // 마차가 목적지에 도착했는지 확인
+            {
+                return; // 도착 전 숫자 키와 F5 입력 차단
+            }
             Keyboard keyboard = Keyboard.current; // 현재 키보드 입력 가져오기
 
             if (keyboard != null && keyboard.f5Key.wasPressedThisFrame) // F5 입력 여부 확인
@@ -89,6 +111,11 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
 
         void OnGUI() // 날짜와 마감 및 출발과 캠페인 결과 화면 표시
         {
+            if (!selectionUnlocked) // 마차가 목적지에 도착했는지 확인
+            {
+                return; // 도착 전 던전 선택 화면 숨김
+            }
+
             if (!showFlowPanel) // 마을 진행 패널 표시 여부 확인
             {
                 return; // 마을 진행 패널 표시 중단
