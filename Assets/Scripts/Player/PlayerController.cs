@@ -1,6 +1,6 @@
 using UnityEngine; // Unity 기본 기능 사용
 using UnityEngine.InputSystem; // 새 입력 시스템 사용
-
+using System.Collections; // 조각상 이동속도 버프 코루틴 사용
 namespace ProjectI // 프로젝트 공통 네임스페이스
 {
     /// <summary>
@@ -63,6 +63,8 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         bool wasGrounded; // 이전 프레임 접지 상태
         float peakFallSpeed; // 공중에서 기록한 최대 낙하속도
         bool isDead; // 현재 사망 상태
+        float movementSpeedBuffMultiplier = 1f; // 조각상이 적용한 현재 이동속도 배율
+        Coroutine movementBuffCoroutine; // 현재 실행 중인 이동속도 버프 코루틴
 
         public bool IsDead => isDead; // 외부 사망 상태 확인
 
@@ -188,7 +190,9 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
 
             bool moving = input.sqrMagnitude > 0.01f; // 실제 이동 입력 여부 확인
             bool sprinting = keyboard.leftShiftKey.isPressed && moving && !isCrouching && verticalInput > 0f && stamina > 0f; // 전진 달리기 가능 여부 확인
+            
             float speed = isCrouching ? crouchSpeed : sprinting ? runSpeed : walkSpeed; // 현재 이동속도 결정
+            speed *= movementSpeedBuffMultiplier; // 조각상 이동속도 버프 배율 적용
 
             if (inventory != null) // 인벤토리 존재 여부 확인
             {
@@ -281,6 +285,33 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             Debug.Log("[Player] 즉사 피해를 받았습니다."); // 즉사 피해 발생 기록
             HandleDeath(); // 부활의 돌 확인을 포함한 기존 사망 처리 실행
         }
+
+        public void ApplyMovementBuff(float multiplier, float duration) // 일정 시간 동안 이동속도 버프 적용
+        {
+            float safeMultiplier = Mathf.Max(1f, multiplier); // 이동속도 배율이 기본값보다 작지 않도록 제한
+            float safeDuration = Mathf.Max(0.1f, duration); // 버프 지속시간이 너무 짧거나 음수가 되지 않도록 제한
+
+            if (movementBuffCoroutine != null) // 기존 이동속도 버프가 실행 중인지 확인
+            {
+                StopCoroutine(movementBuffCoroutine); // 기존 버프 코루틴 중단
+            }
+
+            movementBuffCoroutine = StartCoroutine(MovementBuffRoutine(safeMultiplier, safeDuration)); // 새로운 이동속도 버프 시작
+        }
+
+        IEnumerator MovementBuffRoutine(float multiplier, float duration) // 이동속도 배율을 적용하고 지속시간 후 해제
+        {
+            movementSpeedBuffMultiplier = multiplier; // 현재 이동속도에 버프 배율 적용
+            Debug.Log($"[Player] 이동속도 버프 적용 — {multiplier:F2}배, {duration:F0}초"); // 버프 적용 결과 출력
+
+            yield return new WaitForSeconds(duration); // 설정된 버프 지속시간만큼 대기
+
+            movementSpeedBuffMultiplier = 1f; // 이동속도 배율을 기본값으로 복구
+            movementBuffCoroutine = null; // 실행 중인 버프 코루틴 참조 초기화
+
+            Debug.Log("[Player] 이동속도 버프가 종료되었습니다."); // 버프 종료 결과 출력
+        }
+
         void HandleDeath() // 사망 또는 부활석 자동 소생 처리
         {
             if (inventory != null && inventory.ConsumeItemByName(reviveItemName)) // 부활석 소지 확인과 소모
