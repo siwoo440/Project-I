@@ -270,7 +270,17 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
                 HandleDeath(); // 사망 처리 실행
             }
         }
+        public void TakeFatalDamage() // 방패를 무시하고 플레이어를 즉시 사망 상태로 처리
+        {
+            if (isDead) // 플레이어가 이미 사망했는지 확인
+            {
+                return; // 중복 사망 처리를 방지
+            }
 
+            health = 0f; // 현재 체력을 즉시 0으로 설정
+            Debug.Log("[Player] 즉사 피해를 받았습니다."); // 즉사 피해 발생 기록
+            HandleDeath(); // 부활의 돌 확인을 포함한 기존 사망 처리 실행
+        }
         void HandleDeath() // 사망 또는 부활석 자동 소생 처리
         {
             if (inventory != null && inventory.ConsumeItemByName(reviveItemName)) // 부활석 소지 확인과 소모
