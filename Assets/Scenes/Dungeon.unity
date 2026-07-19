@@ -1156,7 +1156,7 @@ GameObject:
   - component: {fileID: 775851084}
   - component: {fileID: 775851083}
   m_Layer: 0
-  m_Name: Cube
+  m_Name: "\uBD80\uD65C\uC758 \uB3CC"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1498,6 +1498,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectI.InventorySystem
   baseSlots: 5
   weightLimit: 30
+  dropRadius: 0.8
+  dropImpulse: 2.5
 --- !u!114 &1128145111
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2175,7 +2177,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1796175365
+--- !u!1 &1849063521
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -2183,136 +2185,49 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1796175370}
-  - component: {fileID: 1796175369}
-  - component: {fileID: 1796175368}
-  - component: {fileID: 1796175367}
-  - component: {fileID: 1796175366}
+  - component: {fileID: 1849063523}
+  - component: {fileID: 1849063522}
   m_Layer: 0
-  m_Name: Monster
+  m_Name: SpawnManager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1796175366
+--- !u!114 &1849063522
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1796175365}
+  m_GameObject: {fileID: 1849063521}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bdfd0bc60920c9942a0b3b306b8f70a4, type: 3}
+  m_Script: {fileID: 11500000, guid: 5e831cb11838ade439793fcadcd86294, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProjectI.MonsterAI
-  data: {fileID: 0}
-  fbName: "\uBAAC\uC2A4\uD130"
-  fbMaxHealth: 80
-  fbDefense: 0
-  fbMoveSpeed: 3.5
-  fbAttackDamage: 20
-  fbAttackRange: 1.6
-  fbAttackCooldown: 1.5
-  fbSightRange: 12
-  fbSightAngle: 110
-  fbHearingRange: 12
-  fbAggressiveInDark: 1
-  gravity: -20
-  noiseToRadius: 1.5
---- !u!143 &1796175367
-CharacterController:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1796175365}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Height: 1.8
-  m_Radius: 0.4
-  m_SlopeLimit: 45
-  m_StepOffset: 0.3
-  m_SkinWidth: 0.08
-  m_MinMoveDistance: 0.001
-  m_Center: {x: 0, y: 0, z: 0}
---- !u!23 &1796175368
-MeshRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1796175365}
-  m_Enabled: 1
-  m_CastShadows: 1
-  m_ReceiveShadows: 1
-  m_DynamicOccludee: 1
-  m_StaticShadowCaster: 0
-  m_MotionVectors: 1
-  m_LightProbeUsage: 1
-  m_ReflectionProbeUsage: 1
-  m_RayTracingMode: 2
-  m_RayTraceProcedural: 0
-  m_RayTracingAccelStructBuildFlagsOverride: 0
-  m_RayTracingAccelStructBuildFlags: 1
-  m_SmallMeshCulling: 1
-  m_ForceMeshLod: -1
-  m_MeshLodSelectionBias: 0
-  m_RenderingLayerMask: 1
-  m_RendererPriority: 0
-  m_Materials:
-  - {fileID: 2100000, guid: e016c76feb779c84dadb934aad8cc2fa, type: 2}
-  m_StaticBatchInfo:
-    firstSubMesh: 0
-    subMeshCount: 0
-  m_StaticBatchRoot: {fileID: 0}
-  m_ProbeAnchor: {fileID: 0}
-  m_LightProbeVolumeOverride: {fileID: 0}
-  m_ScaleInLightmap: 1
-  m_ReceiveGI: 1
-  m_PreserveUVs: 0
-  m_IgnoreNormalsForChartDetection: 0
-  m_ImportantGI: 0
-  m_StitchLightmapSeams: 1
-  m_SelectedEditorRenderState: 3
-  m_MinimumChartSize: 4
-  m_AutoUVMaxDistance: 0.5
-  m_AutoUVMaxAngle: 89
-  m_LightmapParameters: {fileID: 0}
-  m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
-  m_SortingOrder: 0
-  m_MaskInteraction: 0
-  m_AdditionalVertexStreams: {fileID: 0}
---- !u!33 &1796175369
-MeshFilter:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1796175365}
-  m_Mesh: {fileID: 10208, guid: 0000000000000000e000000000000000, type: 0}
---- !u!4 &1796175370
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectI.SpawnManager
+  dungeonGenerator: {fileID: 1894962786}
+  monsterPrefabs:
+  - {fileID: 1309729432766380328, guid: 9b0b36666a2d15c478b5be88dd52b89c, type: 3}
+  minMonstersPerRoom: 1
+  maxMonstersPerRoom: 2
+  skipStartingRoom: 1
+  wallMargin: 1.5
+  spawnHeight: 1.1
+  collisionCheckRadius: 0.45
+  positionSearchAttempts: 12
+  playerSafeDistance: 4
+  showDebug: 1
+--- !u!4 &1849063523
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1796175365}
+  m_GameObject: {fileID: 1849063521}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 7.99, y: 1, z: 2}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -2568,11 +2483,11 @@ SceneRoots:
   m_Roots:
   - {fileID: 1894962787}
   - {fileID: 1128145107}
+  - {fileID: 1849063523}
   - {fileID: 2040092431}
   - {fileID: 32648253}
   - {fileID: 1508672072}
   - {fileID: 1359721227}
-  - {fileID: 1796175370}
   - {fileID: 465354978}
   - {fileID: 1607500244}
   - {fileID: 656961169}

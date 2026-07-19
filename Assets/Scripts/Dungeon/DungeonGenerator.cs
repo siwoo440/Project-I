@@ -1,85 +1,144 @@
-using System.Collections.Generic;
-using UnityEngine;
+using System.Collections.Generic; // 방 배치 Dictionary와 IEnumerable 사용
+using UnityEngine; // Unity 기본 기능 사용
 
-namespace ProjectI
+namespace ProjectI // 프로젝트 공통 네임스페이스
 {
     /// <summary>
-    /// 절차적 던전 생성 (그리드 랜덤 워크). (기획서 PART 6.1)
-    /// 방 프리팹을 격자에 이어붙이고, 이동하는 쪽 벽을 열어 통로를 만든다. 매 플레이마다 다른 배치.
+    /// 그리드 랜덤 워크 방식으로 절차적 던전을 생성.
+    /// 방 프리팹을 격자에 배치하고 이동 방향의 벽을 열어 방 사이 통로를 연결.
+    /// 생성 완료 후 플레이어를 시작 방으로 이동하고 완료 이벤트를 전달.
     /// </summary>
-    public class DungeonGenerator : MonoBehaviour
+    public class DungeonGenerator : MonoBehaviour // 절차적 던전 생성 컴포넌트
     {
-        [Header("생성 설정")]
-        [SerializeField] Room[] roomPrefabs;   // 방 프리팹(들)
-        [SerializeField] int roomCount = 8;
-        [SerializeField] float cellSize = 12f; // 방 한 칸 크기(프리팹 크기와 일치)
-        [SerializeField] Transform player;     // 시작 방으로 이동시킬 플레이어
+        [Header("생성 설정")] // 던전 생성 설정 구분
+        [SerializeField] Room[] roomPrefabs; // 무작위로 배치할 방 프리팹 목록
+        [SerializeField] int roomCount = 8; // 생성할 목표 방 개수
+        [SerializeField] float cellSize = 12f; // 방 하나가 차지하는 격자 크기
+        [SerializeField] Transform player; // 시작 방으로 이동시킬 플레이어
 
-        [Header("시드")]
-        [SerializeField] bool randomSeed = true;
-        [SerializeField] int seed = 0;
+        [Header("시드")] // 무작위 시드 설정 구분
+        [SerializeField] bool randomSeed = true; // 실행할 때마다 무작위 시드 사용 여부
+        [SerializeField] int seed = 0; // 고정 생성에 사용할 시드값
 
-        readonly Dictionary<Vector2Int, Room> placed = new Dictionary<Vector2Int, Room>();
+        readonly Dictionary<Vector2Int, Room> placed = new Dictionary<Vector2Int, Room>(); // 격자 좌표별 생성된 방 목록
 
-        // 인덱스 = Room.Dir (0=N +z, 1=E +x, 2=S -z, 3=W -x)
-        static readonly Vector2Int[] DirVec =
+        public IEnumerable<Room> PlacedRooms => placed.Values; // 현재 생성된 모든 방 반환
+
+        public Room StartRoom // 던전 시작 방 반환
         {
-            new Vector2Int(0, 1), new Vector2Int(1, 0), new Vector2Int(0, -1), new Vector2Int(-1, 0)
+            get // 원점 좌표의 방 검색
+            {
+                placed.TryGetValue(Vector2Int.zero, out Room startRoom); // 원점에 생성된 방 가져오기
+                return startRoom; // 시작 방 또는 null 반환
+            }
+        }
+
+        public event System.Action GenerationCompleted; // 던전 생성 완료 이벤트
+
+        static readonly Vector2Int[] DirectionVectors = // 방 연결 방향별 격자 이동값
+        {
+            new Vector2Int(0, 1), // 북쪽 이동값
+            new Vector2Int(1, 0), // 동쪽 이동값
+            new Vector2Int(0, -1), // 남쪽 이동값
+            new Vector2Int(-1, 0) // 서쪽 이동값
         };
 
-        void Start() => Generate();
-
-        public void Generate()
+        void Start() // 씬 시작 시 던전 자동 생성
         {
-            if (roomPrefabs == null || roomPrefabs.Length == 0)
-            {
-                Debug.LogError("[Dungeon] roomPrefabs가 비어 있습니다.");
-                return;
-            }
-
-            foreach (var r in placed.Values) if (r) Destroy(r.gameObject);
-            placed.Clear();
-
-            if (randomSeed) seed = Random.Range(int.MinValue, int.MaxValue);
-            Random.InitState(seed);
-
-            Vector2Int cur = Vector2Int.zero;
-            PlaceRoom(cur);
-
-            int guard = 0;
-            while (placed.Count < roomCount && guard++ < roomCount * 20)
-            {
-                int di = Random.Range(0, 4);
-                Vector2Int next = cur + DirVec[di];
-                if (!placed.ContainsKey(next)) PlaceRoom(next);
-                Connect(cur, (Room.Dir)di, next);  // 이동 경로의 두 방 사이 벽 열기
-                cur = next;
-            }
-
-            // 플레이어를 시작 방(원점)으로
-            if (player != null)
-            {
-                var cc = player.GetComponent<CharacterController>();
-                if (cc != null) cc.enabled = false;
-                player.position = new Vector3(0f, 1.1f, 0f);
-                if (cc != null) cc.enabled = true;
-            }
-
-            Debug.Log($"[Dungeon] 생성 완료 — 방 {placed.Count}개 (seed {seed})");
+            Generate(); // 던전 생성 실행
         }
 
-        void PlaceRoom(Vector2Int cell)
+        public void Generate() // 방 생성과 연결 및 플레이어 배치 실행
         {
-            if (placed.ContainsKey(cell)) return;
-            var prefab = roomPrefabs[Random.Range(0, roomPrefabs.Length)];
-            var pos = new Vector3(cell.x * cellSize, 0f, cell.y * cellSize);
-            placed[cell] = Instantiate(prefab, pos, Quaternion.identity, transform);
+            if (roomPrefabs == null || roomPrefabs.Length == 0) // 방 프리팹 등록 여부 확인
+            {
+                Debug.LogError("[Dungeon] roomPrefabs가 비어 있습니다."); // 방 프리팹 오류 출력
+                return; // 던전 생성 중단
+            }
+
+            foreach (Room room in placed.Values) // 기존 생성 방 순회
+            {
+                if (room != null) // 기존 방 오브젝트 존재 여부 확인
+                {
+                    Destroy(room.gameObject); // 기존 방 오브젝트 제거
+                }
+            }
+
+            placed.Clear(); // 기존 방 좌표 목록 초기화
+
+            if (randomSeed) // 무작위 시드 사용 여부 확인
+            {
+                seed = Random.Range(int.MinValue, int.MaxValue); // 새로운 무작위 시드 생성
+            }
+
+            Random.InitState(seed); // 던전 생성용 무작위 상태 초기화
+
+            Vector2Int currentCell = Vector2Int.zero; // 시작 격자 좌표 설정
+
+            PlaceRoom(currentCell); // 시작 방 생성
+
+            int guard = 0; // 무한 반복 방지 횟수 초기화
+
+            while (placed.Count < roomCount && guard++ < roomCount * 20) // 목표 방 수 또는 최대 시도 횟수까지 반복
+            {
+                int directionIndex = Random.Range(0, 4); // 무작위 이동 방향 선택
+                Vector2Int nextCell = currentCell + DirectionVectors[directionIndex]; // 다음 방 격자 좌표 계산
+
+                if (!placed.ContainsKey(nextCell)) // 다음 좌표에 방이 없는지 확인
+                {
+                    PlaceRoom(nextCell); // 새로운 방 생성
+                }
+
+                Connect(currentCell, (Room.Dir)directionIndex, nextCell); // 현재 방과 다음 방 사이 벽 열기
+                currentCell = nextCell; // 현재 격자 좌표 갱신
+            }
+
+            if (player != null) // 플레이어 참조 존재 여부 확인
+            {
+                CharacterController characterController = player.GetComponent<CharacterController>(); // 플레이어 CharacterController 가져오기
+
+                if (characterController != null) // CharacterController 존재 여부 확인
+                {
+                    characterController.enabled = false; // 순간 위치 이동을 위해 컨트롤러 비활성화
+                }
+
+                player.position = new Vector3(0f, 1.1f, 0f); // 플레이어를 시작 방 원점으로 이동
+
+                if (characterController != null) // CharacterController 존재 여부 다시 확인
+                {
+                    characterController.enabled = true; // 위치 이동 후 컨트롤러 재활성화
+                }
+            }
+
+            GenerationCompleted?.Invoke(); // 던전 생성 완료를 구독 중인 시스템에 전달
+            Debug.Log($"[Dungeon] 생성 완료 — 방 {placed.Count}개 (seed {seed})"); // 던전 생성 결과 출력
         }
 
-        void Connect(Vector2Int a, Room.Dir d, Vector2Int b)
+        void PlaceRoom(Vector2Int cell) // 지정한 격자 좌표에 방 생성
         {
-            if (placed.TryGetValue(a, out var ra)) ra.OpenSide(d);
-            if (placed.TryGetValue(b, out var rb)) rb.OpenSide(Room.Opposite(d));
+            if (placed.ContainsKey(cell)) // 해당 좌표의 기존 방 존재 여부 확인
+            {
+                return; // 중복 방 생성 방지
+            }
+
+            Room prefab = roomPrefabs[Random.Range(0, roomPrefabs.Length)]; // 무작위 방 프리팹 선택
+            Vector3 position = new Vector3(cell.x * cellSize, 0f, cell.y * cellSize); // 격자 좌표를 월드 위치로 변환
+            Room createdRoom = Instantiate(prefab, position, Quaternion.identity, transform); // 방 프리팹 생성
+
+            placed[cell] = createdRoom; // 생성된 방을 좌표 목록에 저장
+        }
+
+        void Connect(Vector2Int firstCell, Room.Dir direction, Vector2Int secondCell) // 두 방 사이 통로 연결
+        {
+            if (placed.TryGetValue(firstCell, out Room firstRoom)) // 첫 번째 방 존재 여부 확인
+            {
+                firstRoom.OpenSide(direction); // 첫 번째 방의 이동 방향 벽 열기
+            }
+
+            if (placed.TryGetValue(secondCell, out Room secondRoom)) // 두 번째 방 존재 여부 확인
+            {
+                secondRoom.OpenSide(Room.Opposite(direction)); // 두 번째 방의 반대 방향 벽 열기
+            }
         }
     }
 }
