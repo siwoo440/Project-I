@@ -37,6 +37,23 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         {
             gold += Mathf.Max(0, amount); // 음수가 아닌 보상만 보유 골드에 추가
         }
+        public bool TrySpendGold(int requestedAmount) // 보유 골드 안에서 상점 구매 비용 지불 시도
+        {
+            int safeAmount = Mathf.Max(0, requestedAmount); // 요청 금액을 음수가 되지 않도록 제한
+
+            if (safeAmount == 0) // 무료 아이템인지 확인
+            {
+                return true; // 골드 차감 없이 구매 허용
+            }
+
+            if (gold < safeAmount) // 현재 골드가 구매 비용보다 적은지 확인
+            {
+                return false; // 골드 부족으로 구매 실패 반환
+            }
+
+            gold -= safeAmount; // 구매 비용만큼 보유 골드 차감
+            return true; // 정상 구매 비용 지불 반환
+        }
 
         public int PayDebt(int requestedAmount) // 보유 골드와 남은 빚 안에서 실제 납부 처리
         {

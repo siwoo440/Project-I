@@ -86,6 +86,27 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             return true; // 보상 정산 성공 반환
         }
 
+        public bool TrySpendGold(int requestedAmount) // 마을 상점 구매 비용 지불 시도
+        {
+            int safeAmount = Mathf.Max(0, requestedAmount); // 요청 금액을 음수가 되지 않도록 제한
+
+            if (state.CampaignWon || state.CampaignFailed) // 캠페인이 종료됐는지 확인
+            {
+                Debug.LogWarning("[Campaign] 캠페인 종료 상태에서는 상점을 이용할 수 없습니다."); // 구매 불가 원인 출력
+                return false; // 구매 비용 지불 중단
+            }
+
+            if (!state.TrySpendGold(safeAmount)) // 실제 보유 골드 차감 성공 여부 확인
+            {
+                Debug.LogWarning($"[Campaign] 골드가 부족합니다. 필요 {safeAmount}골드, 보유 {state.Gold}골드"); // 골드 부족 출력
+                return false; // 구매 비용 지불 실패 반환
+            }
+
+            Debug.Log($"[Campaign] 상점 비용 {safeAmount}골드 지불 — 남은 골드 {state.Gold}"); // 구매 비용 지불 결과 출력
+            return true; // 정상 구매 비용 지불 반환
+        }
+
+
         public bool ConfirmDebtPayment(int requestedAmount) // 플레이어가 선택한 빚 납부액 확정
         {
             if (!settlementOpen) // 납부할 정산이 열려 있는지 확인

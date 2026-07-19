@@ -39,6 +39,7 @@ namespace ProjectI
         public int BonusSlots => data != null ? data.bonusSlots : 0;
         public bool TwoHanded => false; // 일반 아이템은 두손 아님
         public WeaponData Weapon => weaponData; // 무기면 데이터, 아니면 null
+        public ItemData Data => data; // 상점에서 아이템 이름과 설명 및 구매 가격을 확인할 데이터 반환
 
         void Awake()
         {
