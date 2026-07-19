@@ -20,12 +20,16 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         [SerializeField] float activationDelay = 0f; // 플레이어 감지 후 실제 발동까지의 지연시간
         [SerializeField] float cooldown = 1.5f; // 재발동이 가능해질 때까지의 대기시간
         [SerializeField] bool oneShot = false; // 한 번 발동한 뒤 영구 비활성화할지 결정
+       
+        [Header("피드백")] // Inspector 함정 피드백 설정 구분
+        [SerializeField] Vector3 feedbackOffset = new Vector3(0f, 0.2f, 0f); // 함정 루트 기준 피드백 발생 위치
 
         [Header("디버그")] // 디버그 설정 구분
         [SerializeField] bool showDebug = true; // 함정 발동 로그를 출력할지 결정
 
         BoxCollider triggerCollider; // 플레이어를 감지할 Trigger Collider
         Rigidbody trapRigidbody; // Trigger 이벤트를 안정적으로 발생시킬 Rigidbody
+        ThreatFeedback threatFeedback; // 함정 경고와 발동 피드백
         bool canActivate = true; // 현재 함정이 발동 가능한 상태인지 저장
 
         public TrapType Type => trapType; // 외부에서 현재 함정 종류 확인
@@ -34,6 +38,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         {
             triggerCollider = GetComponent<BoxCollider>(); // 현재 오브젝트의 BoxCollider 가져오기
             trapRigidbody = GetComponent<Rigidbody>(); // 현재 오브젝트의 Rigidbody 가져오기
+            threatFeedback = GetComponent<ThreatFeedback>(); // 같은 오브젝트의 공통 피드백 검색
             triggerCollider.isTrigger = true; // Collider를 물리 장애물이 아닌 감지 영역으로 설정
             trapRigidbody.useGravity = false; // 함정에 중력이 적용되지 않도록 설정
             trapRigidbody.isKinematic = true; // 물리 힘에 의해 함정이 움직이지 않도록 설정
@@ -54,6 +59,11 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             }
 
             canActivate = false; // 피해 처리 전에 함정을 재사용 대기 상태로 변경
+            if (threatFeedback != null) // 함정 피드백 존재 여부 확인
+            {
+                Vector3 feedbackPosition = transform.position + feedbackOffset; // 함정 경고 발생 위치 계산
+                threatFeedback.PlayWarningAt(feedbackPosition); // 함정 발동 전 경고 피드백 재생
+            }
             StartCoroutine(ActivateTrap(player)); // 발동 지연과 피해 처리 시작
         }
 
@@ -76,6 +86,12 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
                 {
                     float safeDamage = Mathf.Max(0f, damage); // 일반 피해가 음수가 되지 않도록 제한
                     player.TakeDamage(safeDamage); // 기존 플레이어 피해 처리로 일반 피해 적용
+                }
+
+                if (threatFeedback != null) // 함정 피드백 존재 여부 확인
+                {
+                    Vector3 feedbackPosition = transform.position + feedbackOffset; // 함정 발동 피드백 위치 계산
+                    threatFeedback.PlayAttackAt(feedbackPosition); // 함정 발동 소리와 파티클 재생
                 }
 
                 if (showDebug) // 디버그 로그 출력 여부 확인

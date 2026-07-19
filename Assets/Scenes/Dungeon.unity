@@ -587,12 +587,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 157754896}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0.7, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1128145107}
+  m_Father: {fileID: 260350240}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &157754900
 MonoBehaviour:
@@ -811,6 +811,38 @@ Transform:
   m_Children:
   - {fileID: 1343476593}
   m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &260350239
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 260350240}
+  m_Layer: 0
+  m_Name: CameraShakePivot
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &260350240
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 260350239}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 157754899}
+  m_Father: {fileID: 1128145107}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &313171711
 GameObject:
@@ -2114,7 +2146,7 @@ MonoBehaviour:
   dungeonGenerator: {fileID: 1894962786}
   ghostPrefab: {fileID: 5718147948037806946, guid: 772253d57e7dda5449e229cf075f4176, type: 3}
   smilingStatuePrefab: {fileID: 7909635160114117464, guid: 239b9804e9b9c2e4ba98c81cf2e3848a, type: 3}
-  ghostSpawnChance: 1
+  ghostSpawnChance: 0
   statueSpawnChance: 0
   skipStartingRoom: 1
   wallMargin: 1.5
@@ -2142,6 +2174,7 @@ GameObject:
   - component: {fileID: 1128145110}
   - component: {fileID: 1128145111}
   - component: {fileID: 1128145112}
+  - component: {fileID: 1128145113}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -2279,7 +2312,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 157754899}
+  - {fileID: 260350240}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1128145108
@@ -2354,6 +2387,30 @@ MonoBehaviour:
   unarmedRange: 2
   hitRadius: 0.4
   bowFallbackRange: 20
+--- !u!114 &1128145113
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1128145102}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 934ca1956cc26914bbb86f9c479e0883, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectI.PlayerDamageFeedback
+  cameraShakePivot: {fileID: 260350240}
+  flashColor: {r: 0.003921569, g: 0, b: 0, a: 1}
+  maximumFlashAlpha: 0.35
+  flashDuration: 0.35
+  damageForMaximumIntensity: 60
+  shakeDuration: 0.22
+  shakeStrength: 0.08
+  fatalShakeMultiplier: 1.8
+  damageClip: {fileID: 0}
+  fatalDamageClip: {fileID: 0}
+  audioVolume: 0.7
+  useFallbackTone: 1
 --- !u!1 &1129317226
 GameObject:
   m_ObjectHideFlags: 0

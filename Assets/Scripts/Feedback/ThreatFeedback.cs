@@ -27,6 +27,15 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         [SerializeField] float attackTone = 100f; // 공격용 낮은 전자음 주파수
         [SerializeField] float hitTone = 520f; // 피격용 높은 전자음 주파수
 
+        [Header("재생 제한")] // Inspector 반복 재생 제한 설정 구분
+        [SerializeField] float minimumInterval = 0.08f; // 같은 피드백의 최소 재생 간격
+
+        float lastWarningTime = -999f; // 마지막 경고 피드백 재생 시각
+        float lastAppearTime = -999f; // 마지막 출현 피드백 재생 시각
+        float lastAttackTime = -999f; // 마지막 공격 피드백 재생 시각
+        float lastHitTime = -999f; // 마지막 피격 피드백 재생 시각
+
+
         MonsterAI monsterAI; // 자동 피격 이벤트 연결용 MonsterAI
 
         void Awake() // MonsterAI 참조 초기화
@@ -57,6 +66,13 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
 
         public void PlayWarningAt(Vector3 position) // 지정된 위치에서 위험 경고 재생
         {
+            if (Time.time - lastWarningTime < minimumInterval) // 경고 피드백 최소 간격 확인
+            {
+                return; // 중복 경고 재생 방지
+            }
+
+            lastWarningTime = Time.time; // 마지막 경고 재생 시각 갱신
+
             PlayFeedback( // 경고 소리와 파티클 재생
                 warningClip, // 경고 효과음
                 warningTone, // 경고 임시 전자음
@@ -67,6 +83,13 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
 
         public void PlayAppear() // 현재 위치에서 출현 피드백 재생
         {
+            if (Time.time - lastAppearTime < minimumInterval) // 출현 피드백 최소 간격 확인
+            {
+                return; // 중복 출현 재생 방지
+            }
+
+            lastAppearTime = Time.time; // 마지막 출현 재생 시각 갱신
+
             PlayFeedback( // 출현 소리와 파티클 재생
                 appearClip, // 출현 효과음
                 appearTone, // 출현 임시 전자음
@@ -77,16 +100,35 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
 
         public void PlayAttack() // 현재 위치에서 공격 피드백 재생
         {
+            PlayAttackAt(transform.position + Vector3.up); // 오브젝트 상체 위치에서 공격 피드백 재생
+        }
+
+        public void PlayAttackAt(Vector3 position) // 지정된 위치에서 공격 피드백 재생
+        {
+            if (Time.time - lastAttackTime < minimumInterval) // 공격 피드백 최소 간격 확인
+            {
+                return; // 중복 공격 재생 방지
+            }
+
+            lastAttackTime = Time.time; // 마지막 공격 재생 시각 갱신
+
             PlayFeedback( // 공격 소리와 파티클 재생
                 attackClip, // 공격 효과음
                 attackTone, // 공격 임시 전자음
                 0.2f, // 공격 전자음 길이
                 attackEffectPrefab, // 공격 파티클
-                transform.position + Vector3.up); // 오브젝트 상체 위치
+                position); // 공격 발생 위치
         }
 
         public void PlayHit() // 현재 위치에서 피격 피드백 재생
         {
+            if (Time.time - lastHitTime < minimumInterval) // 피격 피드백 최소 간격 확인
+            {
+                return; // 중복 피격 재생 방지
+            }
+
+            lastHitTime = Time.time; // 마지막 피격 재생 시각 갱신
+
             PlayFeedback( // 피격 소리와 파티클 재생
                 hitClip, // 피격 효과음
                 hitTone, // 피격 임시 전자음

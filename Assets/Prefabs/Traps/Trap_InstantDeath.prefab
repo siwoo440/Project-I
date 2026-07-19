@@ -102,6 +102,7 @@ GameObject:
   - component: {fileID: 3323791040496350019}
   - component: {fileID: 7814195049215643036}
   - component: {fileID: 6864157952663400650}
+  - component: {fileID: 3895718851983887735}
   m_Layer: 0
   m_Name: Trap_InstantDeath
   m_TagString: Untagged
@@ -190,4 +191,33 @@ MonoBehaviour:
   activationDelay: 0.1
   cooldown: 3
   oneShot: 0
+  feedbackOffset: {x: 0, y: 0.5, z: 0}
   showDebug: 1
+--- !u!114 &3895718851983887735
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9119177052229605183}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e6d472b857308ca45ae80131930e84ed, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectI.ThreatFeedback
+  warningClip: {fileID: 0}
+  appearClip: {fileID: 0}
+  attackClip: {fileID: 0}
+  hitClip: {fileID: 0}
+  warningEffectPrefab: {fileID: 8909068582956499776, guid: 66c85c6e7fede974583a711f995349af, type: 3}
+  appearEffectPrefab: {fileID: 0}
+  attackEffectPrefab: {fileID: 468254678152700227, guid: 6f8266979b282504881388890b6493a6, type: 3}
+  hitEffectPrefab: {fileID: 0}
+  volume: 0.9
+  maxDistance: 25
+  useFallbackTones: 1
+  warningTone: 110
+  appearTone: 340
+  attackTone: 50
+  hitTone: 520
+  minimumInterval: 0.08

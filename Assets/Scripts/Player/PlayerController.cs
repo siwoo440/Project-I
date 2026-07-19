@@ -67,7 +67,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         Coroutine movementBuffCoroutine; // 현재 실행 중인 이동속도 버프 코루틴
 
         public bool IsDead => isDead; // 외부 사망 상태 확인
-
+        public event System.Action<float, bool> Damaged; // 실제 피해량과 즉사 여부를 외부 피드백에 전달
         void Awake() // 플레이어 참조와 초기 수치 설정
         {
             controller = GetComponent<CharacterController>(); // CharacterController 가져오기
@@ -266,6 +266,11 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             }
 
             health = Mathf.Max(0f, health - amount); // 현재 체력 감소
+            if (amount > 0f) // 실제 피해 발생 여부 확인
+            {
+                Damaged?.Invoke(amount, false); // 일반 피해량과 즉사 아님 상태 전달
+            }
+
 
             Debug.Log($"[Player] 피해 {amount:F0}, 남은 체력 {health:F0}/{maxHealth:F0}"); // 피해 결과 출력
 
@@ -282,6 +287,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             }
 
             health = 0f; // 현재 체력을 즉시 0으로 설정
+            Damaged?.Invoke(maxHealth, true); // 최대 피해량과 즉사 상태를 외부 피드백에 전달
             Debug.Log("[Player] 즉사 피해를 받았습니다."); // 즉사 피해 발생 기록
             HandleDeath(); // 부활의 돌 확인을 포함한 기존 사망 처리 실행
         }
