@@ -59,18 +59,17 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             {
                 Debug.LogWarning("[Dungeon] 이미 던전을 생성 중입니다."); // 중복 생성 요청 경고 출력
                 return; // 중복 던전 생성 중단
-            } 
-            
-            IsGenerating = true; // 던전 생성 진행 상태 활성화
-            GenerationStarted?.Invoke(); // 스폰 매니저에 기존 오브젝트 정리 요청
+            }
 
             if (roomPrefabs == null || roomPrefabs.Length == 0) // 방 프리팹 등록 여부 확인
             {
                 Debug.LogError("[Dungeon] roomPrefabs가 비어 있습니다."); // 방 프리팹 오류 출력
-                return; // 던전 생성 중단
+                return; // 생성 상태를 변경하지 않고 던전 생성 중단
             }
-            
-           
+
+            IsGenerating = true; // 유효성 검사 통과 후 던전 생성 상태 활성화
+            GenerationStarted?.Invoke(); // 스폰 매니저에 기존 오브젝트 정리 요청
+
 
             foreach (Room room in placed.Values) // 기존 생성 방 순회
             {

@@ -26,6 +26,8 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         public float RemainingSeconds => Mathf.Max(0f, realDurationSeconds - elapsed); // 남은 현실시간
         public bool IsLocked => Progress >= 1f; // 탈출 봉쇄 여부
         public bool HasFailed => failed; // 외부 수직 슬라이스 검증에서 유기 실패 여부 확인
+        public float ElapsedSeconds => elapsed; // 실제 던전 진행시간 반환
+        public event System.Action Failed; // 제한시간 유기 실패 이벤트
 
         void Start() // 시간과 필수 참조 초기화
         {
@@ -67,6 +69,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             }
 
             failed = true; // 제한시간 유기 상태 활성화
+            Failed?.Invoke(); // 결과 매니저에 유기 실패 전달
 
             if (playerInventory != null) // 플레이어 인벤토리 존재 여부 확인
             {
@@ -89,7 +92,8 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
 
             GUI.Label(new Rect(Screen.width - 230f, 6f, 220f, 22f), $"던전 시간 {gameHour:00}:{gameMinute:00}   (남은 {remainingSeconds / 60:00}:{remainingSeconds % 60:00})", timeStyle); // 현재 시간과 남은 시간 표시
 
-            if (failed) // 유기 실패 상태 확인
+            if (failed && (RunResultManager.Instance == null || !RunResultManager.Instance.HasResult)) 
+                // 중앙 결과 화면이 없을 때만 기존 실패 화면 표시
             {
                 GUIStyle titleStyle = new GUIStyle(GUI.skin.label); // 실패 제목 스타일 생성
                 GUIStyle messageStyle = new GUIStyle(GUI.skin.label); // 실패 안내 스타일 생성

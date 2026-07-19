@@ -1,7 +1,7 @@
 using System.Collections; // 지연 검증 코루틴 사용
 using System.Collections.Generic; // 오류와 경고 목록 사용
 using UnityEngine; // Unity 기본 기능 사용
-using UnityEngine.InputSystem; // F8 재검증 입력 사용
+using UnityEngine.InputSystem; // F3 패널 전환과 F8 재검증 입력 사용
 
 namespace ProjectI // 프로젝트 공통 네임스페이스
 {
@@ -74,11 +74,24 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             }
         }
 
-        void Update() // 수동 재검증 입력 처리
+        void Update() // 검증 패널 전환과 수동 재검증 입력 처리
         {
             Keyboard keyboard = Keyboard.current; // 현재 키보드 입력 가져오기
 
-            if (keyboard != null && keyboard.f8Key.wasPressedThisFrame) // F8 입력 확인
+            if (keyboard == null) // 키보드 연결 여부 확인
+            {
+                return; // 키보드 입력 처리 중단
+            }
+
+            if (keyboard.f3Key.wasPressedThisFrame) // F3 입력 여부 확인
+            {
+                showValidationPanel = !showValidationPanel; // 검증 패널 표시 상태 전환
+
+                string panelState = showValidationPanel ? "표시" : "숨김"; // 현재 패널 상태 문구 계산
+                Debug.Log($"[VerticalSlice] 검증 패널 {panelState}"); // 변경된 패널 상태 출력
+            }
+
+            if (keyboard.f8Key.wasPressedThisFrame) // F8 입력 여부 확인
             {
                 ValidateVerticalSlice(); // 현재 Scene과 생성 결과 즉시 재검증
             }
@@ -383,7 +396,8 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             GUI.Label(new Rect(x + 10f, y + 145f, width - 20f, 20f), $"고스트: {(gimmickSpawnManager != null ? gimmickSpawnManager.ActiveGhostCount : 0)} / 웃는 석상: {(gimmickSpawnManager != null ? gimmickSpawnManager.ActiveStatueCount : 0)}"); // 기믹 몬스터 수 표시
             GUI.Label(new Rect(x + 10f, y + 165f, width - 20f, 20f), $"마차: {(wagon != null ? wagon.SecuredCount : 0)}개 / {(wagon != null ? wagon.SecuredValue : 0)}골드"); // 마차 적재 결과 표시
             GUI.Label(new Rect(x + 10f, y + 185f, width - 20f, 20f), $"남은 시간: {(dungeonTimeSystem != null ? dungeonTimeSystem.RemainingSeconds : 0f):F0}초"); // 제한시간 잔여량 표시
-            GUI.Label(new Rect(x + 10f, y + 205f, width - 20f, 20f), "[F8] 현재 상태 재검증"); // 재검증 조작 안내 표시
+            GUI.Label(new Rect(x + 10f, y + 205f, width - 20f, 20f), "[F3] 패널 숨김 / [F8] 현재 상태 재검증"); 
+            // 패널 전환과 재검증 조작 안내 표시
 
             float issueY = y + 225f; // 오류와 경고 표시 시작 위치 계산
 

@@ -2044,6 +2044,51 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &914023406
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 914023408}
+  - component: {fileID: 914023407}
+  m_Layer: 0
+  m_Name: RunResultManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &914023407
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 914023406}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 07c8ef2c52c6b2948b03c118b9686f7b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectI.RunResultManager
+  showResultPanel: 1
+--- !u!4 &914023408
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 914023406}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1040840234}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &922867520
 GameObject:
   m_ObjectHideFlags: 0
@@ -2142,6 +2187,7 @@ Transform:
   m_Children:
   - {fileID: 1336960405}
   - {fileID: 1709809437}
+  - {fileID: 914023408}
   m_Father: {fileID: 1009573269}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1045646862
@@ -2286,7 +2332,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectI.VerticalSliceValidator
   dungeonGenerator: {fileID: 1894962786}
-  dungeonTimeSystem: {fileID: 0}
+  dungeonTimeSystem: {fileID: 1894962788}
   wagon: {fileID: 1359721226}
   wagonCargo: {fileID: 733841938}
   wagonLever: {fileID: 170582668}
@@ -3081,6 +3127,7 @@ MonoBehaviour:
   gimmickSpawnManager: {fileID: 1091222877}
   audioManager: {fileID: 1336960404}
   particleEffectPool: {fileID: 1709809438}
+  runResultManager: {fileID: 914023407}
   verticalSliceValidator: {fileID: 1078297258}
   performanceMonitor: {fileID: 1699022422}
 --- !u!1 &1399460199
@@ -3879,7 +3926,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c83f2a33de0ac014b8475eb4a933983b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectI.DungeonTimeSystem
-  realDurationSeconds: 1800
+  realDurationSeconds: 1080
   startHour: 6
   endHour: 24
   wagonProximity: 5

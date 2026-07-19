@@ -69,6 +69,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
 
         public bool IsDead => isDead; // 외부 사망 상태 확인
         public event System.Action<float, bool> Damaged; // 실제 피해량과 즉사 여부를 외부 피드백에 전달
+        public event System.Action Died; // 부활할 수 없는 최종 사망 이벤트
         void Awake() // 플레이어 참조와 초기 수치 설정
         {
             controller = GetComponent<CharacterController>(); // CharacterController 가져오기
@@ -408,12 +409,14 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             }
 
             LockCursor(false); // 마우스 커서 잠금 해제
+            Died?.Invoke(); // 결과 매니저에 최종 사망 전달
             Debug.Log("[Player] 사망, 부활의 돌 없음"); // 최종 사망 결과 출력
         }
 
         void OnGUI() // 임시 플레이어 UI 표시
         {
-            if (isDead) // 사망 상태 확인
+            if (isDead && (RunResultManager.Instance == null || !RunResultManager.Instance.HasResult)) 
+                // 중앙 결과 화면이 없을 때만 기존 사망 화면 표시
             {
                 DrawDeathScreen(); // 사망 화면 표시
             }
