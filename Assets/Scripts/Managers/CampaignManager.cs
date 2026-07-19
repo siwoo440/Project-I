@@ -29,7 +29,8 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         public int LastSettlementDay => lastSettlementDay; // 최근 정산 날짜 반환
         public string LastRunReason => lastRunReason; // 최근 탐험 종료 원인 반환
         public int MaximumDebtPayment => Mathf.Min(state.Gold, state.RemainingDebt); // 현재 최대 납부 가능액 반환
-
+        public bool CanStartNextRun => !settlementOpen && !state.CampaignWon && !state.CampaignFailed && state.CurrentDay <= state.DeadlineDay; // 정산과 캠페인 상태를 확인한 다음 던전 출발 가능 여부
+        public bool IsLastAvailableDay => CanStartNextRun && state.CurrentDay == state.DeadlineDay; // 현재 날짜가 마지막 출발 기회인지 반환
         void Awake() // 캠페인 매니저 싱글톤과 초기 상태 설정
         {
             if (Instance != null && Instance != this) // 기존 캠페인 매니저 존재 여부 확인
@@ -98,6 +99,25 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
 
             Debug.Log($"[Campaign] 빚 {lastDebtPayment}골드 납부 — 보유 {state.Gold}골드, 남은 빚 {state.RemainingDebt}골드"); // 납부 결과 출력
             return true; // 빚 납부 확정 성공 반환
+        }
+
+        public string GetDeadlineMessage() // 현재 날짜와 캠페인 상태에 맞는 마감 안내 반환
+        {
+            if (state.CampaignWon) { return "빚을 모두 상환했습니다."; }// 빚 전액 상환 여부 확인 -> 캠페인 성공 문구 반환
+            
+            if (state.CampaignFailed) { return "빚을 갚지 못한 채 상환 기한이 끝났습니다."; }
+            // 상환 기한 초과 여부 확인 ->  캠페인 실패 문구 반환
+
+            if (settlementOpen) { return "빚 납부를 확정해야 다음 탐험을 시작할 수 있습니다."; }
+            // 마을 정산 진행 여부 확인 ->  정산 진행 안내 반환
+
+            if (state.RemainingDays <= 1) { return "오늘이 빚을 갚을 수 있는 마지막 날입니다!";  }
+            // 마지막 출발 기회인지 확인 -> 마지막 날 경고 반환
+
+            if (state.RemainingDays <= 3) { return $"상환 기한이 얼마 남지 않았습니다. 남은 기회 {state.RemainingDays}일"; }
+             // 마감이 3일 이하로 남았는지 확인 -> 마감 임박 경고 반환
+
+            return $"상환 기한까지 {state.RemainingDays}일 남았습니다."; // 일반 날짜 안내 반환
         }
 
         [ContextMenu("캠페인 상태 초기화")]

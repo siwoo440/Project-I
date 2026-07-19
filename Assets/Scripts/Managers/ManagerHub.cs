@@ -72,6 +72,26 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             performanceMonitor      ??= FindFirstObjectByType<RuntimePerformanceMonitor>(); // 성능 검사기 검색
             runResultManager        ??= FindFirstObjectByType<RunResultManager>(); // 던전 결과 매니저 검색
             campaignManager         ??= FindFirstObjectByType<CampaignManager>(); // 캠페인 매니저 검색
+
+            if (AudioManager.Instance != null) // 기존 영구 AudioManager 존재 여부 확인
+            {
+                audioManager = AudioManager.Instance; // 실제 유지 중인 AudioManager로 참조 보정
+            }
+
+            if (ParticleEffectPool.Instance != null) // 기존 영구 파티클 풀 존재 여부 확인
+            {
+                particleEffectPool = ParticleEffectPool.Instance; // 실제 유지 중인 파티클 풀로 참조 보정
+            }
+
+            if (RunResultManager.Instance != null) // 기존 영구 결과 매니저 존재 여부 확인
+            {
+                runResultManager = RunResultManager.Instance; // 실제 유지 중인 결과 매니저로 참조 보정
+            }
+
+            if (CampaignManager.Instance != null) // 기존 영구 캠페인 매니저 존재 여부 확인
+            {
+                campaignManager = CampaignManager.Instance; // 실제 유지 중인 캠페인 매니저로 참조 보정
+            }
         }
 
         [ContextMenu("매니저 참조 검사")]

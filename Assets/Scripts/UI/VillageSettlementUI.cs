@@ -14,8 +14,11 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         int selectedDebtPayment; // 플레이어가 현재 선택한 빚 납부액
         bool hasSettlementData; // 현재 표시할 정산 데이터 존재 여부
         bool settlementCompleted; // 이번 방문의 빚 납부 확정 여부
+        bool windowOpen = true; // 현재 정산 창 표시 여부
         GUIStyle titleStyle; // 정산 제목 표시 스타일
         GUIStyle centerStyle; // 정산 정보 표시 스타일
+
+        public bool IsWindowOpen => windowOpen; // 다른 마을 UI에서 정산 창 표시 상태 확인
 
         void Start() // 마을 도착 후 던전 보상 정산과 UI 초기화
         {
@@ -72,6 +75,11 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
 
         void OnGUI() // 마을 정산과 빚 납부 인터페이스 표시
         {
+            if (!windowOpen) // 정산 확인 후 창이 닫혔는지 확인
+            {
+                return; // 정산 창 표시 중단
+            }
+
             if (campaignManager == null) // 캠페인 매니저 존재 여부 확인
             {
                 GUI.Box(new Rect(20f, 20f, 380f, 80f), "CampaignManager가 없습니다."); // 참조 누락 안내 표시
@@ -99,6 +107,12 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             if (!hasSettlementData) // 정산 가능한 탐험 결과 존재 여부 확인
             {
                 GUI.Label(new Rect(x + 20f, y + 100f, width - 40f, 30f), "정산할 던전 결과가 없습니다.", centerStyle); // 결과 없음 안내 표시
+
+                if (GUI.Button(new Rect(x + 160f, y + 160f, width - 320f, 45f), "정산 창 닫기")) // 결과 없음 창 닫기 버튼 확인
+                {
+                    windowOpen = false; // 정산 창 닫기
+                }
+
                 return; // 나머지 정산 UI 표시 중단
             }
 
@@ -184,7 +198,10 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             GUI.Label(new Rect(x + 20f, y + 250f, width - 40f, 25f), $"남은 빚: {campaignManager.State.RemainingDebt}", centerStyle); // 정산 후 남은 빚 표시
             GUI.Label(new Rect(x + 20f, y + 285f, width - 40f, 25f), $"다음 날짜: {campaignManager.State.CurrentDay}일차", centerStyle); // 다음 날짜 표시
             GUI.Label(new Rect(x + 20f, y + 335f, width - 40f, 35f), campaignResult, titleStyle); // 캠페인 진행 결과 표시
-            GUI.Label(new Rect(x + 20f, y + 385f, width - 40f, 20f), "다음 던전 출발 연결은 이후 일차에 구현", centerStyle); // 다음 개발 단계 안내 표시
+            if (GUI.Button(new Rect(x + 150f, y + 375f, width - 300f, 40f), "정산 확인")) // 정산 결과 확인 버튼 입력
+            {
+                windowOpen = false; // 정산 창을 닫고 하루 안내 화면 표시 허용
+            }
         }
     }
 }
