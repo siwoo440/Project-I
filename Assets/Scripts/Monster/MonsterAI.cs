@@ -39,6 +39,7 @@ namespace ProjectI
         LightSystem playerLight;
 
         float health, vy, lastAttackTime, patrolTimer;
+        public event System.Action Damaged; // 외부 기믹에 몬스터 피격 사실 전달
         Vector3 patrolTarget, horiz;
 
         string Name => data != null ? data.displayName : fbName;
@@ -160,6 +161,11 @@ namespace ProjectI
         float HorizDist(Vector3 p) { Vector3 d = p - transform.position; d.y = 0f; return d.magnitude; }
 
         // ---- 전투 ----
+        public void Alert() // 외부 기믹에서 몬스터를 즉시 추격 상태로 변경
+        {
+            state = State.Chase; // 현재 FSM 상태를 플레이어 추격으로 변경
+        }
+
         void TryAttack()
         {
             if (Time.time - lastAttackTime < AttackCooldown) return;
@@ -169,10 +175,18 @@ namespace ProjectI
         }
 
         /// <summary>몬스터 피격(플레이어 공격은 12일차에서 연동).</summary>
-        public void TakeDamage(float amount)
+        public void TakeDamage(float amount) // 플레이어 공격으로 몬스터 체력 감소
         {
-            health -= amount;
-            if (health <= 0f) { Debug.Log($"[{Name}] 처치됨"); Destroy(gameObject); }
+            float safeDamage = Mathf.Max(0f, amount); // 전달된 피해가 음수가 되지 않도록 제한
+
+            Damaged?.Invoke(); // 체력을 줄이기 전에 외부 기믹에 피격 사실 전달
+            health -= safeDamage; // 몬스터 현재 체력 감소
+
+            if (health <= 0f) // 몬스터 체력이 모두 소진되었는지 확인
+            {
+                Debug.Log($"[{Name}] 처치됨"); // 몬스터 처치 결과 출력
+                Destroy(gameObject); // 몬스터 게임 오브젝트 제거
+            }
         }
     }
 }

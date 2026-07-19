@@ -9,6 +9,11 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         [SerializeField] DungeonGenerator dungeonGenerator; // 생성 완료 이벤트와 방 목록을 제공하는 던전 생성기
         [SerializeField] Treasure[] treasurePrefabs; // 자동 생성할 보물 프리팹 목록
 
+        [Header("미믹 스폰")] // Inspector 미믹 스폰 설정 구분
+        [SerializeField] Mimic mimicPrefab; // 일반 보물 대신 생성할 미믹 프리팹
+        [SerializeField][Range(0f, 1f)] float mimicChance = 0.15f; // 보물 생성 기회가 미믹으로 교체될 확률
+        [SerializeField] float mimicGroundOffset = 0f; // 미믹 루트를 바닥에서 띄울 높이
+
         [Header("방별 보물 수")] // 방별 보물 수 설정 구분
         [SerializeField] int minTreasuresPerRoom = 0; // 방 하나의 최소 기본 보물 수
         [SerializeField] int maxTreasuresPerRoom = 1; // 방 하나의 최대 기본 보물 수
@@ -28,6 +33,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         [SerializeField] bool showDebug = true; // 현재 보물 수를 화면에 표시할지 결정
 
         readonly List<Treasure> spawnedTreasures = new List<Treasure>(); // 이 매니저가 생성한 보물 목록
+        readonly List<Mimic> spawnedMimics = new List<Mimic>(); // TreasureSpawnManager가 생성한 미믹 목록
         Transform player; // 플레이어 위치를 확인하기 위한 Transform 참조
 
         public int ActiveTreasureCount // 현재 존재하는 자동 생성 보물 수 반환
@@ -45,6 +51,24 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
                 }
 
                 return count; // 계산된 보물 수 반환
+            }
+        }
+
+        public int ActiveMimicCount // 현재 존재하는 자동 생성 미믹 수 반환
+        {
+            get // 유효한 미믹 개수 계산
+            {
+                int count = 0; // 유효한 미믹 수 초기화
+
+                foreach (Mimic mimic in spawnedMimics) // 생성된 미믹 목록 순회
+                {
+                    if (mimic != null) // 미믹 오브젝트가 아직 존재하는지 확인
+                    {
+                        count++; // 유효한 미믹 수 증가
+                    }
+                }
+
+                return count; // 계산된 미믹 수 반환
             }
         }
 
@@ -101,6 +125,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             }
 
             int totalSpawned = 0; // 이번에 생성된 전체 보물 수 저장
+            int totalMimicsSpawned = 0; // 이번에 생성된 전체 미믹 수 저장
 
             foreach (Room room in dungeonGenerator.PlacedRooms) // 생성된 던전의 모든 방을 순회
             {
@@ -138,6 +163,20 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
                         continue; // 현재 보물 생성을 건너뜀
                     }
 
+                    bool shouldSpawnMimic = mimicPrefab != null && Random.value < Mathf.Clamp01(mimicChance); // 현재 보물 생성 기회를 미믹으로 교체할지 결정
+
+                    if (shouldSpawnMimic) // 미믹 생성이 선택되었는지 확인
+                    {
+                        float heightAdjustment = mimicGroundOffset - spawnHeight; // 보물용 검색 높이를 미믹 바닥 높이로 보정
+                        Vector3 mimicPosition = spawnPosition + Vector3.up * heightAdjustment; // 미믹 루트가 바닥에 놓일 최종 위치 계산
+                        Quaternion mimicRotation = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f); // 미믹의 무작위 Y축 회전 계산
+                        Mimic spawnedMimic = Instantiate(mimicPrefab, mimicPosition, mimicRotation, transform); // 미믹을 TreasureSpawnManager 자식으로 생성
+
+                        spawnedMimics.Add(spawnedMimic); // 생성된 미믹을 관리 목록에 추가
+                        totalMimicsSpawned++; // 전체 생성된 미믹 수 증가
+                        continue; // 현재 생성 기회에서 일반 보물 생성 방지
+                    }
+
                     Treasure selectedPrefab = treasurePrefabs[Random.Range(0, treasurePrefabs.Length)]; // 목록에서 보물 프리팹 무작위 선택
 
                     if (selectedPrefab == null) // 선택된 프리팹이 비어 있는지 확인
@@ -154,7 +193,8 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
                 }
             }
 
-            Debug.Log($"[TreasureSpawnManager] 보물 자동 생성 완료 — {totalSpawned}개"); // 최종 생성 결과 출력
+            Debug.Log($"[TreasureSpawnManager] 자동 생성 완료 — 보물 {totalSpawned}개, 미믹 {totalMimicsSpawned}마리");
+            // 보물과 미믹 생성 결과 출력
         }
 
         public void ClearSpawnedTreasures() // 이 매니저가 자동 생성한 보물 제거
@@ -168,6 +208,18 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             }
 
             spawnedTreasures.Clear(); // 보물 관리 목록 초기화
+
+            foreach (Mimic mimic in spawnedMimics) // 기존 자동 생성 미믹 목록 순회
+            {
+                if (mimic != null) // 미믹 오브젝트가 아직 존재하는지 확인
+                {
+                    Destroy(mimic.gameObject); // 기존 미믹 게임 오브젝트 제거
+                }
+            }
+
+            spawnedMimics.Clear(); // 자동 생성 미믹 목록 초기화
+
+
         }
 
         void OnGUI() // 보물 자동 생성 상태를 임시 화면에 표시
@@ -177,7 +229,11 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
                 return; // 화면 표시 중단
             }
 
-            GUI.Label(new Rect(10f, 215f, 300f, 25f), $"자동 생성 보물: {ActiveTreasureCount}"); // 현재 생성된 보물 수 표시
+            GUI.Label(new Rect(10f, 215f, 300f, 25f), $"자동 생성 보물: {ActiveTreasureCount}"); 
+            // 현재 생성된 보물 수 표시
+            GUI.Label(new Rect(10f, 265f, 300f, 25f), $"자동 생성 미믹: {ActiveMimicCount}"); 
+            // 현재 생성된 미믹 수 표시
+
         }
     }
 }
