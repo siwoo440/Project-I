@@ -52,6 +52,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         InventorySystem inventory; // 무게와 부활석 확인용 인벤토리
         PlayerCombat combat; // 방패와 전투 제어용 컴포넌트
         PlayerInteractor interactor; // 상호작용 제어용 컴포넌트
+        PlayerStatusEffectSystem statusEffectSystem; // 출혈과 둔화 상태 관리 컴포넌트
         Transform cam; // 1인칭 시점 카메라 Transform
 
         float pitch; // 현재 카메라 상하 회전값
@@ -74,7 +75,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             inventory = GetComponent<InventorySystem>(); // 인벤토리 컴포넌트 가져오기
             combat = GetComponent<PlayerCombat>(); // 전투 컴포넌트 가져오기
             interactor = GetComponent<PlayerInteractor>(); // 상호작용 컴포넌트 가져오기
-
+            statusEffectSystem = GetComponent<PlayerStatusEffectSystem>(); // 상태 이상 관리 컴포넌트 가져오기
             Camera cameraComponent = GetComponentInChildren<Camera>(); // 자식 카메라 검색
 
             if (cameraComponent != null) // 카메라 존재 여부 확인
@@ -193,6 +194,11 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             
             float speed = isCrouching ? crouchSpeed : sprinting ? runSpeed : walkSpeed; // 현재 이동속도 결정
             speed *= movementSpeedBuffMultiplier; // 조각상 이동속도 버프 배율 적용
+           
+            if (statusEffectSystem != null) // 상태 이상 시스템 존재 여부 확인
+            {
+                speed *= statusEffectSystem.MovementMultiplier; // 현재 둔화 이동속도 배율 적용
+            }
 
             if (inventory != null) // 인벤토리 존재 여부 확인
             {
@@ -279,6 +285,50 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
                 HandleDeath(); // 사망 처리 실행
             }
         }
+        public bool Heal(float amount) // 플레이어 현재 체력 회복
+        {
+            if (isDead) // 플레이어 최종 사망 상태 확인
+            {
+                return false; // 회복 실패 반환
+            }
+
+            float safeAmount = Mathf.Max(0f, amount); // 회복량 안전값 계산
+
+            if (safeAmount <= 0f || health >= maxHealth) // 회복 가능 여부 확인
+            {
+                return false; // 회복 실패 반환
+            }
+
+            float previousHealth = health; // 회복 전 체력 저장
+            health = Mathf.Min(maxHealth, health + safeAmount); // 최대 체력을 넘지 않도록 회복
+            float recoveredAmount = health - previousHealth; // 실제 회복된 체력 계산
+            Debug.Log($"[Player] 체력 {recoveredAmount:F0} 회복 — {health:F0}/{maxHealth:F0}"); // 회복 결과 출력
+            return recoveredAmount > 0f; // 실제 회복 성공 여부 반환
+        }
+        public void TakeStatusDamage(float amount) // 방패를 무시하는 상태 이상 피해 적용
+        {
+            if (isDead) // 플레이어 사망 상태 확인
+            {
+                return; // 상태 이상 피해 처리 중단
+            }
+
+            float safeDamage = Mathf.Max(0f, amount); // 상태 이상 피해량 안전값 계산
+
+            if (safeDamage <= 0f) // 실제 피해 존재 여부 확인
+            {
+                return; // 상태 이상 피해 처리 중단
+            }
+
+            health = Mathf.Max(0f, health - safeDamage); // 방패 계산 없이 현재 체력 감소
+            Damaged?.Invoke(safeDamage, false); // 피격 화면과 카메라 피드백에 실제 피해 전달
+            Debug.Log($"[Player] 상태 이상 피해 {safeDamage:F0}, 남은 체력 {health:F0}/{maxHealth:F0}"); // 피해 결과 출력
+
+            if (health <= 0f) // 체력 소진 여부 확인
+            {
+                HandleDeath(); // 기존 부활과 사망 처리 실행
+            }
+        }
+
         public void TakeFatalDamage() // 방패를 무시하고 플레이어를 즉시 사망 상태로 처리
         {
             if (isDead) // 플레이어가 이미 사망했는지 확인
@@ -323,6 +373,10 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             if (inventory != null && inventory.ConsumeItemByName(reviveItemName)) // 부활석 소지 확인과 소모
             {
                 health = Mathf.Max(1f, maxHealth * reviveHealthRatio); // 최대 체력 비율로 부활
+                if (statusEffectSystem != null) // 상태 이상 시스템 존재 여부 확인
+                {
+                    statusEffectSystem.ClearAll(); // 부활 시 모든 상태 이상 제거
+                }
 
                 Debug.Log($"[Player] {reviveItemName} 사용, 체력 {health:F0}으로 부활"); // 부활 결과 출력
 
@@ -330,6 +384,11 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             }
 
             isDead = true; // 사망 상태 활성화
+            if (statusEffectSystem != null) // 상태 이상 시스템 존재 여부 확인
+            {
+                statusEffectSystem.ClearAll(); // 최종 사망 시 모든 상태 이상 제거
+            }
+
             health = 0f; // 현재 체력 0 고정
             verticalVelocity = 0f; // 수직 이동 정지
            
@@ -364,10 +423,19 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
                 return; // 디버그 정보 표시 중단
             }
 
-            GUI.Label(new Rect(10f, 10f, 500f, 20f), $"체력: {health:F0} / {maxHealth:F0}"); // 현재 체력 표시
-            GUI.Label(new Rect(10f, 30f, 500f, 20f), $"스태미너: {stamina:F0} / {maxStamina:F0}"); // 현재 스태미너 표시
-            GUI.Label(new Rect(10f, 50f, 500f, 20f), $"앉기: {(isCrouching ? "O" : "X")}    접지: {(controller.isGrounded ? "O" : "X")}"); // 앉기와 접지 상태 표시
-            GUI.Label(new Rect(10f, 70f, 640f, 20f), "이동 WASD / 달리기 Shift / 점프 Space / 앉기 Ctrl / 커서해제 Esc(재잠금:클릭)"); // 플레이어 조작법 표시
+            GUI.Label(new Rect(10f, 10f, 500f, 20f), 
+                $"체력: {health:F0} / {maxHealth:F0}"); // 현재 체력 표시
+            
+            GUI.Label(new Rect(10f, 30f, 500f, 20f), 
+                $"스태미너: {stamina:F0} / {maxStamina:F0}"); // 현재 스태미너 표시
+           
+            GUI.Label(new Rect(10f, 50f, 500f, 20f), 
+                $"앉기: {(isCrouching ? "O" : "X")}    접지: {(controller.isGrounded ? "O" : "X")}"); 
+            // 앉기와 접지 상태 표시
+            
+            GUI.Label(new Rect(10f, 70f, 760f, 20f), 
+                "이동 WASD / 달리기 Shift / 점프 Space / 앉기 Ctrl / 아이템 사용 R / 커서해제 Esc"); 
+            // 플레이어 조작법 표시
         }
 
         void DrawDeathScreen() // 임시 사망 화면 표시

@@ -13,10 +13,12 @@ namespace ProjectI
 
         public InventorySystem Inventory { get; private set; }
         IInteractable current;
-
+        PlayerController playerController; // 회복 아이템 효과를 받을 플레이어
         void Awake()
         {
             Inventory = GetComponent<InventorySystem>();
+            playerController = GetComponent<PlayerController>(); // 같은 오브젝트의 PlayerController 가져오기
+
             if (rayOrigin == null)
             {
                 var cam = GetComponentInChildren<Camera>();
@@ -32,7 +34,42 @@ namespace ProjectI
             if (kb == null) return;
             if (kb.eKey.wasPressedThisFrame && current != null) current.Interact(this);
             if (kb.qKey.wasPressedThisFrame && Inventory != null) Inventory.DropSelected();
+            if (kb.rKey.wasPressedThisFrame) // 회복 아이템 사용 입력 확인
+            {
+                TryUseSelectedRecoveryItem(); // 현재 선택한 회복 아이템 사용 시도
+            }
         }
+
+        void TryUseSelectedRecoveryItem() // 현재 선택한 회복 아이템 사용
+        {
+            if (Inventory == null || playerController == null) // 인벤토리와 플레이어 참조 확인
+            {
+                return; // 사용 처리 중단
+            }
+
+            ICarryable selectedItem = Inventory.SelectedItem; // 현재 선택 소지품 가져오기
+            MonoBehaviour itemBehaviour = selectedItem as MonoBehaviour; // 선택 소지품의 Unity 컴포넌트 가져오기
+
+            if (itemBehaviour == null) // 선택 소지품 존재 여부 확인
+            {
+                Debug.Log("[PlayerInteractor] 사용할 아이템이 선택되지 않았습니다."); // 선택 아이템 없음 출력
+                return; // 사용 처리 중단
+            }
+
+            RecoveryItem recoveryItem = itemBehaviour.GetComponent<RecoveryItem>(); // 선택 소지품의 회복 기능 검색
+
+            if (recoveryItem == null) // 회복 아이템 여부 확인
+            {
+                Debug.Log($"[PlayerInteractor] {selectedItem.DisplayName}은 사용할 수 있는 회복 아이템이 아닙니다."); // 사용 불가 아이템 출력
+                return; // 사용 처리 중단
+            }
+
+            if (recoveryItem.TryUse(playerController)) // 실제 회복 효과 적용 성공 여부 확인
+            {
+                Inventory.ConsumeSelected(); // 사용에 성공한 선택 아이템 소모
+            }
+        }
+
 
         void DetectTarget()
         {

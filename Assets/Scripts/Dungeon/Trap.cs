@@ -20,7 +20,16 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         [SerializeField] float activationDelay = 0f; // 플레이어 감지 후 실제 발동까지의 지연시간
         [SerializeField] float cooldown = 1.5f; // 재발동이 가능해질 때까지의 대기시간
         [SerializeField] bool oneShot = false; // 한 번 발동한 뒤 영구 비활성화할지 결정
-       
+
+        [Header("상태 이상")] // Inspector 함정 상태 이상 설정 구분
+        [SerializeField] bool applyBleeding; // 발동 시 출혈 적용 여부
+        [SerializeField] float bleedingDuration = 8f; // 출혈 지속시간
+        [SerializeField] float bleedingDamagePerTick = 4f; // 출혈 1회 피해량
+        [SerializeField] float bleedingTickInterval = 2f; // 출혈 피해 간격
+        [SerializeField] bool applySlow; // 발동 시 둔화 적용 여부
+        [SerializeField] float slowDuration = 5f; // 둔화 지속시간
+        [SerializeField][Range(0.1f, 1f)] float slowMultiplier = 0.6f; // 둔화 이동속도 배율
+
         [Header("피드백")] // Inspector 함정 피드백 설정 구분
         [SerializeField] Vector3 feedbackOffset = new Vector3(0f, 0.2f, 0f); // 함정 루트 기준 피드백 발생 위치
 
@@ -67,6 +76,10 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             StartCoroutine(ActivateTrap(player)); // 발동 지연과 피해 처리 시작
         }
 
+
+
+
+
         IEnumerator ActivateTrap(PlayerController player) // 설정된 지연 후 플레이어에게 함정 효과 적용
         {
             float safeActivationDelay = Mathf.Max(0f, activationDelay); // 발동 지연시간이 음수가 되지 않도록 제한
@@ -87,6 +100,28 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
                     float safeDamage = Mathf.Max(0f, damage); // 일반 피해가 음수가 되지 않도록 제한
                     player.TakeDamage(safeDamage); // 기존 플레이어 피해 처리로 일반 피해 적용
                 }
+
+                if (trapType != TrapType.InstantDeath && !player.IsDead) // 일반 함정과 생존 상태 확인
+                {
+                    PlayerStatusEffectSystem statusEffectSystem = player.GetComponent<PlayerStatusEffectSystem>(); // 플레이어 상태 이상 시스템 검색
+
+                    if (statusEffectSystem != null) // 상태 이상 시스템 존재 여부 확인
+                    {
+                        if (applyBleeding) // 출혈 적용 설정 확인
+                        {
+                            statusEffectSystem.ApplyBleeding( // 플레이어에게 출혈 적용
+                                bleedingDuration, // 출혈 지속시간 전달
+                                bleedingDamagePerTick, // 출혈 1회 피해량 전달
+                                bleedingTickInterval); // 출혈 피해 간격 전달
+                        }
+
+                        if (applySlow) // 둔화 적용 설정 확인
+                        {
+                            statusEffectSystem.ApplySlow(slowDuration, slowMultiplier); // 플레이어에게 둔화 적용
+                        }
+                    }
+                }
+
 
                 if (threatFeedback != null) // 함정 피드백 존재 여부 확인
                 {

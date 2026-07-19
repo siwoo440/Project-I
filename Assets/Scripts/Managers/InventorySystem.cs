@@ -80,6 +80,24 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         public float WeightRatio => weightLimit > 0f ? CurrentWeight / weightLimit : 0f; // 무게 제한 대비 현재 무게 비율
         public bool CarryingTwoHand => twoHand != null; // 두손 운반 여부
 
+        public ICarryable SelectedItem // 현재 선택한 일반 또는 두손 소지품 반환
+        {
+            get // 현재 선택 소지품 확인
+            {
+                if (twoHand != null) // 두손 소지품 존재 여부 확인
+                {
+                    return twoHand; // 현재 두손 소지품 반환
+                }
+
+                if (selected < 0 || selected >= items.Count) // 일반 선택 인덱스 유효 여부 확인
+                {
+                    return null; // 선택 소지품 없음 반환
+                }
+
+                return items[selected]; // 현재 선택한 일반 소지품 반환
+            }
+        }
+
         void Awake() // 플레이어 손과 내부 보관 위치 초기화
         {
             hand = GetComponent<PlayerHand>(); // 플레이어 손 컴포넌트 가져오기
@@ -238,7 +256,24 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
 
             return selectedItem; // 꺼낸 소지품 반환
         }
+        public bool ConsumeSelected() // 현재 선택 소지품을 인벤토리에서 제거하고 소모
+        {
+            ICarryable selectedItem = TakeSelected(); // 선택 소지품을 인벤토리에서 꺼내기
 
+            if (selectedItem == null) // 선택 소지품 존재 여부 확인
+            {
+                return false; // 소모 실패 반환
+            }
+
+            MonoBehaviour itemBehaviour = selectedItem as MonoBehaviour; // 선택 소지품의 Unity 컴포넌트 가져오기
+
+            if (itemBehaviour != null) // 소지품 Unity 오브젝트 존재 여부 확인
+            {
+                Destroy(itemBehaviour.gameObject); // 사용한 소지품 오브젝트 제거
+            }
+
+            return true; // 선택 소지품 소모 성공 반환
+        }
         public bool ConsumeItemByName(string itemName) // 이름이 일치하는 일반 아이템 하나 소모
         {
             for (int i = 0; i < items.Count; i++) // 일반 슬롯 소지품 순회
