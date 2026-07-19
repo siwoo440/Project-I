@@ -1021,6 +1021,61 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &429890100
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 429890101}
+  - component: {fileID: 429890102}
+  m_Layer: 0
+  m_Name: StalkerSpawnManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &429890101
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 429890100}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1849063523}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &429890102
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 429890100}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 62e3d9d91c22b5d43ae73f87397361aa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectI.StalkerSpawnManager
+  dungeonGenerator: {fileID: 1894962786}
+  stalkerPrefab: {fileID: 1843511728412445422, guid: 9424af19e4d73b942807780c79cb27ab, type: 3}
+  spawnChance: 1
+  skipStartingRoom: 1
+  wallMargin: 1.5
+  positionSearchHeight: 1.1
+  groundOffset: 0
+  collisionCheckRadius: 0.45
+  positionSearchAttempts: 30
+  playerSafeDistance: 8
+  showDebug: 1
 --- !u!1 &465354972
 GameObject:
   m_ObjectHideFlags: 0
@@ -3173,6 +3228,7 @@ Transform:
   - {fileID: 500170331}
   - {fileID: 1940104194}
   - {fileID: 538285486}
+  - {fileID: 429890101}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1894962785
