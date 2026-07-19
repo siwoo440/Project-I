@@ -1156,7 +1156,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectI.StalkerSpawnManager
   dungeonGenerator: {fileID: 1894962786}
   stalkerPrefab: {fileID: 1843511728412445422, guid: 9424af19e4d73b942807780c79cb27ab, type: 3}
-  spawnChance: 0
+  spawnChance: 0.2
   skipStartingRoom: 1
   wallMargin: 1.5
   positionSearchHeight: 1.1
@@ -1422,7 +1422,7 @@ MonoBehaviour:
   monsterPrefabs:
   - {fileID: 1309729432766380328, guid: 9b0b36666a2d15c478b5be88dd52b89c, type: 3}
   minMonstersPerRoom: 0
-  maxMonstersPerRoom: 0
+  maxMonstersPerRoom: 1
   skipStartingRoom: 1
   wallMargin: 1.5
   spawnHeight: 1.1
@@ -1591,7 +1591,7 @@ MonoBehaviour:
   - {fileID: 5016322937979358524, guid: e93d80bbb608ffd4099e79292ee5c133, type: 3}
   - {fileID: 6864157952663400650, guid: 39ce97fbd445c644f91d0b6683aba727, type: 3}
   - {fileID: 5016322937979358524, guid: 8dcdbf84f354aeb4a931a9d6463c1f63, type: 3}
-  minTrapsPerRoom: 1
+  minTrapsPerRoom: 0
   maxTrapsPerRoom: 1
   skipStartingRoom: 1
   useBrightnessMultiplier: 1
@@ -2156,6 +2156,69 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1045646862}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1 &1078297257
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1078297259}
+  - component: {fileID: 1078297258}
+  m_Layer: 0
+  m_Name: VerticalSliceValidator
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1078297258
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1078297257}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3257485f35e6cd0478f70949816a842c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectI.VerticalSliceValidator
+  dungeonGenerator: {fileID: 1894962786}
+  dungeonTimeSystem: {fileID: 1894962788}
+  wagon: {fileID: 1359721226}
+  wagonCargo: {fileID: 733841938}
+  wagonLever: {fileID: 170582668}
+  playerController: {fileID: 1128145103}
+  inventorySystem: {fileID: 1128145110}
+  lightSystem: {fileID: 1128145111}
+  statusEffectSystem: {fileID: 1128145114}
+  damageFeedback: {fileID: 1128145113}
+  monsterSpawnManager: {fileID: 500170332}
+  treasureSpawnManager: {fileID: 1940104195}
+  trapSpawnManager: {fileID: 538285487}
+  stalkerSpawnManager: {fileID: 429890102}
+  gimmickSpawnManager: {fileID: 1091222877}
+  audioManager: {fileID: 1336960404}
+  minimumRoomCount: 8
+  validationDelay: 0.5
+  showValidationPanel: 1
+--- !u!4 &1078297259
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1078297257}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1091222875
 GameObject:
   m_ObjectHideFlags: 0
@@ -2203,7 +2266,7 @@ MonoBehaviour:
   dungeonGenerator: {fileID: 1894962786}
   ghostPrefab: {fileID: 5718147948037806946, guid: 772253d57e7dda5449e229cf075f4176, type: 3}
   smilingStatuePrefab: {fileID: 7909635160114117464, guid: 239b9804e9b9c2e4ba98c81cf2e3848a, type: 3}
-  ghostSpawnChance: 0
+  ghostSpawnChance: 0.3
   statueSpawnChance: 0
   skipStartingRoom: 1
   wallMargin: 1.5
@@ -3496,8 +3559,8 @@ MonoBehaviour:
   roomCount: 8
   cellSize: 12
   player: {fileID: 1128145107}
-  randomSeed: 1
-  seed: 0
+  randomSeed: 0
+  seed: 2502
 --- !u!4 &1894962787
 Transform:
   m_ObjectHideFlags: 0
@@ -3578,9 +3641,9 @@ MonoBehaviour:
   - {fileID: 5319074641223368258, guid: f9f70335d7d939d43af79a7a376c28b7, type: 3}
   - {fileID: 2170209715330989519, guid: f8866ff79c1a5b040a5c9bf3ca1a6561, type: 3}
   mimicPrefab: {fileID: 1100585841771256800, guid: 3fabd273d9d492c4098a4d17c5e83b04, type: 3}
-  mimicChance: 1
+  mimicChance: 0.15
   mimicGroundOffset: 0
-  minTreasuresPerRoom: 1
+  minTreasuresPerRoom: 0
   maxTreasuresPerRoom: 1
   skipStartingRoom: 1
   wallMargin: 1.5
@@ -4091,3 +4154,4 @@ SceneRoots:
   - {fileID: 253910461}
   - {fileID: 5396714949836006030}
   - {fileID: 98877833}
+  - {fileID: 1078297259}

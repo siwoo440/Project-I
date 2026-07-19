@@ -25,6 +25,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         public float GameHour => Mathf.Lerp(startHour, endHour, Progress); // 현재 던전 게임시간
         public float RemainingSeconds => Mathf.Max(0f, realDurationSeconds - elapsed); // 남은 현실시간
         public bool IsLocked => Progress >= 1f; // 탈출 봉쇄 여부
+        public bool HasFailed => failed; // 외부 수직 슬라이스 검증에서 유기 실패 여부 확인
 
         void Start() // 시간과 필수 참조 초기화
         {
