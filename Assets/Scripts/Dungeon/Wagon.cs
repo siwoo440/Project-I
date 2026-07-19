@@ -13,7 +13,6 @@ namespace ProjectI
         readonly List<ICarryable> secured = new List<ICarryable>();
         Transform cargoRoot;
         bool left;
-
         public int SecuredCount => secured.Count;
         public int SecuredValue
         {

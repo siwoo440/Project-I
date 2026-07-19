@@ -10,9 +10,7 @@ namespace ProjectI
         [SerializeField] Wagon wagon;
 
         void Awake() { if (wagon == null) wagon = GetComponentInParent<Wagon>(); }
-
         public string GetPrompt() => "[E] 마차에 싣기";
-
         public void Interact(PlayerInteractor interactor)
         {
             if (interactor == null || interactor.Inventory == null || wagon == null) return;
