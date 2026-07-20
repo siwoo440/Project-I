@@ -224,9 +224,9 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
 
         void OnGUI() // 자동 생성 상태 임시 표시
         {
-            if (!showDebug) // 디버그 표시 여부 확인
+            if (!showDebug || !DebugUIToggleController.SpawnInfoVisible) // Inspector 설정과 F4 표시 상태 확인
             {
-                return; // 화면 표시 중단
+                return; // 자동 스폰 디버그 정보 표시 중단
             }
 
             GUI.Label(new Rect(10f, 315f, 300f, 25f), $"자동 생성 고스트: {ActiveGhostCount}"); // 고스트 수 표시

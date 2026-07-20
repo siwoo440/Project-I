@@ -178,9 +178,9 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
 
         void OnGUI() // 몬스터 자동 생성 상태를 임시 화면에 표시
         {
-            if (!showDebug) // 디버그 표시가 꺼져 있는지 확인
+            if (!showDebug || !DebugUIToggleController.SpawnInfoVisible) // Inspector 설정과 F4 표시 상태 확인
             {
-                return; // 화면 표시 중단
+                return; // 자동 스폰 디버그 정보 표시 중단
             }
 
             GUI.Label(new Rect(10f, 190f, 300f, 25f), $"자동 생성 몬스터: {ActiveMonsterCount}"); // 현재 생성된 몬스터 수 표시

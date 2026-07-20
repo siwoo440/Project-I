@@ -17,7 +17,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         [Header("성능 측정")] // Inspector 성능 측정 설정 구분
         [SerializeField][Min(0.1f)] float sampleInterval = 0.5f; // FPS와 메모리 갱신 간격
         [SerializeField][Min(1f)] float memoryGrowthWarningMB = 16f; // 생성 1회 메모리 증가 경고 기준
-        [SerializeField] bool showPanel = true; // 임시 OnGUI 패널 표시 여부
+        [SerializeField] bool showPanel = false; // Scene 시작 시 성능 검사 패널을 숨김
 
         [Header("자동 반복 생성")] // 반복 생성 검사 설정 구분
         [SerializeField][Min(1)] int automaticTestIterations = 10; // 자동 생성 반복 횟수

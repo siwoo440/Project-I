@@ -68,6 +68,11 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         Coroutine movementBuffCoroutine; // 현재 실행 중인 이동속도 버프 코루틴
 
         public bool IsDead => isDead; // 외부 사망 상태 확인
+        public float CurrentHealth => health; // HUD에 현재 체력 전달
+        public float MaxHealth => maxHealth; // HUD에 최대 체력 전달
+        public float CurrentStamina => stamina; // HUD에 현재 스태미너 전달
+        public float MaxStamina => maxStamina; // HUD에 최대 스태미너 전달
+
         public event System.Action<float, bool> Damaged; // 실제 피해량과 즉사 여부를 외부 피드백에 전달
         public event System.Action Died; // 부활할 수 없는 최종 사망 이벤트
         void Awake() // 플레이어 참조와 초기 수치 설정
@@ -422,9 +427,9 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
                 DrawDeathScreen(); // 사망 화면 표시
             }
 
-            if (!showDebug) // 디버그 UI 표시 설정 확인
+            if (!showDebug || !DebugUIToggleController.PlayerInfoVisible) // Inspector 설정과 F1 표시 상태 확인
             {
-                return; // 디버그 정보 표시 중단
+                return; // 기존 플레이어 디버그 정보 표시 중단
             }
 
             GUI.Label(new Rect(10f, 10f, 500f, 20f), 

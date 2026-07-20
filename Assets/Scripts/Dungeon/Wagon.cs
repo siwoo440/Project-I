@@ -104,9 +104,12 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
 
         void OnGUI() // 마차 적재 상태와 임시 탈출 결과 표시
         {
-            GUI.Label( // 마차 확보 상태 표시
-                new Rect(10f, 150f, 700f, 20f), // 적재 정보 표시 위치와 크기
-                $"마차 적재: 전체 {SecuredCount}개 | 보물 {SecuredTreasureCount}개 | 총 가치 {SecuredValue}골드"); // 적재 정보 문구
+            if (DebugUIToggleController.InventoryInfoVisible) // F2 마차 적재 디버그 정보 표시 상태 확인
+            {
+                GUI.Label( // 마차 확보 상태 표시
+                    new Rect(10f, 150f, 700f, 20f), // 적재 정보 표시 위치와 크기
+                    $"마차 적재: 전체 {SecuredCount}개 | 보물 {SecuredTreasureCount}개 | 총 가치 {SecuredValue}골드"); // 적재 정보 문구
+            }
 
             if (left && (RunResultManager.Instance == null || !RunResultManager.Instance.HasResult)) // 중앙 결과 화면이 없을 때만 기존 성공 화면 표시
             {

@@ -11,7 +11,12 @@ namespace ProjectI
         [SerializeField] float interactDistance = 3f;
         [SerializeField] Transform rayOrigin;   // 카메라 (없으면 자동)
 
+        [Header("디버그")] // 임시 OnGUI 설정 구분
+        [SerializeField] bool showDebug = true; // 기존 OnGUI 표시 여부
+
         public InventorySystem Inventory { get; private set; } // 현재 플레이어 인벤토리 반환
+        public string CurrentPrompt => current != null ? current.GetPrompt() : string.Empty; // HUD에 현재 상호작용 문구 전달
+
         public event System.Action Interacted; // E 상호작용이 실행된 사실 전달
         IInteractable current;
         PlayerController playerController; // 회복 아이템 효과를 받을 플레이어
@@ -85,11 +90,19 @@ namespace ProjectI
                 current = hit.collider.GetComponentInParent<IInteractable>();
         }
 
-        void OnGUI()
+        void OnGUI() // 기존 임시 조준점과 상호작용 문구 표시
         {
-            GUI.Label(new Rect(Screen.width / 2f - 4, Screen.height / 2f - 10, 20, 20), "+");
-            if (current != null)
-                GUI.Label(new Rect(Screen.width / 2f - 120, Screen.height / 2f + 12, 240, 20), current.GetPrompt());
+            if (!showDebug || !DebugUIToggleController.PlayerInfoVisible) // Inspector 설정과 F1 표시 상태 확인
+            {
+                return; // 기존 조준점과 상호작용 문구 표시 중단
+            }
+
+            GUI.Label(new Rect(Screen.width / 2f - 4f, Screen.height / 2f - 10f, 20f, 20f), "+"); // 임시 조준점 표시
+
+            if (current != null) // 상호작용 대상 존재 여부 확인
+            {
+                GUI.Label(new Rect(Screen.width / 2f - 120f, Screen.height / 2f + 12f, 240f, 20f), current.GetPrompt()); // 임시 상호작용 문구 표시
+            }
         }
     }
 }

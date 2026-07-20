@@ -15,6 +15,9 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         [SerializeField] float endHour = 24f; // 던전 종료 게임시간
         [SerializeField] float wagonProximity = 5f; // 마차 탈출 인정 거리
 
+        [Header("디버그")] // 임시 시간 UI 설정 구분
+        [SerializeField] bool showDebug = true; // 기존 OnGUI 시간 표시 여부
+
         float elapsed; // 현재까지 흐른 현실시간
         bool deadlineFired; // 제한시간 처리 완료 여부
         bool failed; // 제한시간 유기 실패 여부
@@ -82,18 +85,20 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
 
         void OnGUI() // 던전 시간과 실패 화면 표시
         {
-            int gameHour = Mathf.FloorToInt(GameHour); // 현재 게임시간의 시 계산
-            int gameMinute = Mathf.FloorToInt((GameHour - gameHour) * 60f); // 현재 게임시간의 분 계산
-            int remainingSeconds = Mathf.CeilToInt(RemainingSeconds); // 남은 현실시간의 정수 초 계산
-            GUIStyle timeStyle = new GUIStyle(GUI.skin.label); // 시간 표시 스타일 생성
+            if (showDebug && DebugUIToggleController.PlayerInfoVisible) // Inspector 설정과 F1 표시 상태 확인
+            {
+                int gameHour = Mathf.FloorToInt(GameHour); // 현재 게임시간의 시 계산
+                int gameMinute = Mathf.FloorToInt((GameHour - gameHour) * 60f); // 현재 게임시간의 분 계산
+                int remainingSeconds = Mathf.CeilToInt(RemainingSeconds); // 남은 현실시간의 정수 초 계산
+                GUIStyle timeStyle = new GUIStyle(GUI.skin.label); // 기존 시간 표시 스타일 생성
 
-            timeStyle.fontSize = 14; // 시간 글자 크기 설정
-            timeStyle.alignment = TextAnchor.UpperRight; // 시간 오른쪽 정렬 설정
+                timeStyle.fontSize = 14; // 기존 시간 글자 크기 설정
+                timeStyle.alignment = TextAnchor.UpperRight; // 기존 시간 오른쪽 정렬 설정
 
-            GUI.Label(new Rect(Screen.width - 230f, 6f, 220f, 22f), $"던전 시간 {gameHour:00}:{gameMinute:00}   (남은 {remainingSeconds / 60:00}:{remainingSeconds % 60:00})", timeStyle); // 현재 시간과 남은 시간 표시
+                GUI.Label(new Rect(Screen.width - 230f, 6f, 220f, 22f), $"던전 시간 {gameHour:00}:{gameMinute:00}   (남은 {remainingSeconds / 60:00}:{remainingSeconds % 60:00})", timeStyle); // 기존 시간 정보 표시
+            }
 
-            if (failed && (RunResultManager.Instance == null || !RunResultManager.Instance.HasResult)) 
-                // 중앙 결과 화면이 없을 때만 기존 실패 화면 표시
+            if (failed && (RunResultManager.Instance == null || !RunResultManager.Instance.HasResult)) // 중앙 결과 화면 없이 제한시간 실패 여부 확인
             {
                 GUIStyle titleStyle = new GUIStyle(GUI.skin.label); // 실패 제목 스타일 생성
                 GUIStyle messageStyle = new GUIStyle(GUI.skin.label); // 실패 안내 스타일 생성

@@ -34,7 +34,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         [Header("검증 설정")] // Inspector 검증 기준 설정 구분
         [SerializeField] int minimumRoomCount = 8; // 정상 던전으로 인정할 최소 방 수
         [SerializeField] float validationDelay = 0.5f; // 자동 생성 완료 후 검증 대기시간
-        [SerializeField] bool showValidationPanel = true; // 임시 검증 패널 표시 여부
+        [SerializeField] bool showValidationPanel = false; // Scene 시작 시 검증 패널을 숨김
 
         readonly List<string> errors = new List<string>(); // 진행 불가 오류 목록
         readonly List<string> warnings = new List<string>(); // 확인이 필요한 경고 목록

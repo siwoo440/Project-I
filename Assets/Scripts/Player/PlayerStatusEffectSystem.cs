@@ -177,9 +177,9 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
 
         void OnGUI() // 현재 상태 이상과 남은 시간 표시
         {
-            if (!showDebug) // 디버그 표시 여부 확인
+            if (!showDebug || !DebugUIToggleController.PlayerInfoVisible) // Inspector 설정과 F1 표시 상태 확인
             {
-                return; // 상태 이상 표시 중단
+                return; // 상태 이상 디버그 정보 표시 중단
             }
 
             float y = 145f; // 첫 상태 이상 표시 세로 위치

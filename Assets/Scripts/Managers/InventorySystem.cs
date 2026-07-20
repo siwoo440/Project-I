@@ -435,6 +435,10 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
 
         void OnGUI() // 임시 인벤토리 정보와 핫바 표시
         {
+            if (!DebugUIToggleController.InventoryInfoVisible) // F2 인벤토리 디버그 UI 표시 상태 확인
+            {
+                return; // 기존 인벤토리 정보와 핫바 표시 중단
+            }
             GUI.Label(new Rect(10f, 100f, 640f, 20f), $"인벤토리: {UsedSlots}/{TotalSlots}칸   무게: {CurrentWeight:F1}/{weightLimit:F0}kg ({WeightRatio * 100f:F0}%)"); // 슬롯과 무게 정보 표시
 
             if (twoHand != null) // 두손 운반 여부 확인

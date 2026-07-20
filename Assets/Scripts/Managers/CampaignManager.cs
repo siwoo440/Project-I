@@ -192,9 +192,9 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
 
         void OnGUI() // 보유 골드와 빚 및 날짜를 임시 HUD로 표시
         {
-            if (!showCampaignHud) // 캠페인 HUD 표시 여부 확인
+            if (!showCampaignHud || !DebugUIToggleController.CampaignInfoVisible) // Scene 설정과 F7 표시 상태 확인
             {
-                return; // HUD 표시 중단
+                return; // 기존 캠페인 디버그 HUD 표시 중단
             }
 
             float width = 320f; // 캠페인 HUD 너비

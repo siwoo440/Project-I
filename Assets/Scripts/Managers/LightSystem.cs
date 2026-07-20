@@ -14,6 +14,9 @@ namespace ProjectI
         LightRoom currentRoom;
         Transform searchRoot;   // 손에 든 광원 탐색 기준(카메라)
 
+        [Header("디버그")] // 임시 밝기 UI 설정 구분
+        [SerializeField] bool showDebug = true; // 기존 OnGUI 밝기 표시 여부
+
         public float CurrentBrightness { get; private set; }
         public string Stage { get; private set; } = "완전한 어둠";
 
@@ -56,10 +59,15 @@ namespace ProjectI
             return "완전한 어둠";
         }
 
-        void OnGUI()
+        void OnGUI() // 기존 임시 밝기 UI 표시
         {
-            var style = new GUIStyle(GUI.skin.label) { fontSize = 14, alignment = TextAnchor.UpperCenter };
-            GUI.Label(new Rect(Screen.width / 2f - 120, 6, 240, 22), $"밝기: {CurrentBrightness:F0}  ({Stage})", style);
+            if (!showDebug || !DebugUIToggleController.PlayerInfoVisible) // Inspector 설정과 F1 표시 상태 확인
+            {
+                return; // 기존 밝기 디버그 UI 표시 중단
+            }
+
+            GUIStyle style = new GUIStyle(GUI.skin.label) { fontSize = 14, alignment = TextAnchor.UpperCenter }; // 밝기 UI 스타일 생성
+            GUI.Label(new Rect(Screen.width / 2f - 120f, 6f, 240f, 22f), $"밝기: {CurrentBrightness:F0}  ({Stage})", style); // 기존 밝기 정보 표시
         }
     }
 }
