@@ -1,11 +1,15 @@
 using System.Collections.Generic; // AudioSource 풀과 전자음 캐시 사용
 using UnityEngine; // Unity 기본 기능 사용
+using UnityEngine.Audio; // AudioMixerGroup 출력 연결 사용
 
 namespace ProjectI // 프로젝트 공통 네임스페이스
 {
     public class AudioManager : MonoBehaviour // 2D와 3D 효과음 재생 및 풀링 관리
     {
         public static AudioManager Instance { get; private set; } // 현재 활성 AudioManager 접근점
+
+        [Header("AudioMixer 연결")] // Inspector AudioMixer 출력 연결 구분
+        [SerializeField] AudioMixerGroup sfxOutputGroup; // 풀링된 3D AudioSource가 출력될 SFX 그룹
 
         [Header("AudioSource 풀")] // Inspector 오디오 풀 설정 구분
         [SerializeField][Min(1)] int initialPoolSize = 12; // 시작할 때 미리 생성할 AudioSource 수
@@ -163,6 +167,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             sourceObject.transform.localScale = Vector3.one; // 로컬 크기 초기화
 
             AudioSource source = sourceObject.AddComponent<AudioSource>(); // AudioSource 컴포넌트 추가
+            source.outputAudioMixerGroup = sfxOutputGroup; // 풀링된 3D 효과음을 AudioMixer의 SFX 그룹으로 출력
             source.playOnAwake = false; // 자동 재생 비활성화
             source.loop = false; // 반복 재생 비활성화
             sourceObject.SetActive(false); // 대기 상태로 비활성화

@@ -25,6 +25,8 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
 
         public bool IsBlocking { get; private set; } // 현재 방패 방어 여부
         public float CurrentBlockReduction { get; private set; } // 현재 피해 감소율
+        public event System.Action<WeaponType?> AttackPerformed; // 맨손 또는 무기 공격 실행 사실 전달
+        public event System.Action AttackHit; // 공격이 몬스터에게 명중한 사실 전달
 
         void Awake() // 전투에 필요한 참조 초기화
         {
@@ -86,6 +88,10 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
                 return; // 공격 처리 중단
             }
 
+            WeaponType? attackType = weapon != null ? weapon.type : (WeaponType?)null; // 현재 무기 종류 또는 맨손 상태 결정
+            AttackPerformed?.Invoke(attackType); // 근접 공격 실행 사실을 오디오 피드백에 전달
+
+
             float damage = weapon != null ? weapon.attackDamage : unarmedDamage; // 현재 공격력 결정
             float range = weapon != null ? weapon.attackRange : unarmedRange; // 현재 공격 사거리 결정
             float criticalChance = weapon != null ? weapon.critChance : 0.1f; // 현재 치명타 확률 결정
@@ -115,6 +121,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
                 Debug.Log("[전투] 화살이 없습니다"); // 화살 부족 안내
                 return; // 활 공격 처리 중단
             }
+            AttackPerformed?.Invoke(WeaponType.Bow); // 실제 화살을 소모한 활 발사 사실 전달
 
             float range = weapon.attackRange > 5f ? weapon.attackRange : bowFallbackRange; // 활 공격 사거리 결정
             Vector3 origin = cam.position + cam.forward * 0.6f; // 원거리 판정 시작 위치 계산
@@ -140,6 +147,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             float finalDamage = Mathf.Max(1f, rawDamage - monster.Defense); // 방어력 차감과 최소 피해 적용
 
             monster.TakeDamage(finalDamage); // 몬스터 체력 감소
+            AttackPerformed?.Invoke(WeaponType.Bow); // 실제 화살을 소모한 활 발사 사실 전달
             Debug.Log($"[전투] {attackName} {finalDamage:F0} 피해{(isCritical ? " (치명타!)" : "")}"); // 공격 결과 출력
         }
     }

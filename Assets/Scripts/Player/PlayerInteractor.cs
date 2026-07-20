@@ -11,7 +11,8 @@ namespace ProjectI
         [SerializeField] float interactDistance = 3f;
         [SerializeField] Transform rayOrigin;   // 카메라 (없으면 자동)
 
-        public InventorySystem Inventory { get; private set; }
+        public InventorySystem Inventory { get; private set; } // 현재 플레이어 인벤토리 반환
+        public event System.Action Interacted; // E 상호작용이 실행된 사실 전달
         IInteractable current;
         PlayerController playerController; // 회복 아이템 효과를 받을 플레이어
         void Awake()
@@ -32,7 +33,12 @@ namespace ProjectI
 
             var kb = Keyboard.current;
             if (kb == null) return;
-            if (kb.eKey.wasPressedThisFrame && current != null) current.Interact(this);
+            if (kb.eKey.wasPressedThisFrame && current != null) // E 입력과 상호작용 대상 존재 여부 확인
+            {
+                current.Interact(this); // 현재 대상의 상호작용 실행
+                Interacted?.Invoke(); // 상호작용 효과음 재생을 위해 이벤트 전달
+            }
+
             if (kb.qKey.wasPressedThisFrame && Inventory != null) Inventory.DropSelected();
             if (kb.rKey.wasPressedThisFrame) // 회복 아이템 사용 입력 확인
             {

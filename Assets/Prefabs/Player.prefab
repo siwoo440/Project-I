@@ -189,6 +189,7 @@ GameObject:
   - component: {fileID: 288524831453878783}
   - component: {fileID: 37486195872669548}
   - component: {fileID: 1165227540061828189}
+  - component: {fileID: -3995161806158177333}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -438,3 +439,32 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectI.PlayerStatusEffectSystem
   showDebug: 1
+--- !u!114 &-3995161806158177333
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3959692974982100839}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fba550a339e135542a9e64752bd112c0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectI.PlayerAudioFeedback
+  footstepClips: []
+  footstepVolume: 0.65
+  walkStepInterval: 0.52
+  runStepInterval: 0.32
+  movementThreshold: 0.2
+  runSpeedThreshold: 5.5
+  hurtClip: {fileID: 0}
+  deathClip: {fileID: 0}
+  statusVolume: 0.8
+  unarmedSwingClip: {fileID: 0}
+  swordSwingClip: {fileID: 0}
+  axeSwingClip: {fileID: 0}
+  bowShotClip: {fileID: 0}
+  attackHitClip: {fileID: 0}
+  attackVolume: 0.8
+  interactionClip: {fileID: 0}
+  interactionVolume: 0.7
