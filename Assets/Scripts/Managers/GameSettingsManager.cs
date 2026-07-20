@@ -9,20 +9,34 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
 
         const string MouseSensitivityKey = "Settings.MouseSensitivity"; // 마우스 감도 저장 키
         const string MasterVolumeKey = "Settings.MasterVolume"; // 전체 음량 저장 키
+        const string BgmVolumeKey = "Settings.BGMVolume"; // 배경음 음량 저장 키
+        const string SfxVolumeKey = "Settings.SFXVolume"; // 효과음 음량 저장 키
+        const string AmbientVolumeKey = "Settings.AmbientVolume"; // 환경음 음량 저장 키
+
         const string FullScreenKey = "Settings.FullScreen"; // 전체 화면 저장 키
         const string VSyncKey = "Settings.VSync"; // 수직 동기화 저장 키
         const string ResolutionWidthKey = "Settings.ResolutionWidth"; // 해상도 너비 저장 키
         const string ResolutionHeightKey = "Settings.ResolutionHeight"; // 해상도 높이 저장 키
 
         const float DefaultMouseSensitivity = 1f; // 기본 마우스 감도 배율
+
         const float DefaultMasterVolume = 0.8f; // 기본 전체 음량
+        const float DefaultBgmVolume = 0.7f; // 기본 배경음 음량
+        const float DefaultSfxVolume = 0.8f; // 기본 효과음 음량
+        const float DefaultAmbientVolume = 0.7f; // 기본 환경음 음량
+
         const int DefaultResolutionWidth = 1920; // 기본 해상도 너비
         const int DefaultResolutionHeight = 1080; // 기본 해상도 높이
 
         readonly List<Vector2Int> availableResolutions = new List<Vector2Int>(); // 중복을 제거한 사용 가능 해상도 목록
 
         float mouseSensitivityMultiplier = DefaultMouseSensitivity; // 현재 마우스 감도 배율
+
         float masterVolume = DefaultMasterVolume; // 현재 전체 음량
+        float bgmVolume = DefaultBgmVolume; // 현재 배경음 음량
+        float sfxVolume = DefaultSfxVolume; // 현재 효과음 음량
+        float ambientVolume = DefaultAmbientVolume; // 현재 환경음 음량
+
         bool fullScreen = true; // 현재 전체 화면 여부
         bool vSync = true; // 현재 수직 동기화 여부
         int resolutionWidth = DefaultResolutionWidth; // 현재 해상도 너비
@@ -30,6 +44,9 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
 
         public float MouseSensitivityMultiplier => mouseSensitivityMultiplier; // 현재 마우스 감도 배율 반환
         public float MasterVolume => masterVolume; // 현재 전체 음량 반환
+        public float BgmVolume => bgmVolume; // 현재 배경음 음량 반환
+        public float SfxVolume => sfxVolume; // 현재 효과음 음량 반환
+        public float AmbientVolume => ambientVolume; // 현재 환경음 음량 반환
         public bool FullScreen => fullScreen; // 현재 전체 화면 여부 반환
         public bool VSync => vSync; // 현재 수직 동기화 여부 반환
         public int ResolutionWidth => resolutionWidth; // 현재 해상도 너비 반환
@@ -87,7 +104,12 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         void LoadSettings() // PlayerPrefs에 저장된 게임 설정 불러오기
         {
             mouseSensitivityMultiplier = PlayerPrefs.GetFloat(MouseSensitivityKey, DefaultMouseSensitivity); // 저장된 마우스 감도 불러오기
+
             masterVolume = PlayerPrefs.GetFloat(MasterVolumeKey, DefaultMasterVolume); // 저장된 전체 음량 불러오기
+            bgmVolume = PlayerPrefs.GetFloat(BgmVolumeKey, DefaultBgmVolume); // 저장된 배경음 음량 불러오기
+            sfxVolume = PlayerPrefs.GetFloat(SfxVolumeKey, DefaultSfxVolume); // 저장된 효과음 음량 불러오기
+            ambientVolume = PlayerPrefs.GetFloat(AmbientVolumeKey, DefaultAmbientVolume); // 저장된 환경음 음량 불러오기
+
             fullScreen = PlayerPrefs.GetInt(FullScreenKey, 1) == 1; // 저장된 전체 화면 여부 불러오기
             vSync = PlayerPrefs.GetInt(VSyncKey, 1) == 1; // 저장된 수직 동기화 여부 불러오기
             resolutionWidth = PlayerPrefs.GetInt(ResolutionWidthKey, DefaultResolutionWidth); // 저장된 해상도 너비 불러오기
@@ -97,10 +119,13 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             masterVolume = Mathf.Clamp01(masterVolume); // 불러온 전체 음량을 0에서 1 사이로 제한
         }
 
-        public void SaveAndApply(float sensitivity, float volume, bool useFullScreen, bool useVSync, int width, int height) // 전달받은 설정 저장과 적용
+        public void SaveAndApply(float sensitivity, float master, float bgm, float sfx, float ambient, bool useFullScreen, bool useVSync, int width, int height) // 전달받은 설정 저장과 적용
         {
             mouseSensitivityMultiplier = Mathf.Clamp(sensitivity, 0.25f, 3f); // 마우스 감도 안전 범위 적용
-            masterVolume = Mathf.Clamp01(volume); // 전체 음량 안전 범위 적용
+            masterVolume = Mathf.Clamp01(master); // 전체 음량 안전 범위 적용
+            bgmVolume = Mathf.Clamp01(bgm); // 배경음 음량 안전 범위 적용
+            sfxVolume = Mathf.Clamp01(sfx); // 효과음 음량 안전 범위 적용
+            ambientVolume = Mathf.Clamp01(ambient); // 환경음 음량 안전 범위 적용
             fullScreen = useFullScreen; // 전체 화면 설정 적용
             vSync = useVSync; // 수직 동기화 설정 적용
             resolutionWidth = Mathf.Max(640, width); // 해상도 너비 최소값 제한
@@ -109,13 +134,18 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             SaveSettings(); // 현재 설정을 PlayerPrefs에 저장
             ApplyCurrentSettings(); // 저장한 설정을 실제 게임에 적용
 
-            Debug.Log($"[Settings] 설정 저장 — 감도 {mouseSensitivityMultiplier:F2}, 음량 {masterVolume * 100f:F0}%, 해상도 {resolutionWidth}x{resolutionHeight}, 전체 화면 {fullScreen}, 수직 동기화 {vSync}"); // 설정 저장 결과 출력
+            Debug.Log($"[Settings] 설정 저장 — Master {masterVolume * 100f:F0}%, BGM {bgmVolume * 100f:F0}%, SFX {sfxVolume * 100f:F0}%, Ambient {ambientVolume * 100f:F0}%"); // 오디오 설정 저장 결과 출력
         }
 
         void SaveSettings() // 현재 설정값을 PlayerPrefs에 기록
         {
             PlayerPrefs.SetFloat(MouseSensitivityKey, mouseSensitivityMultiplier); // 마우스 감도 저장
+
             PlayerPrefs.SetFloat(MasterVolumeKey, masterVolume); // 전체 음량 저장
+            PlayerPrefs.SetFloat(BgmVolumeKey, bgmVolume); // 배경음 음량 저장
+            PlayerPrefs.SetFloat(SfxVolumeKey, sfxVolume); // 효과음 음량 저장
+            PlayerPrefs.SetFloat(AmbientVolumeKey, ambientVolume); // 환경음 음량 저장
+
             PlayerPrefs.SetInt(FullScreenKey, fullScreen ? 1 : 0); // 전체 화면 여부 저장
             PlayerPrefs.SetInt(VSyncKey, vSync ? 1 : 0); // 수직 동기화 여부 저장
             PlayerPrefs.SetInt(ResolutionWidthKey, resolutionWidth); // 해상도 너비 저장
@@ -125,7 +155,13 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
 
         void ApplyCurrentSettings() // 현재 설정을 Unity 화면과 음량에 적용
         {
-            AudioListener.volume = masterVolume; // 모든 AudioSource에 전체 음량 적용
+            AudioListener.volume = 1f; // AudioMixer와 음량이 이중 적용되지 않도록 Listener 음량 고정
+
+            if (GameAudioManager.Instance != null) // 전역 오디오 관리자 존재 여부 확인
+            {
+                GameAudioManager.Instance.ApplyVolumes(masterVolume, bgmVolume, sfxVolume, ambientVolume); // 저장된 네 종류의 음량을 AudioMixer에 적용
+            }
+
             QualitySettings.vSyncCount = vSync ? 1 : 0; // 수직 동기화 활성 또는 비활성 적용
 
             FullScreenMode screenMode = fullScreen ? FullScreenMode.FullScreenWindow : FullScreenMode.Windowed; // 전체 화면 여부에 맞는 화면 모드 계산
@@ -184,7 +220,9 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             int defaultResolutionIndex = FindResolutionIndex(DefaultResolutionWidth, DefaultResolutionHeight); // 기본 해상도와 가장 가까운 번호 검색
             Vector2Int defaultResolution = GetResolution(defaultResolutionIndex); // 실제 지원하는 기본 해상도 가져오기
 
-            SaveAndApply(DefaultMouseSensitivity, DefaultMasterVolume, true, true, defaultResolution.x, defaultResolution.y); // 기본 설정 저장과 적용
+            SaveAndApply(DefaultMouseSensitivity, DefaultMasterVolume, DefaultBgmVolume, DefaultSfxVolume, DefaultAmbientVolume, 
+                         true, true, defaultResolution.x, defaultResolution.y); 
+            // 기본 게임과 오디오 설정 저장 및 적용
         }
     }
 }
