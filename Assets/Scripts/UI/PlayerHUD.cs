@@ -21,6 +21,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         [SerializeField] TMP_Text staminaValueText; // 현재 스태미너 수치 글자
 
         [Header("던전 정보 UI")] // 던전 정보 UI 참조 구분
+        [SerializeField] GameObject dungeonInfoPanel; // Dungeon Scene에서만 표시할 던전 정보 패널
         [SerializeField] TMP_Text timeText; // 던전 시간과 남은 시간 글자
         [SerializeField] TMP_Text brightnessText; // 현재 밝기와 밝기 단계 글자
 
@@ -114,6 +115,13 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
 
         void UpdateDungeonInformation() // 던전 시간과 밝기 정보 갱신
         {
+            bool hasDungeonTimeSystem = dungeonTimeSystem != null; // 현재 Scene이 던전 시간 시스템을 가지고 있는지 확인
+
+            if (dungeonInfoPanel != null) // 던전 정보 패널 참조 존재 여부 확인
+            {
+                dungeonInfoPanel.SetActive(hasDungeonTimeSystem); // DungeonTimeSystem이 있는 Scene에서만 패널 표시
+            }
+
             if (dungeonTimeSystem != null && timeText != null) // 던전 시간 시스템과 UI 존재 여부 확인
             {
                 int gameHour = Mathf.FloorToInt(dungeonTimeSystem.GameHour); // 현재 던전 시 계산

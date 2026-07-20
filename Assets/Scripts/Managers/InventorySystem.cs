@@ -79,7 +79,10 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
 
         public float WeightRatio => weightLimit > 0f ? CurrentWeight / weightLimit : 0f; // 무게 제한 대비 현재 무게 비율
         public bool CarryingTwoHand => twoHand != null; // 두손 운반 여부
-
+        public IReadOnlyList<ICarryable> Items => items; // Canvas 인벤토리에 일반 소지품 목록 전달
+        public int SelectedIndex => selected; // Canvas 인벤토리에 현재 선택 아이템 인덱스 전달
+        public ICarryable TwoHandItem => twoHand; // Canvas 인벤토리에 현재 두손 소지품 전달
+        public float WeightLimit => weightLimit; // Canvas 인벤토리에 무게 제한 전달
         public ICarryable SelectedItem // 현재 선택한 일반 또는 두손 소지품 반환
         {
             get // 현재 선택 소지품 확인

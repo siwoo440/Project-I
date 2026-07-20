@@ -37,8 +37,9 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         int maximumRecordedLeftovers; // 자동 검사 중 발견한 최대 잔류 개수
         bool automaticTestRunning; // 자동 반복 생성 검사 진행 여부
 
-        void Awake() // 성능 검사 참조 초기화
+        void Awake() // 성능 검사 참조와 시작 패널 상태 초기화
         {
+            showPanel = false; // 기존 Scene 직렬화 값과 관계없이 시작 시 성능 패널 숨김
             ResolveReferences(); // Scene의 검사 대상 자동 검색
             managedMemoryBytes = System.GC.GetTotalMemory(false); // 초기 관리 메모리 측정
         }
