@@ -143,7 +143,8 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
                 return; // 시점 처리 중단
             }
 
-            Vector2 delta = mouse.delta.ReadValue() * mouseSensitivity; // 마우스 이동량 계산
+            float settingsMultiplier = GameSettingsManager.Instance != null ? GameSettingsManager.Instance.MouseSensitivityMultiplier : 1f; // 저장된 마우스 감도 배율 가져오기
+            Vector2 delta = mouse.delta.ReadValue() * mouseSensitivity * settingsMultiplier; // 기본 감도와 사용자 설정을 적용한 마우스 이동량 계산
 
             transform.Rotate(Vector3.up, delta.x); // 플레이어 몸체 좌우 회전
             pitch = Mathf.Clamp(pitch - delta.y, minPitch, maxPitch); // 카메라 상하 회전 제한

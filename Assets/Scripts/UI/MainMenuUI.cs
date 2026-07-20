@@ -10,6 +10,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
 
         [Header("저장 연결")] // Inspector 저장 관리자 연결 구분
         [SerializeField] CampaignSaveManager saveManager; // 저장 파일 존재 여부를 확인할 관리자
+        [SerializeField] GameSettingsUI settingsUI; // 메인 메뉴에서 열 게임 설정 화면
 
         [Header("화면 설정")] // Inspector 메인 메뉴 문구 설정 구분
         [SerializeField] string gameTitle = "PROJECT I"; // 메인 메뉴 게임 제목
@@ -28,6 +29,10 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             }
 
             ResolveSaveManager(); // 저장 관리자 참조 검색
+            if (settingsUI == null) // Inspector에 설정 화면이 연결되지 않았는지 확인
+            {
+                settingsUI = FindFirstObjectByType<GameSettingsUI>(); // 현재 Scene에서 설정 화면 검색
+            }
             Cursor.lockState = CursorLockMode.None; // 메뉴 조작을 위해 마우스 잠금 해제
             Cursor.visible = true; // 메뉴 조작을 위해 마우스 커서 표시
         }
@@ -110,8 +115,12 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
 
         void OnGUI() // OnGUI 기반 임시 메인 메뉴 표시
         {
+            if (settingsUI != null && settingsUI.IsOpen) // 게임 설정 화면이 열려 있는지 확인
+            {
+                return; // 기존 메인 메뉴와 설정 화면이 겹치지 않도록 표시 중단
+            }
             float width = 560f; // 메인 메뉴 창 너비
-            float height = 500f; // 메인 메뉴 창 높이
+            float height = 580f; // 설정 버튼을 포함한 메인 메뉴 창 높이
             float x = (Screen.width - width) * 0.5f; // 화면 가로 중앙 위치 계산
             float y = (Screen.height - height) * 0.5f; // 화면 세로 중앙 위치 계산
 
@@ -158,7 +167,19 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
 
                 GUI.enabled = true; // 이후 GUI 활성 상태 복원
 
-                if (GUI.Button(new Rect(x + 130f, y + 355f, 300f, 50f), "게임 종료")) // 게임 종료 버튼 입력 확인
+                if (GUI.Button(new Rect(x + 130f, y + 355f, 300f, 50f), "설정")) // 게임 설정 버튼 입력 확인
+                {
+                    if (settingsUI != null) // 설정 화면 존재 여부 확인
+                    {
+                        settingsUI.Open(); // 현재 저장값으로 게임 설정 화면 열기
+                    }
+                    else // 설정 화면을 찾지 못한 경우
+                    {
+                        statusMessage = "GameSettingsUI를 찾을 수 없습니다."; // 설정 화면 누락 안내 저장
+                    }
+                }
+
+                if (GUI.Button(new Rect(x + 130f, y + 420f, 300f, 50f), "게임 종료")) // 게임 종료 버튼 입력 확인
                 {
                     QuitGame(); // 게임 종료 실행
                 }
@@ -180,7 +201,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
 
             if (!string.IsNullOrEmpty(statusMessage)) // 별도 안내 문구 존재 여부 확인
             {
-                GUI.Label(new Rect(x + 40f, y + 430f, width - 80f, 40f), statusMessage, centerStyle); // 현재 안내 문구 표시
+                GUI.Label(new Rect(x + 40f, y + 505f, width - 80f, 40f), statusMessage, centerStyle); // 설정 버튼 아래에 현재 안내 문구 표시
             }
         }
     }
