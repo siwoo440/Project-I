@@ -42,6 +42,8 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
                 yield break; // 게임 시작 처리 중단
             }
 
+            campaignManager.SetHudVisible(true); // Village 게임 시작 시 캠페인 HUD 다시 표시
+
             if (startMode == GameStartMode.NewGame) // 새 게임 시작 요청인지 확인
             {
                 StartNewCampaign(campaignManager, shopManager, saveManager); // 새 캠페인 초기화 실행

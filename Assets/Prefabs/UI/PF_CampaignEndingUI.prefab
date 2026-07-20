@@ -1,0 +1,54 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1970613483759840448
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5950520824986436588}
+  - component: {fileID: 1324014838501607772}
+  m_Layer: 0
+  m_Name: PF_CampaignEndingUI
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5950520824986436588
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1970613483759840448}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1324014838501607772
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1970613483759840448}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 391230de504a5ca47aa0410ce890850e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectI.CampaignEndingUI
+  mainMenuSceneName: MainMenu
+  villageSceneName: Village
+  victoryTitle: "\uBE5A\uC744 \uBAA8\uB450 \uAC1A\uC558\uC2B5\uB2C8\uB2E4"
+  defeatTitle: "\uC0C1\uD658 \uAE30\uD55C\uC774 \uB05D\uB0AC\uC2B5\uB2C8\uB2E4"
+  victoryMessage: "\uB3C4\uAD74\uB2E8\uC740 \uBE5A\uC5D0\uC11C \uBC97\uC5B4\uB098
+    \uC0C8\uB85C\uC6B4 \uC0B6\uC744 \uC5BB\uC5C8\uC2B5\uB2C8\uB2E4."
+  defeatMessage: "\uB3C4\uAD74\uB2E8\uC740 \uAE30\uD55C \uC548\uC5D0 \uBE5A\uC744
+    \uAC1A\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4."

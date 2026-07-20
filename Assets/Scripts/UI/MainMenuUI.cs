@@ -21,6 +21,12 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         void Awake() // 메인 메뉴 시작 상태 설정
         {
             GameStartRequest.Clear(); // 이전 Scene 이동 요청 초기화
+
+            if (CampaignManager.Instance != null) // 이전 캠페인 관리자가 메인 메뉴에 남아 있는지 확인
+            {
+                CampaignManager.Instance.SetHudVisible(false); // 메인 메뉴에서 캠페인 HUD 숨김
+            }
+
             ResolveSaveManager(); // 저장 관리자 참조 검색
             Cursor.lockState = CursorLockMode.None; // 메뉴 조작을 위해 마우스 잠금 해제
             Cursor.visible = true; // 메뉴 조작을 위해 마우스 커서 표시

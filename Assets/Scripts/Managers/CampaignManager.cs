@@ -149,7 +149,10 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
 
             Debug.Log($"[Campaign] 저장 상태 적용 — {state.CurrentDay}일차, {state.Gold}골드, 남은 빚 {state.RemainingDebt}골드"); // 복원 결과 출력
         }
-
+        public void SetHudVisible(bool visible) // Scene과 결과 화면에 맞춰 캠페인 HUD 표시 상태 변경
+        {
+            showCampaignHud = visible; // 전달받은 값으로 캠페인 HUD 표시 여부 설정
+        }
         public string GetDeadlineMessage() // 현재 날짜와 캠페인 상태에 맞는 마감 안내 반환
         {
             if (state.CampaignWon) { return "빚을 모두 상환했습니다."; }// 빚 전액 상환 여부 확인 -> 캠페인 성공 문구 반환
