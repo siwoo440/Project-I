@@ -214,7 +214,17 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             LoadVillage(); // 확정된 결과를 유지하며 Village Scene 로드
         }
 
+        public bool AbandonCurrentRun() // 일시정지 메뉴에서 현재 던전 탐험 포기
+        {
+            if (!runActive || currentResult.HasResult) // 현재 던전 진행과 기존 결과 존재 여부 확인
+            {
+                Debug.LogWarning("[RunResult] 포기할 수 있는 활성 던전 탐험이 없습니다."); // 탐험 포기 불가 원인 출력
+                return false; // 탐험 포기 실패 반환
+            }
 
+            CompleteRun(false, RunEndReason.ManualAbandoned); // 수동 탐험 포기 결과 확정
+            return currentResult.HasResult; // 결과가 정상적으로 생성됐는지 반환
+        }
 
 
         public void LoadVillage() // 확정된 던전 결과를 유지한 채 마을 Scene으로 이동

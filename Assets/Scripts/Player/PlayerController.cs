@@ -115,9 +115,9 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
                 return; // 입력 처리 중단
             }
 
-            if (keyboard.escapeKey.wasPressedThisFrame) // Escape 키 입력 확인
+            if (keyboard.escapeKey.wasPressedThisFrame && PauseMenuUI.Instance == null) // 일시정지 메뉴가 없는 개발 Scene에서 Escape 입력 확인
             {
-                LockCursor(false); // 마우스 커서 잠금 해제
+                LockCursor(false); // 기존 방식으로 마우스 커서 잠금 해제
             }
 
             if (mouse != null && mouse.leftButton.wasPressedThisFrame && Cursor.lockState != CursorLockMode.Locked) // 게임 화면 재클릭 확인

@@ -8,6 +8,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         ManualExtraction, // 플레이어가 마차 레버로 직접 탈출
         DeadlineExtraction, // 제한시간 종료 시 마차 근처에서 자동 탈출
         DeadlineAbandoned, // 제한시간 종료 시 던전에 유기
+        ManualAbandoned, // 플레이어가 일시정지 메뉴에서 탐험 포기
         PlayerDeath // 부활할 수 없는 최종 사망
     }
 
@@ -75,6 +76,9 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
 
                 case RunEndReason.DeadlineAbandoned: // 제한시간 유기 결과
                     return "제한시간 초과로 던전에 유기"; // 유기 실패 문구 반환
+
+                case RunEndReason.ManualAbandoned: // 플레이어 수동 탐험 포기 결과
+                    return "플레이어가 탐험을 포기함"; // 수동 탐험 포기 문구 반환
 
                 case RunEndReason.PlayerDeath: // 최종 사망 결과
                     return "부활 불가로 최종 사망"; // 최종 사망 문구 반환
