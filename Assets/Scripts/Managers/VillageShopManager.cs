@@ -37,7 +37,6 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         {
             remainingStock = Mathf.Max(0, amount); // 저장된 재고를 음수가 되지 않도록 적용
         }
-
         public void Restock() // 마을 방문용 재고 초기화
         {
             remainingStock = Mathf.Max(1, stockPerVisit); // 설정된 방문당 재고 적용
@@ -308,6 +307,17 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
 
             return true; // 구매 성공 반환
         }
+
+        public void ResetForNewCampaign() // 새 게임 시작을 위해 상점 상태 전체 초기화
+        {
+            StopAllCoroutines(); // 진행 중인 구매품 전달 코루틴 중단
+            deliveryRunning = false; // 구매품 전달 상태 초기화
+            pendingItemPrefabs.Clear(); // 이전 캠페인의 구매 대기 아이템 제거
+            Restock(); // 첫 번째 마을 방문용 상점 재고 초기화
+
+            Debug.Log("[VillageShop] 새 캠페인용 상점 상태를 초기화했습니다."); // 상점 초기화 결과 출력
+        }
+
 
         [ContextMenu("상점 재고 갱신")] // Inspector 우클릭 테스트 메뉴 등록
         public void Restock() // 모든 상점 아이템의 방문당 재고 초기화
