@@ -118,8 +118,36 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             settlementOpen = false; // 이번 정산의 납부 선택 종료
             state.CompleteDay(); // 납부 후 다음 날짜로 진행
 
+            if (CampaignSaveManager.Instance != null) // 저장 관리자 존재 여부 확인
+            {
+                CampaignSaveManager.Instance.SaveGame(); // 하루 정산 완료 상태 자동 저장
+            }
+
             Debug.Log($"[Campaign] 빚 {lastDebtPayment}골드 납부 — 보유 {state.Gold}골드, 남은 빚 {state.RemainingDebt}골드"); // 납부 결과 출력
             return true; // 빚 납부 확정 성공 반환
+        }
+
+        public void ApplySavedState(CampaignSaveData saveData) // 저장 데이터로 현재 캠페인 상태 복원
+        {
+            if (saveData == null) // 저장 데이터 존재 여부 확인
+            {
+                Debug.LogError("[Campaign] 적용할 저장 데이터가 없습니다."); // 저장 데이터 누락 오류 출력
+                return; // 상태 복원 중단
+            }
+
+            state.ApplySavedState(saveData.currentDay, saveData.deadlineDay, saveData.gold, saveData.remainingDebt, saveData.completedRuns, saveData.campaignWon, saveData.campaignFailed); // 저장된 캠페인 수치 적용
+            settlementOpen = false; // 저장하지 않는 중간 정산 상태 초기화
+            lastRunReward = 0; // 최근 탐험 보상 표시 초기화
+            lastDebtPayment = 0; // 최근 빚 납부 표시 초기화
+            lastSettlementDay = 0; // 최근 정산 날짜 표시 초기화
+            lastRunReason = string.Empty; // 최근 탐험 종료 원인 초기화
+
+            if (RunResultManager.Instance != null) // 이전 던전 결과 관리자 존재 여부 확인
+            {
+                RunResultManager.Instance.ClearCurrentResult(); // 중복 보상 방지를 위해 던전 결과 초기화
+            }
+
+            Debug.Log($"[Campaign] 저장 상태 적용 — {state.CurrentDay}일차, {state.Gold}골드, 남은 빚 {state.RemainingDebt}골드"); // 복원 결과 출력
         }
 
         public string GetDeadlineMessage() // 현재 날짜와 캠페인 상태에 맞는 마감 안내 반환

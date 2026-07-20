@@ -32,7 +32,16 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             campaignWon = remainingDebt == 0; // 시작 빚이 없으면 성공 상태 적용
             campaignFailed = false; // 캠페인 실패 상태 초기화
         }
-
+        public void ApplySavedState(int savedCurrentDay, int savedDeadlineDay, int savedGold, int savedRemainingDebt, int savedCompletedRuns, bool savedWon, bool savedFailed) // 저장 파일의 캠페인 상태 적용
+        {
+            currentDay = Mathf.Max(1, savedCurrentDay); // 저장된 현재 날짜를 최소 1일로 제한
+            deadlineDay = Mathf.Max(1, savedDeadlineDay); // 저장된 마감 날짜를 최소 1일로 제한
+            gold = Mathf.Max(0, savedGold); // 저장된 골드를 음수가 되지 않도록 적용
+            remainingDebt = Mathf.Max(0, savedRemainingDebt); // 저장된 빚을 음수가 되지 않도록 적용
+            completedRuns = Mathf.Max(0, savedCompletedRuns); // 완료 탐험 횟수를 음수가 되지 않도록 적용
+            campaignWon = savedWon || remainingDebt == 0; // 저장된 성공 또는 빚 전액 상환 상태 적용
+            campaignFailed = !campaignWon && (savedFailed || currentDay > deadlineDay); // 성공하지 못한 기한 초과 상태 적용
+        }
         public void AddGold(int amount) // 정산 보상을 보유 골드에 추가
         {
             gold += Mathf.Max(0, amount); // 음수가 아닌 보상만 보유 골드에 추가
