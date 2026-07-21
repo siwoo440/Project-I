@@ -1,46 +1,118 @@
-using UnityEngine;
+using UnityEngine; // Unity GameObject와 컴포넌트 기능 사용
 
-namespace ProjectI
+namespace ProjectI // 프로젝트 공통 네임스페이스
 {
-    /// <summary>
-    /// 던전 방(그리드 셀 하나). 4방향 벽을 가지며, 인접 방과 연결되는 쪽 벽을 연다(비활성화).
-    /// 방 프리팹에는 LightRoom(트리거+밝기)도 함께 넣어 밝기 계산에 자동 참여. (기획서 PART 6.1)
-    /// </summary>
-    public class Room : MonoBehaviour
+    public class Room : MonoBehaviour // 던전의 수평 및 수직 격자 방 관리
     {
-        public enum Dir { N = 0, E = 1, S = 2, W = 3 }  // N=+Z, E=+X, S=-Z, W=-X
-
-        [SerializeField] GameObject wallN;
-        [SerializeField] GameObject wallE;
-        [SerializeField] GameObject wallS;
-        [SerializeField] GameObject wallW;
-
-        /// <summary>해당 방향 벽을 열어(비활성화) 통로를 만든다.</summary>
-        public void OpenSide(Dir d)
+        public enum Dir // 방 연결 방향 종류
         {
-            var w = WallOf(d);
-            if (w != null) w.SetActive(false);
+            N = 0, // 북쪽 +Z 연결
+            E = 1, // 동쪽 +X 연결
+            S = 2, // 남쪽 -Z 연결
+            W = 3, // 서쪽 -X 연결
+            Up = 4, // 위층 +Y 연결
+            Down = 5 // 아래층 -Y 연결
         }
 
-        GameObject WallOf(Dir d)
+        [Header("수평 벽")] // 수평 연결을 막는 벽 오브젝트 구분
+        [SerializeField] GameObject wallN; // 북쪽 벽
+        [SerializeField] GameObject wallE; // 동쪽 벽
+        [SerializeField] GameObject wallS; // 남쪽 벽
+        [SerializeField] GameObject wallW; // 서쪽 벽
+
+        [Header("수직 연결 차단물")] // 층간 연결을 막는 오브젝트 구분
+        [SerializeField] GameObject ceilingBlock; // 위층 연결부를 막는 천장 또는 해치
+        [SerializeField] GameObject floorBlock; // 아래층 연결부를 막는 바닥 또는 해치
+
+        [Header("수직 연결 외형")] // 연결될 때 표시할 계단과 난간 구분
+        [SerializeField] GameObject stairsUpVisual; // 위층으로 올라가는 계단 외형
+        [SerializeField] GameObject stairsDownVisual; // 아래층으로 내려가는 입구 외형
+
+        [Header("자동 스폰")] // 방 내부 자동 생성 허용 설정
+        [SerializeField] bool allowAutomaticSpawning = true; // 몬스터와 보물 및 함정 생성 허용 여부
+
+        public bool AllowAutomaticSpawning => allowAutomaticSpawning; // 외부 스폰 매니저에 생성 허용 상태 반환
+
+        public void OpenSide(Dir direction) // 지정된 수평 벽 또는 수직 해치를 열고 연결 외형 활성화
         {
-            switch (d)
+            GameObject blocker = GetBlocker(direction); // 현재 방향을 막는 오브젝트 검색
+
+            if (blocker != null) // 차단 오브젝트가 연결되어 있는지 확인
             {
-                case Dir.N: return wallN;
-                case Dir.E: return wallE;
-                case Dir.S: return wallS;
-                default:    return wallW;
+                blocker.SetActive(false); // 연결 방향의 벽 또는 해치 비활성화
+            }
+
+            GameObject verticalVisual = GetVerticalVisual(direction); // 현재 방향의 계단 외형 검색
+
+            if (verticalVisual != null) // 계단 또는 난간 외형이 연결되어 있는지 확인
+            {
+                verticalVisual.SetActive(true); // 연결된 수직 이동 외형 활성화
             }
         }
 
-        public static Dir Opposite(Dir d)
+        GameObject GetBlocker(Dir direction) // 방향에 맞는 수평 벽 또는 수직 해치 반환
         {
-            switch (d)
+            switch (direction) // 전달된 연결 방향 확인
             {
-                case Dir.N: return Dir.S;
-                case Dir.S: return Dir.N;
-                case Dir.E: return Dir.W;
-                default:    return Dir.E;
+                case Dir.N: // 북쪽 방향인지 확인
+                    return wallN; // 북쪽 벽 반환
+
+                case Dir.E: // 동쪽 방향인지 확인
+                    return wallE; // 동쪽 벽 반환
+
+                case Dir.S: // 남쪽 방향인지 확인
+                    return wallS; // 남쪽 벽 반환
+
+                case Dir.W: // 서쪽 방향인지 확인
+                    return wallW; // 서쪽 벽 반환
+
+                case Dir.Up: // 위층 방향인지 확인
+                    return ceilingBlock; // 천장 또는 위층 해치 반환
+
+                case Dir.Down: // 아래층 방향인지 확인
+                    return floorBlock; // 바닥 또는 아래층 해치 반환
+
+                default: // 정의되지 않은 방향 처리
+                    return null; // 차단 오브젝트 없음 반환
+            }
+        }
+
+        GameObject GetVerticalVisual(Dir direction) // 방향에 맞는 계단 또는 난간 외형 반환
+        {
+            switch (direction) // 전달된 수직 방향 확인
+            {
+                case Dir.Up: // 위층 연결인지 확인
+                    return stairsUpVisual; // 올라가는 계단 외형 반환
+
+                case Dir.Down: // 아래층 연결인지 확인
+                    return stairsDownVisual; // 내려가는 입구 외형 반환
+
+                default: // 수평 연결 방향 처리
+                    return null; // 수직 외형 없음 반환
+            }
+        }
+
+        public static Dir Opposite(Dir direction) // 전달된 연결 방향의 반대 방향 반환
+        {
+            switch (direction) // 현재 방향 확인
+            {
+                case Dir.N: // 북쪽 방향인지 확인
+                    return Dir.S; // 남쪽 반환
+
+                case Dir.E: // 동쪽 방향인지 확인
+                    return Dir.W; // 서쪽 반환
+
+                case Dir.S: // 남쪽 방향인지 확인
+                    return Dir.N; // 북쪽 반환
+
+                case Dir.W: // 서쪽 방향인지 확인
+                    return Dir.E; // 동쪽 반환
+
+                case Dir.Up: // 위층 방향인지 확인
+                    return Dir.Down; // 아래층 반환
+
+                default: // 아래층 또는 예외 방향 처리
+                    return Dir.Up; // 위층 반환
             }
         }
     }

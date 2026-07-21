@@ -288,13 +288,13 @@ CharacterController:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Height: 1.8
+  m_Height: 2
   m_Radius: 0.4
   m_SlopeLimit: 45
   m_StepOffset: 0.3
   m_SkinWidth: 0.08
-  m_MinMoveDistance: 0.001
-  m_Center: {x: 0, y: 0, z: 0}
+  m_MinMoveDistance: 0
+  m_Center: {x: 0, y: 1, z: 0}
 --- !u!114 &57911020597041624
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -357,6 +357,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectI.PlayerInteractor
   interactDistance: 3
   rayOrigin: {fileID: 0}
+  showDebug: 1
 --- !u!114 &844759360164300977
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -385,6 +386,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a5395b50cb7899f439393845cda7592f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectI.LightSystem
+  showDebug: 1
 --- !u!114 &288524831453878783
 MonoBehaviour:
   m_ObjectHideFlags: 0

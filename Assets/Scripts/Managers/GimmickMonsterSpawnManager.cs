@@ -155,9 +155,9 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
 
             foreach (Room room in dungeonGenerator.PlacedRooms) // 현재 생성된 모든 방 순회
             {
-                if (room == null) // 방 유효성 확인
+                if (room == null || !room.AllowAutomaticSpawning) // 방 유효성과 자동 스폰 허용 상태 확인
                 {
-                    continue; // 유효하지 않은 방 제외
+                    continue; // 계단 방과 유효하지 않은 방 제외
                 }
 
                 if (skipStartingRoom && room == dungeonGenerator.StartRoom) // 시작 방 제외 설정 확인
