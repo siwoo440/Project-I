@@ -20,6 +20,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         [SerializeField] float collisionCheckRadius = 0.45f; // 몬스터 생성 위치의 충돌 검사 반경
         [SerializeField] int positionSearchAttempts = 30; // 방 안에서 위치를 검색할 최대 횟수
         [SerializeField] float playerSafeDistance = 4f; // 플레이어 주변 몬스터 생성 금지 거리
+        [SerializeField] float navMeshSampleDistance = 2f; // 검색된 생성 위치 주변의 NavMesh 검색 거리
 
         [Header("디버그")] // 디버그 설정 구분
         [SerializeField] bool showDebug = true; // 현재 몬스터 수를 화면에 표시할지 결정
@@ -144,6 +145,17 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
                         Debug.LogWarning($"[MonsterSpawnManager] {room.name}: 안전한 몬스터 위치를 찾지 못했습니다."); // 위치 검색 실패 경고 출력
                         continue; // 현재 몬스터 생성을 건너뜀
                     }
+
+                    if (!DungeonSpawnUtility.TryFindNavMeshPosition( // 물리 검사 위치 주변의 NavMesh 위치 검색
+                        spawnPosition, // 기존에 검색된 몬스터 생성 위치 전달
+                        navMeshSampleDistance, // NavMesh 검색 거리 전달
+                        out Vector3 navMeshPosition)) // 검색된 NavMesh 위치 저장
+                    {
+                        Debug.LogWarning($"[MonsterSpawnManager] {room.name}: 생성 위치 주변에서 NavMesh를 찾지 못했습니다."); // NavMesh 누락 경고 출력
+                        continue; // NavMesh가 없는 위치의 몬스터 생성 건너뜀
+                    }
+
+                    spawnPosition = navMeshPosition; // 최종 생성 위치를 NavMesh 위로 보정
 
                     MonsterAI selectedPrefab = monsterPrefabs[Random.Range(0, monsterPrefabs.Length)]; // 목록에서 몬스터 프리팹 무작위 선택
 

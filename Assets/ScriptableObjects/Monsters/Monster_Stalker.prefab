@@ -12,6 +12,8 @@ GameObject:
   - component: {fileID: 1736582121239849026}
   - component: {fileID: 1225763034555332040}
   - component: {fileID: 1843511728412445422}
+  - component: {fileID: -5720568591096908401}
+  - component: {fileID: -6312534180402734793}
   m_Layer: 0
   m_Name: Monster_Stalker
   m_TagString: Untagged
@@ -53,13 +55,13 @@ CharacterController:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Height: 1.8
-  m_Radius: 0.45
+  m_Height: 2
+  m_Radius: 0.4
   m_SlopeLimit: 45
   m_StepOffset: 0.3
   m_SkinWidth: 0.08
-  m_MinMoveDistance: 0.001
-  m_Center: {x: 0, y: 0.9, z: 0}
+  m_MinMoveDistance: 0
+  m_Center: {x: 0, y: 1, z: 0}
 --- !u!114 &1225763034555332040
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -105,6 +107,47 @@ MonoBehaviour:
   disappearDelay: 0.5
   gravity: -20
   showDebug: 1
+--- !u!195 &-5720568591096908401
+NavMeshAgent:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4542517383082933778}
+  m_Enabled: 1
+  m_AgentTypeID: 0
+  m_Radius: 0.4
+  m_Speed: 3.5
+  m_Acceleration: 20
+  avoidancePriority: 50
+  m_AngularSpeed: 720
+  m_StoppingDistance: 0.1
+  m_AutoTraverseOffMeshLink: 1
+  m_AutoBraking: 0
+  m_AutoRepath: 1
+  m_Height: 2
+  m_BaseOffset: 0
+  m_WalkableMask: 4294967295
+  m_ObstacleAvoidanceType: 4
+--- !u!114 &-6312534180402734793
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4542517383082933778}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9c52a9a30e1fa2e499ed79f3d76f7fa6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectI.MonsterNavigation
+  selfSampleDistance: 2
+  targetSampleDistance: 3
+  repathInterval: 0.15
+  targetMoveThreshold: 0.5
+  stoppingDistance: 0.1
+  acceleration: 20
+  showDebugWarning: 1
 --- !u!1 &5190450057679144431
 GameObject:
   m_ObjectHideFlags: 0

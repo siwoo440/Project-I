@@ -1,5 +1,5 @@
 using UnityEngine; // Unity의 물리 검사, 위치, 수학 기능 사용
-
+using UnityEngine.AI; // 몬스터 생성 위치를 NavMesh 위로 보정하기 위해 사용
 namespace ProjectI // 프로젝트 공통 네임스페이스
 {
     public static class DungeonSpawnUtility // 던전 자동 스폰이 공통으로 사용하는 기능 모음
@@ -140,6 +140,19 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             }
 
             return false; // 모든 검색에서 위치를 찾지 못했음을 반환
+        }
+        public static bool TryFindNavMeshPosition(Vector3 sourcePosition, float sampleDistance, out Vector3 navMeshPosition) // 입력 위치 주변의 이동 가능한 NavMesh 위치 검색
+        {
+            navMeshPosition = sourcePosition; // 검색 실패에 대비해 기존 위치 저장
+            float safeDistance = Mathf.Max(0.1f, sampleDistance); // 검색 거리가 너무 작거나 음수가 되지 않도록 제한
+
+            if (!NavMesh.SamplePosition(sourcePosition, out NavMeshHit hit, safeDistance, NavMesh.AllAreas)) // 주변 NavMesh 위치 검색
+            {
+                return false; // 이동 가능한 위치를 찾지 못했음을 반환
+            }
+
+            navMeshPosition = hit.position; // 검색된 NavMesh 위치 저장
+            return true; // NavMesh 위치 검색 성공 반환
         }
     }
 }

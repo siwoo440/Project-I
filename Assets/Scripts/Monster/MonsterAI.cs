@@ -34,6 +34,7 @@ namespace ProjectI
         State state = State.Patrol;
 
         CharacterController cc;
+        MonsterNavigation navigation; // NavMesh 경로 이동 방향을 제공하는 보조 컴포넌트
         PlayerController player;
         CharacterController playerCC;
         LightSystem playerLight;
@@ -58,6 +59,7 @@ namespace ProjectI
         void Awake()
         {
             cc = GetComponent<CharacterController>();
+            navigation = GetComponent<MonsterNavigation>(); // 같은 오브젝트의 선택적 NavMesh 이동 컴포넌트 검색
             threatFeedback = GetComponent<ThreatFeedback>(); // 같은 오브젝트의 공통 피드백 검색
             health = MaxHealth;
         }
@@ -149,11 +151,42 @@ namespace ProjectI
             patrolTarget = transform.position + new Vector3(r.x, 0f, r.y);
             patrolTimer = Random.Range(2f, 4f);
         }
-        void MoveToward(Vector3 target, float speed)
+        void MoveToward(Vector3 target, float speed) // NavMesh 또는 기존 직선 방향으로 목표에 이동
         {
-            Vector3 d = target - transform.position; d.y = 0f;
-            if (d.sqrMagnitude > 0.01f) { d.Normalize(); FaceDir(d); horiz = d * speed; }
+            Vector3 direction = Vector3.zero; // 이번 프레임에 사용할 수평 이동 방향 초기화
+            bool navigationHandled = false; // NavMesh가 이동 요청을 처리했는지 저장
+
+            if (navigation != null) // NavMesh 이동 컴포넌트가 연결되어 있는지 확인
+            {
+                navigationHandled = navigation.TryGetMoveDirection( // 목표까지의 NavMesh 이동 방향 요청
+                    target, // 이동할 목표 위치 전달
+                    speed, // 현재 FSM에서 사용할 이동속도 전달
+                    out direction); // 계산된 이동 방향 저장
+            }
+
+            if (!navigationHandled) // NavMesh가 없거나 현재 몬스터를 NavMesh에 배치할 수 없는지 확인
+            {
+                direction = target - transform.position; // 기존 방식으로 목표까지의 직선 방향 계산
+                direction.y = 0f; // 수직 방향 제외
+
+                if (direction.sqrMagnitude > 0.01f) // 유효한 직선 방향인지 확인
+                {
+                    direction.Normalize(); // 일정한 이동속도를 위해 단위 방향으로 변환
+                }
+            }
+
+            direction.y = 0f; // NavMesh 방향에서도 수직 이동 제거
+
+            if (direction.sqrMagnitude <= 0.01f) // 이동 가능한 방향이 없는지 확인
+            {
+                return; // 현재 프레임 수평 이동 중단
+            }
+
+            direction.Normalize(); // 경로 방향을 안전한 단위 벡터로 변환
+            FaceDir(direction); // 이동할 통로 방향으로 몬스터 회전
+            horiz = direction * speed; // 기존 CharacterController가 사용할 수평속도 저장
         }
+
         void FaceToward(Vector3 target)
         {
             Vector3 d = target - transform.position; d.y = 0f;
