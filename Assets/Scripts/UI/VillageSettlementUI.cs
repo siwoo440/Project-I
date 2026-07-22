@@ -5,9 +5,9 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
     public class VillageSettlementUI : MonoBehaviour // 마을 보상 정산과 직접 빚 납부 인터페이스
     {
         [Header("납부 조절 단위")] // Inspector 납부 금액 조절 설정 구분
-        [Tooltip("소액 조절 단위")] [SerializeField][Min(1)] int smallStep = 10; // 소액 조절 단위
-        [Tooltip("중간 조절 단위")] [SerializeField][Min(1)] int mediumStep = 100; // 중간 조절 단위
-        [Tooltip("큰 조절 단위")] [SerializeField][Min(1)] int largeStep = 1000; // 큰 조절 단위
+        [Tooltip("소액 조절 단위")][SerializeField][Min(1)] int smallStep = 10; // 소액 조절 단위
+        [Tooltip("중간 조절 단위")][SerializeField][Min(1)] int mediumStep = 100; // 중간 조절 단위
+        [Tooltip("큰 조절 단위")][SerializeField][Min(1)] int largeStep = 1000; // 큰 조절 단위
 
         CampaignManager campaignManager; // 골드와 빚을 관리하는 캠페인 매니저
 
@@ -23,7 +23,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         void Start() // 마을 도착 후 던전 보상 정산과 UI 초기화
         {
             Time.timeScale = 1f; // 던전 종료로 정지된 게임시간 복구
-            Cursor.lockState = CursorLockMode.None; // 마을 UI 조작을 위해 커서 잠금 해제
+            Cursor.lockState = CursorLockMode.None; // 마을 UI 조작을 위한 커서 잠금 해제
             Cursor.visible = true; // 마우스 커서 표시
 
             campaignManager = CampaignManager.Instance; // 영구 캠페인 매니저 가져오기
@@ -47,6 +47,12 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             {
                 Debug.LogWarning("[VillageSettlementUI] 정산할 던전 결과가 없습니다."); // 결과 없음 경고 출력
             }
+        }
+
+        void CloseWindow() // 정산 창 닫기 처리
+        {
+            windowOpen = false; // 정산 창 표시 상태 해제
+            Debug.Log("[VillageSettlementUI] 정산 창을 닫았습니다."); // 버튼 실행 결과 출력
         }
 
         void AdjustPayment(int amount) // 선택한 납부 금액을 안전 범위 안에서 증감
@@ -110,7 +116,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
 
                 if (GUI.Button(new Rect(x + 160f, y + 160f, width - 320f, 45f), "정산 창 닫기")) // 결과 없음 창 닫기 버튼 확인
                 {
-                    windowOpen = false; // 정산 창 닫기
+                    CloseWindow(); // 정산 창 닫기 처리 실행
                 }
 
                 return; // 나머지 정산 UI 표시 중단
@@ -198,9 +204,10 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             GUI.Label(new Rect(x + 20f, y + 250f, width - 40f, 25f), $"남은 빚: {campaignManager.State.RemainingDebt}", centerStyle); // 정산 후 남은 빚 표시
             GUI.Label(new Rect(x + 20f, y + 285f, width - 40f, 25f), $"다음 날짜: {campaignManager.State.CurrentDay}일차", centerStyle); // 다음 날짜 표시
             GUI.Label(new Rect(x + 20f, y + 335f, width - 40f, 35f), campaignResult, titleStyle); // 캠페인 진행 결과 표시
+
             if (GUI.Button(new Rect(x + 150f, y + 375f, width - 300f, 40f), "정산 확인")) // 정산 결과 확인 버튼 입력
             {
-                windowOpen = false; // 정산 창을 닫고 하루 안내 화면 표시 허용
+                CloseWindow(); // 정산 창 닫기 처리 실행
             }
         }
     }

@@ -28,11 +28,20 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             settlementUI = FindFirstObjectByType<VillageSettlementUI>(); // 현재 Scene의 정산 UI 검색
         }
 
-        void Start() // 마을 Scene 시작 시 플레이어 생성과 배치 실행
+        void Start() // 마을 Scene 시작 시 정산 UI 확인과 플레이어 배치
         {
+            if (settlementUI == null) // 정산 UI 연결 여부 확인
+            {
+                settlementUI = FindFirstObjectByType<VillageSettlementUI>(); // 현재 Scene의 정산 UI 자동 검색
+            }
+
+            if (settlementUI == null) // 정산 UI 검색 실패 여부 확인
+            {
+                Debug.LogError("[VillagePlayerSpawner] VillageSettlementUI를 찾을 수 없습니다."); // 정산 UI 누락 오류 출력
+            }
+
             SpawnOrMovePlayer(); // 플레이어를 마차 위 도착 지점에 배치
         }
-
         public void SpawnOrMovePlayer() // 기존 플레이어를 재사용하거나 새 플레이어를 생성
         {
             Transform targetPoint = spawnPoint != null ? spawnPoint : transform; // 실제 도착 위치 결정

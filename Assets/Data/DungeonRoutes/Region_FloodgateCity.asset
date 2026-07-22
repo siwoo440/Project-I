@@ -10,17 +10,19 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4077cfbf0a52423438231fb348932138, type: 3}
-  m_Name: Route_SunkenKeep
+  m_Name: Region_FloodgateCity
   m_EditorClassIdentifier: Assembly-CSharp::ProjectI.DungeonRouteData
-  routeId: sunken_keep
+  routeId: floodgate_city
   displayName: "\uCE68\uC218\uB41C \uC131\uCC44"
   description: "\uBC29\uC774 \uD06C\uACE0 \uC704\uD5D8\uC774 \uB9CE\uC9C0\uB9CC \uB192\uC740
     \uAC00\uCE58\uC758 \uBCF4\uBB3C\uC744 \uAE30\uB300\uD560 \uC218 \uC788\uB294
     \uC131\uCC44."
-  sceneName: Dungeon
-  dangerLevel: 5
-  roomCount: 12
-  monsterSpawnMultiplier: 1.25
+  coreMechanic: "\uD575\uC2EC \uAE30\uBBF9"
+  sceneName: sunken_keep
+  isAvailable: 0
+  dangerGradeData: {fileID: 11400000, guid: 804234b79e2fc7243becbc017b51a5f9, type: 2}
+  minimumRoomCount: 20
+  maximumRoomCount: 24
+  travelCost: 0
   trapSpawnMultiplier: 1.35
-  rewardValueMultiplier: 1.5
   seedOffset: 3300

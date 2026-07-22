@@ -1,6 +1,6 @@
 using UnityEngine; // Unity 기본 기능 사용
 using UnityEngine.SceneManagement; // 선택한 Dungeon Scene 이동 사용
-
+using System.Collections.Generic; // 지역 ID 중복 검사 기능
 namespace ProjectI // 프로젝트 공통 네임스페이스
 {
     public class DungeonSelectionManager : MonoBehaviour // 마을에서 선택한 던전 경로를 Scene 간 보관
@@ -47,7 +47,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
                 selectedRouteIndex = 0; // 선택 번호 기본값 적용
                 return; // 경로 초기화 중단
             }
-
+            ValidateRoutes(); // 등록된 10개 탐사 지역 데이터 검사
             selectedRouteIndex = Mathf.Clamp(defaultRouteIndex, 0, routes.Length - 1); // 기본 경로 번호를 안전 범위로 제한
             Debug.Log($"[DungeonSelection] 기본 경로 — {SelectedRoute.DisplayName}"); // 기본 경로 결과 출력
         }
@@ -80,6 +80,12 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
                 return false; // 던전 경로 선택 실패 반환
             }
 
+            if (!route.IsAvailable) // 선택 지역의 구현 완료 여부 확인
+            {
+                Debug.LogWarning($"[DungeonSelection] 아직 출발할 수 없는 지역: {route.DisplayName}"); // 미구현 지역 안내 출력
+                return false; // 미구현 지역 선택 실패 반환
+            }
+
             selectedRouteIndex = index; // 현재 선택 경로 번호 저장
             Debug.Log($"[DungeonSelection] 경로 선택 — {route.DisplayName}"); // 선택 결과 출력
             return true; // 던전 경로 선택 성공 반환
@@ -92,6 +98,12 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             if (route == null) // 선택된 던전 경로 존재 여부 확인
             {
                 Debug.LogError("[DungeonSelection] 선택된 던전 경로가 없습니다."); // 경로 누락 오류 출력
+                return false; // 던전 출발 실패 반환
+            }
+
+            if (!route.IsAvailable) // 선택한 지역의 출발 가능 여부 확인
+            {
+                Debug.LogWarning($"[DungeonSelection] {route.DisplayName}은 아직 구현되지 않았습니다."); // 미구현 지역 출발 경고
                 return false; // 던전 출발 실패 반환
             }
 
@@ -125,6 +137,66 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             Debug.Log($"[DungeonSelection] {route.DisplayName}으로 출발합니다."); // 던전 출발 결과 출력
             SceneManager.LoadScene(route.SceneName); // 선택된 Dungeon Scene 로드
             return true; // 던전 출발 성공 반환
+        }
+        public bool ValidateRoutes() // 10개 탐사 지역 데이터 전체 검사
+        {
+            bool isValid = true; // 전체 검증 결과 초기화
+
+            if (routes == null || routes.Length != 10) // 탐사 지역 개수 확인
+            {
+                int currentCount = routes != null ? routes.Length : 0; // 현재 등록 개수 계산
+                Debug.LogError($"[DungeonSelection] 탐사 지역은 10개여야 합니다. 현재: {currentCount}개"); // 지역 개수 오류 출력
+                isValid = false; // 검증 실패 상태 저장
+            }
+
+            HashSet<string> routeIds = new HashSet<string>(); // 중복 검사할 지역 ID 목록 생성
+
+            if (routes == null) // 지역 배열 존재 여부 확인
+            {
+                return false; // 배열 누락 검증 실패 반환
+            }
+
+            for (int index = 0; index < routes.Length; index++) // 등록된 모든 지역 순회
+            {
+                DungeonRouteData route = routes[index]; // 현재 번호의 지역 데이터 가져오기
+
+                if (route == null) // 지역 데이터 연결 여부 확인
+                {
+                    Debug.LogError($"[DungeonSelection] Routes의 {index}번 요소가 비어 있습니다."); // 빈 요소 오류 출력
+                    isValid = false; // 검증 실패 상태 저장
+                    continue; // 현재 요소의 나머지 검사 생략
+                }
+
+                if (string.IsNullOrWhiteSpace(route.RouteId)) // 지역 ID 입력 여부 확인
+                {
+                    Debug.LogError($"[DungeonSelection] {route.DisplayName}의 Route ID가 비어 있습니다."); // 빈 ID 오류 출력
+                    isValid = false; // 검증 실패 상태 저장
+                }
+                else if (!routeIds.Add(route.RouteId)) // 동일 ID 등록 여부 확인
+                {
+                    Debug.LogError($"[DungeonSelection] 중복된 Route ID: {route.RouteId}"); // 중복 ID 오류 출력
+                    isValid = false; // 검증 실패 상태 저장
+                }
+
+                if (route.GradeData == null) // 위험 등급 에셋 연결 여부 확인
+                {
+                    Debug.LogError($"[DungeonSelection] {route.DisplayName}의 위험 등급 데이터가 없습니다."); // 등급 누락 오류 출력
+                    isValid = false; // 검증 실패 상태 저장
+                }
+
+                if (route.IsAvailable && string.IsNullOrWhiteSpace(route.SceneName)) // 출발 가능 지역의 Scene 입력 여부 확인
+                {
+                    Debug.LogError($"[DungeonSelection] {route.DisplayName}의 Scene 이름이 비어 있습니다."); // Scene 누락 오류 출력
+                    isValid = false; // 검증 실패 상태 저장
+                }
+            }
+
+            if (isValid) // 전체 데이터 정상 여부 확인
+            {
+                Debug.Log("[DungeonSelection] 탐사 지역 데이터 검증 완료 — 10개 정상"); // 검증 성공 출력
+            }
+
+            return isValid; // 최종 검증 결과 반환
         }
     }
 }

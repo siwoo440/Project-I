@@ -17,7 +17,8 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         GUIStyle warningStyle; // 캠페인 경고 스타일
 
         bool selectionUnlocked; // 마차 도착 후 던전 선택 허용 여부
-
+        const int RoutesPerPage = 3; // 한 페이지에 표시할 지역 카드 수
+        int currentPage; // 현재 표시 중인 지역 페이지
         public bool IsSelectionUnlocked => selectionUnlocked; // 현재 던전 선택 허용 상태 반환
 
         public void LockSelection() // 마차 출발 전 던전 선택 화면 잠금
@@ -86,19 +87,29 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
                 return; // 던전 선택 입력 처리 중단
             }
 
+            if (keyboard.leftArrowKey.wasPressedThisFrame) // 왼쪽 방향키 입력 확인
+            {
+                ChangePage(-1); // 이전 지역 페이지 이동
+            }
+
+            if (keyboard.rightArrowKey.wasPressedThisFrame) // 오른쪽 방향키 입력 확인
+            {
+                ChangePage(1); // 다음 지역 페이지 이동
+            }
+
             if (keyboard.digit1Key.wasPressedThisFrame) // 숫자 1번 입력 확인
             {
-                selectionManager.SelectRoute(0); // 첫 번째 던전 경로 선택
+                TrySelectVisibleRoute(0); // 현재 페이지 첫 번째 지역 선택
             }
 
             if (keyboard.digit2Key.wasPressedThisFrame) // 숫자 2번 입력 확인
             {
-                selectionManager.SelectRoute(1); // 두 번째 던전 경로 선택
+                TrySelectVisibleRoute(1); // 현재 페이지 두 번째 지역 선택
             }
 
             if (keyboard.digit3Key.wasPressedThisFrame) // 숫자 3번 입력 확인
             {
-                selectionManager.SelectRoute(2); // 세 번째 던전 경로 선택
+                TrySelectVisibleRoute(2); // 현재 페이지 세 번째 지역 선택
             }
 
             if (keyboard.f5Key.wasPressedThisFrame) // F5 출발 입력 확인
@@ -106,7 +117,28 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
                 TryDepart(); // 선택한 던전으로 출발 시도
             }
         }
+        void TrySelectVisibleRoute(int localIndex) // 현재 페이지의 지역 선택
+        {
+            int routeIndex = currentPage * RoutesPerPage + localIndex; // 전체 지역 번호 계산
 
+            if (selectionManager == null || routeIndex >= selectionManager.RouteCount) // 매니저와 지역 번호 확인
+            {
+                return; // 유효하지 않은 지역 선택 중단
+            }
+
+            selectionManager.SelectRoute(routeIndex); // 계산된 전체 지역 번호 선택
+        }
+
+        void ChangePage(int direction) // 던전 선택 페이지 변경
+        {
+            if (selectionManager == null) // 던전 선택 매니저 존재 여부 확인
+            {
+                return; // 페이지 변경 중단
+            }
+
+            int pageCount = Mathf.Max(1, Mathf.CeilToInt(selectionManager.RouteCount / (float)RoutesPerPage)); // 전체 페이지 수 계산
+            currentPage = Mathf.Clamp(currentPage + direction, 0, pageCount - 1); // 페이지 번호 범위 제한
+        }
         void TryDepart() // 정산 창과 던전 선택 상태를 확인한 뒤 출발
         {
             if (settlementUI != null && settlementUI.IsWindowOpen) // 마을 정산 창이 열려 있는지 확인
@@ -192,51 +224,84 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             warningStyle.normal.textColor = new Color(1f, 0.55f, 0.25f); // 경고 문구를 주황색으로 설정
         }
 
-        void DrawRouteSelection(float x, float y, float width) // 선택 가능한 던전 경로 목록 표시
+        void DrawRouteSelection(float x, float y, float width) // 선택 가능한 탐사 지역 목록 표시
         {
-            GUI.Label(new Rect(x + 10f, y + 15f, width - 20f, 45f), "마차 — 다음 목적지 선택", titleStyle); // 던전 선택 제목 표시
-            GUI.Label(new Rect(x + 20f, y + 60f, width - 40f, 25f), $"{campaignManager.State.CurrentDay}일차 / 남은 빚 {campaignManager.State.RemainingDebt}골드", centerStyle); // 현재 날짜와 빚 표시
+            int pageCount = Mathf.Max(1, Mathf.CeilToInt(selectionManager.RouteCount / (float)RoutesPerPage)); // 전체 페이지 수 계산
+            currentPage = Mathf.Clamp(currentPage, 0, pageCount - 1); // 현재 페이지 범위 보정
+            int firstRouteIndex = currentPage * RoutesPerPage; // 현재 페이지 첫 지역 번호 계산
 
-            float cardWidth = 260f; // 경로 카드 너비
-            float cardHeight = 290f; // 경로 카드 높이
-            float cardStartX = x + 40f; // 첫 경로 카드 가로 위치
-            float cardY = y + 105f; // 경로 카드 세로 위치
+            GUI.Label(new Rect(x + 10f, y + 10f, width - 20f, 40f), "마차 — 다음 탐사 지역 선택", titleStyle); // 탐사 지역 선택 제목 표시
+            GUI.Label(new Rect(x + 20f, y + 50f, width - 40f, 25f), $"{campaignManager.State.CurrentDay}일차 / 남은 빚 {campaignManager.State.RemainingDebt}골드", centerStyle); // 날짜와 빚 표시
+            GUI.Label(new Rect(x + 20f, y + 75f, width - 40f, 22f), $"{currentPage + 1} / {pageCount} 페이지 · 방향키로 이동", centerStyle); // 페이지 정보 표시
 
-            for (int i = 0; i < selectionManager.RouteCount && i < 3; i++) // 최대 세 개 던전 경로 순회
+            float cardWidth = 260f; // 지역 카드 너비
+            float cardHeight = 290f; // 지역 카드 높이
+            float cardStartX = x + 40f; // 첫 지역 카드 가로 위치
+            float cardY = y + 105f; // 지역 카드 세로 위치
+
+            for (int localIndex = 0; localIndex < RoutesPerPage; localIndex++) // 현재 페이지의 카드 위치 순회
             {
-                DungeonRouteData route = selectionManager.GetRoute(i); // 현재 번호의 던전 경로 가져오기
+                int routeIndex = firstRouteIndex + localIndex; // 전체 지역 번호 계산
 
-                if (route == null) // 던전 경로 데이터 존재 여부 확인
+                if (routeIndex >= selectionManager.RouteCount) // 전체 지역 개수 초과 여부 확인
                 {
-                    continue; // 비어 있는 경로 건너뜀
+                    break; // 남은 빈 카드 처리 중단
                 }
 
-                float cardX = cardStartX + i * 280f; // 현재 경로 카드 가로 위치 계산
-                bool selected = route == selectionManager.SelectedRoute; // 현재 경로 선택 여부 확인
-                string selectedText = selected ? "선택됨" : $"[{i + 1}] 선택"; // 선택 상태 버튼 문구 계산
+                DungeonRouteData route = selectionManager.GetRoute(routeIndex); // 현재 지역 데이터 가져오기
 
-                GUI.Box(new Rect(cardX, cardY, cardWidth, cardHeight), string.Empty); // 던전 경로 카드 배경 표시
-                GUI.Label(new Rect(cardX + 10f, cardY + 15f, cardWidth - 20f, 35f), route.DisplayName, titleStyle); // 던전 이름 표시
-                GUI.Label(new Rect(cardX + 10f, cardY + 60f, cardWidth - 20f, 60f), route.Description, centerStyle); // 던전 설명 표시
-                GUI.Label(new Rect(cardX + 10f, cardY + 125f, cardWidth - 20f, 22f), $"위험도: {route.DangerLevel}/5", centerStyle); // 던전 위험도 표시
-                GUI.Label(new Rect(cardX + 10f, cardY + 150f, cardWidth - 20f, 22f), $"방: {route.RoomCount}개", centerStyle); // 방 개수 표시
-                GUI.Label(new Rect(cardX + 10f, cardY + 175f, cardWidth - 20f, 22f), $"보물 가치: {route.RewardValueMultiplier:F2}배", centerStyle); // 보물 가치 배율 표시
-                GUI.Label(new Rect(cardX + 10f, cardY + 200f, cardWidth - 20f, 22f), $"몬스터: {route.MonsterSpawnMultiplier:F2}배", centerStyle); // 몬스터 생성 배율 표시
-                GUI.Label(new Rect(cardX + 10f, cardY + 225f, cardWidth - 20f, 22f), $"함정: {route.TrapSpawnMultiplier:F2}배", centerStyle); // 함정 생성 배율 표시
-
-                if (GUI.Button(new Rect(cardX + 30f, cardY + 250f, cardWidth - 60f, 30f), selectedText)) // 던전 경로 선택 버튼 입력 확인
+                if (route == null) // 지역 데이터 존재 여부 확인
                 {
-                    selectionManager.SelectRoute(i); // 현재 카드의 던전 경로 선택
+                    continue; // 빈 지역 데이터 건너뜀
                 }
+
+                float cardX = cardStartX + localIndex * 280f; // 현재 지역 카드 가로 위치 계산
+                bool selected = route == selectionManager.SelectedRoute; // 현재 지역 선택 여부 확인
+                string costText = route.TravelCost > 0 ? $"{route.TravelCost:N0}골드" : "무료"; // 이동 비용 표시 문구 계산
+                string buttonText = !route.IsAvailable ? "미구현" : selected ? "선택됨" : $"[{localIndex + 1}] 선택"; // 지역 버튼 문구 계산
+
+                GUI.Box(new Rect(cardX, cardY, cardWidth, cardHeight), string.Empty); // 지역 카드 배경 표시
+                GUI.Label(new Rect(cardX + 10f, cardY + 10f, cardWidth - 20f, 35f), route.DisplayName, titleStyle); // 지역 이름 표시
+                GUI.Label(new Rect(cardX + 10f, cardY + 48f, cardWidth - 20f, 45f), route.Description, centerStyle); // 지역 설명 표시
+                GUI.Label(new Rect(cardX + 10f, cardY + 98f, cardWidth - 20f, 22f), $"위험도: {route.DangerGradeLabel} / {route.DangerLevel}단계", centerStyle); // 위험 등급 표시
+                GUI.Label(new Rect(cardX + 10f, cardY + 123f, cardWidth - 20f, 22f), $"방: {route.MinimumRoomCount}~{route.MaximumRoomCount}개", centerStyle); // 지역 방 수 표시
+                GUI.Label(new Rect(cardX + 10f, cardY + 148f, cardWidth - 20f, 22f), $"마차 비용: {costText}", centerStyle); // 이동 비용 표시
+                GUI.Label(new Rect(cardX + 10f, cardY + 173f, cardWidth - 20f, 22f), $"수익: ×{route.RewardValueMultiplier:F2}", centerStyle); // 수익 배율 표시
+                GUI.Label(new Rect(cardX + 10f, cardY + 198f, cardWidth - 20f, 42f), $"기믹: {route.CoreMechanic}", centerStyle); // 핵심 기믹 표시
+
+                bool previousGuiEnabled = GUI.enabled; // 기존 GUI 활성 상태 저장
+                GUI.enabled = route.IsAvailable; // 미구현 지역 버튼 비활성화
+
+                if (GUI.Button(new Rect(cardX + 30f, cardY + 250f, cardWidth - 60f, 30f), buttonText)) // 지역 선택 버튼 입력 확인
+                {
+                    selectionManager.SelectRoute(routeIndex); // 현재 카드의 탐사 지역 선택
+                }
+
+                GUI.enabled = previousGuiEnabled; // 기존 GUI 활성 상태 복구
             }
 
-            DungeonRouteData selectedRoute = selectionManager.SelectedRoute; // 현재 선택한 던전 경로 가져오기
-            string departText = selectedRoute != null ? $"[F5] {selectedRoute.DisplayName}으로 출발" : "[F5] 출발"; // 선택 경로를 포함한 출발 문구 계산
-
-            if (GUI.Button(new Rect(x + 250f, y + 420f, width - 500f, 50f), departText)) // 선택한 던전 출발 버튼 입력 확인
+            if (GUI.Button(new Rect(x + 40f, y + 430f, 130f, 35f), "← 이전")) // 이전 페이지 버튼 입력 확인
             {
-                TryDepart(); // 선택한 던전으로 출발 시도
+                ChangePage(-1); // 이전 페이지 이동
             }
+
+            if (GUI.Button(new Rect(x + width - 170f, y + 430f, 130f, 35f), "다음 →")) // 다음 페이지 버튼 입력 확인
+            {
+                ChangePage(1); // 다음 페이지 이동
+            }
+
+            DungeonRouteData selectedRoute = selectionManager.SelectedRoute; // 현재 선택한 지역 가져오기
+            string departText = selectedRoute != null ? $"[F5] {selectedRoute.DisplayName}으로 출발" : "[F5] 출발"; // 출발 버튼 문구 계산
+            bool canDepart = selectedRoute != null && selectedRoute.IsAvailable; // 출발 가능 상태 계산
+            bool previousDepartEnabled = GUI.enabled; // 기존 GUI 활성 상태 저장
+            GUI.enabled = canDepart; // 미구현 지역 출발 버튼 차단
+
+            if (GUI.Button(new Rect(x + 250f, y + 420f, width - 500f, 50f), departText)) // 선택한 지역 출발 버튼 입력 확인
+            {
+                TryDepart(); // 선택한 탐사 지역으로 출발 시도
+            }
+
+            GUI.enabled = previousDepartEnabled; // 기존 GUI 활성 상태 복구
         }
 
         void DrawCampaignEnd(float x, float y, float width, string title, string message) // 캠페인 종료로 인한 출발 차단 화면 표시

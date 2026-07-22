@@ -10,16 +10,18 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4077cfbf0a52423438231fb348932138, type: 3}
-  m_Name: Route_Mine
+  m_Name: Region_GrayMarshAbbey
   m_EditorClassIdentifier: Assembly-CSharp::ProjectI.DungeonRouteData
-  routeId: mine
+  routeId: gray_marsh_abbey
   displayName: "\uBC84\uB824\uC9C4 \uAD11\uC0B0"
   description: "\uBAAC\uC2A4\uD130\uC640 \uD568\uC815\uC774 \uADE0\uD615 \uC788\uAC8C
     \uB4F1\uC7A5\uD558\uB294 \uC624\uB798\uB41C \uAD11\uC0B0."
-  sceneName: Dungeon
-  dangerLevel: 3
-  roomCount: 10
-  monsterSpawnMultiplier: 1
+  coreMechanic: "\uD575\uC2EC \uAE30\uBBF9"
+  sceneName: mine
+  isAvailable: 0
+  dangerGradeData: {fileID: 11400000, guid: 804234b79e2fc7243becbc017b51a5f9, type: 2}
+  minimumRoomCount: 20
+  maximumRoomCount: 24
+  travelCost: 0
   trapSpawnMultiplier: 1
-  rewardValueMultiplier: 1.25
   seedOffset: 2200

@@ -156,26 +156,27 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             connections.Clear(); // 기존 연결 초기화
             placed[Vector3Int.zero] = fixedStartRoom; // 고정 시작 방을 원점 셀로 등록
 
-            DungeonRouteData selectedRoute = DungeonSelectionManager.Instance != null // 선택 관리자 확인
-                ? DungeonSelectionManager.Instance.SelectedRoute // 선택한 경로 가져오기
-                : null; // 선택 경로 없음
+            DungeonRouteData selectedRoute = DungeonSelectionManager.Instance != null // 던전 선택 매니저 존재 여부 확인
+    ? DungeonSelectionManager.Instance.SelectedRoute // 선택한 탐사 지역 데이터 가져오기
+    : null; // 선택 지역 없음 처리
 
-            int targetRoomCount = selectedRoute != null // 선택 경로 확인
-                ? Mathf.Max(8, selectedRoute.RoomCount) // 경로 방 개수 적용
-                : Mathf.Max(8, roomCount); // 기본 방 개수 적용
-
-            if (randomSeed) // 무작위 시드 확인
+            if (randomSeed) // 무작위 시드 사용 여부 확인
             {
-                seed = Random.Range(int.MinValue, int.MaxValue); // 새 무작위 시드 생성
+                seed = Random.Range(int.MinValue, int.MaxValue); // 새로운 무작위 시드 생성
             }
 
-            if (selectedRoute != null) // 선택 경로 확인
+            if (selectedRoute != null) // 선택한 탐사 지역 존재 여부 확인
             {
-                seed = unchecked(seed + selectedRoute.SeedOffset); // 경로별 시드 오프셋 적용
+                seed = unchecked(seed + selectedRoute.SeedOffset); // 지역별 시드 보정값 적용
             }
 
-            Random.InitState(seed); // Unity 무작위 상태 초기화
-            BuildRandomLayout(targetRoomCount); // 기본 던전 좌표 생성
+            Random.InitState(seed); // 방 수와 배치에 사용할 무작위 상태 초기화
+
+            int targetRoomCount = selectedRoute != null // 선택한 탐사 지역 존재 여부 확인
+                ? selectedRoute.GetRandomRoomCount() // 지역별 최소와 최대 사이의 방 수 결정
+                : Mathf.Max(8, roomCount); // 선택 지역이 없을 때 기존 기본 방 수 적용
+
+            BuildRandomLayout(targetRoomCount); // 최종 방 수를 이용한 던전 좌표 생성
 
             if (guaranteeUpperFloor && SafeMaximumFloor >= 1) // 위층 보장 설정 확인
             {
