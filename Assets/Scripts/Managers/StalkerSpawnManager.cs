@@ -6,23 +6,23 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
     public class StalkerSpawnManager : MonoBehaviour // 던전당 확률적으로 한 마리의 스토커를 생성
     {
         [Header("필수 참조")] // Inspector 필수 참조 설정 구분
-        [SerializeField] DungeonGenerator dungeonGenerator; // 생성 완료 이벤트와 방 목록을 제공하는 던전 생성기
-        [SerializeField] Stalker stalkerPrefab; // 자동 생성할 스토커 프리팹
+        [Tooltip("생성 완료 이벤트와 방 목록을 제공하는 던전 생성기")] [SerializeField] DungeonGenerator dungeonGenerator; // 생성 완료 이벤트와 방 목록을 제공하는 던전 생성기
+        [Tooltip("자동 생성할 스토커 프리팹")] [SerializeField] Stalker stalkerPrefab; // 자동 생성할 스토커 프리팹
 
         [Header("출현 설정")] // Inspector 스토커 출현 설정 구분
-        [SerializeField][Range(0f, 1f)] float spawnChance = 0.2f; // 던전당 스토커가 출현할 확률
-        [SerializeField] bool skipStartingRoom = true; // 시작 방을 스토커 생성 후보에서 제외할지 결정
+        [Tooltip("던전당 스토커가 출현할 확률")] [SerializeField][Range(0f, 1f)] float spawnChance = 0.2f; // 던전당 스토커가 출현할 확률
+        [Tooltip("시작 방을 스토커 생성 후보에서 제외할지 결정")] [SerializeField] bool skipStartingRoom = true; // 시작 방을 스토커 생성 후보에서 제외할지 결정
 
         [Header("스폰 위치")] // Inspector 스토커 위치 설정 구분
-        [SerializeField] float wallMargin = 1.5f; // 벽으로부터 떨어질 최소 거리
-        [SerializeField] float positionSearchHeight = 1.1f; // 장애물 검사를 실행할 바닥 위 높이
-        [SerializeField] float groundOffset = 0f; // 스토커 루트를 바닥에서 띄울 높이
-        [SerializeField] float collisionCheckRadius = 0.45f; // 스토커 생성 위치의 충돌 검사 반경
-        [SerializeField] int positionSearchAttempts = 30; // 각 방에서 안전한 위치를 검색할 최대 횟수
-        [SerializeField] float playerSafeDistance = 8f; // 플레이어 주변 스토커 생성 금지 거리
+        [Tooltip("벽으로부터 떨어질 최소 거리")] [SerializeField] float wallMargin = 1.5f; // 벽으로부터 떨어질 최소 거리
+        [Tooltip("장애물 검사를 실행할 바닥 위 높이")] [SerializeField] float positionSearchHeight = 1.1f; // 장애물 검사를 실행할 바닥 위 높이
+        [Tooltip("스토커 루트를 바닥에서 띄울 높이")] [SerializeField] float groundOffset = 0f; // 스토커 루트를 바닥에서 띄울 높이
+        [Tooltip("스토커 생성 위치의 충돌 검사 반경")] [SerializeField] float collisionCheckRadius = 0.45f; // 스토커 생성 위치의 충돌 검사 반경
+        [Tooltip("각 방에서 안전한 위치를 검색할 최대 횟수")] [SerializeField] int positionSearchAttempts = 30; // 각 방에서 안전한 위치를 검색할 최대 횟수
+        [Tooltip("플레이어 주변 스토커 생성 금지 거리")] [SerializeField] float playerSafeDistance = 8f; // 플레이어 주변 스토커 생성 금지 거리
 
         [Header("디버그")] // Inspector 디버그 설정 구분
-        [SerializeField] bool showDebug = true; // 스토커 생성 상태를 화면에 표시할지 결정
+        [Tooltip("스토커 생성 상태를 화면에 표시할지 결정")] [SerializeField] bool showDebug = true; // 스토커 생성 상태를 화면에 표시할지 결정
 
         readonly List<Stalker> spawnedStalkers = new List<Stalker>(); // 이 매니저가 생성한 스토커 목록
         PlayerController player; // 스토커의 목표로 지정할 플레이어

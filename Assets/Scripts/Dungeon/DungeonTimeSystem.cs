@@ -10,13 +10,13 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
     public class DungeonTimeSystem : MonoBehaviour // 던전 제한시간 관리 컴포넌트
     {
         [Header("시간 설정")] // 던전 시간 설정 구분
-        [SerializeField] float realDurationSeconds = 18f * 60f; // 던전 제한시간 18분
-        [SerializeField] float startHour = 6f; // 던전 시작 게임시간
-        [SerializeField] float endHour = 24f; // 던전 종료 게임시간
-        [SerializeField] float wagonProximity = 5f; // 마차 탈출 인정 거리
+        [Tooltip("던전 제한시간 18분")] [SerializeField] float realDurationSeconds = 18f * 60f; // 던전 제한시간 18분
+        [Tooltip("던전 시작 게임시간")] [SerializeField] float startHour = 6f; // 던전 시작 게임시간
+        [Tooltip("던전 종료 게임시간")] [SerializeField] float endHour = 24f; // 던전 종료 게임시간
+        [Tooltip("마차 탈출 인정 거리")] [SerializeField] float wagonProximity = 5f; // 마차 탈출 인정 거리
 
         [Header("디버그")] // 임시 시간 UI 설정 구분
-        [SerializeField] bool showDebug = true; // 기존 OnGUI 시간 표시 여부
+        [Tooltip("기존 OnGUI 시간 표시 여부")] [SerializeField] bool showDebug = true; // 기존 OnGUI 시간 표시 여부
 
         float elapsed; // 현재까지 흐른 현실시간
         bool deadlineFired; // 제한시간 처리 완료 여부
@@ -57,10 +57,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
 
         void OnDeadline() // 제한시간 종료 시 탈출 또는 유기 판정
         {
-            if (wagon != null && wagon.HasLeft) // 기존 탈출 성공 여부 확인
-            {
-                return; // 탈출 후 유기 처리 방지
-            }
+            if (wagon != null && wagon.HasLeft) { return; } // 기존 탈출 성공 여부 확인 ->  탈출 후 유기 처리 방지
 
             bool isNearWagon = wagon != null && playerInventory != null && Vector3.Distance(playerInventory.transform.position, wagon.transform.position) <= wagonProximity; // 마차 근처 여부 계산
 
@@ -87,13 +84,13 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         {
             if (showDebug && DebugUIToggleController.PlayerInfoVisible) // Inspector 설정과 F1 표시 상태 확인
             {
-                int gameHour = Mathf.FloorToInt(GameHour); // 현재 게임시간의 시 계산
-                int gameMinute = Mathf.FloorToInt((GameHour - gameHour) * 60f); // 현재 게임시간의 분 계산
-                int remainingSeconds = Mathf.CeilToInt(RemainingSeconds); // 남은 현실시간의 정수 초 계산
+                int gameHour            = Mathf.FloorToInt(GameHour); // 현재 게임시간의 시 계산
+                int gameMinute          = Mathf.FloorToInt((GameHour - gameHour) * 60f); // 현재 게임시간의 분 계산
+                int remainingSeconds    = Mathf.CeilToInt(RemainingSeconds); // 남은 현실시간의 정수 초 계산
                 GUIStyle timeStyle = new GUIStyle(GUI.skin.label); // 기존 시간 표시 스타일 생성
 
-                timeStyle.fontSize = 14; // 기존 시간 글자 크기 설정
-                timeStyle.alignment = TextAnchor.UpperRight; // 기존 시간 오른쪽 정렬 설정
+                timeStyle.fontSize      = 14; // 기존 시간 글자 크기 설정
+                timeStyle.alignment     = TextAnchor.UpperRight; // 기존 시간 오른쪽 정렬 설정
 
                 GUI.Label(new Rect(Screen.width - 230f, 6f, 220f, 22f), $"던전 시간 {gameHour:00}:{gameMinute:00}   (남은 {remainingSeconds / 60:00}:{remainingSeconds % 60:00})", timeStyle); // 기존 시간 정보 표시
             }

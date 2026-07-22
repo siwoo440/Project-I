@@ -5,10 +5,10 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
     public class VillageDepartureLever : MonoBehaviour, IInteractable // 마차 출발을 요청하는 상호작용 레버
     {
         [Header("마차 연결")] // Inspector 마차 참조 구분
-        [SerializeField] VillageWagonTravelController wagonTravel; // 출발시킬 마차 이동 컴포넌트
+        [Tooltip("출발시킬 마차 이동 컴포넌트")] [SerializeField] VillageWagonTravelController wagonTravel; // 출발시킬 마차 이동 컴포넌트
 
         [Header("레버 연출")] // Inspector 임시 레버 연출 설정 구분
-        [SerializeField] Vector3 pulledLocalEulerAngles = new Vector3(0f, 0f, 45f); // 작동 후 레버 로컬 회전값
+        [Tooltip("작동 후 레버 로컬 회전값")] [SerializeField] Vector3 pulledLocalEulerAngles = new Vector3(0f, 0f, 45f); // 작동 후 레버 로컬 회전값
 
         bool pulled; // 레버 사용 완료 여부
 

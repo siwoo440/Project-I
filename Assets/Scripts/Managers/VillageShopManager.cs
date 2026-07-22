@@ -8,9 +8,9 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
     [System.Serializable] // Inspector에서 상점 재고 항목을 설정할 수 있도록 지정
     public class VillageShopStockEntry // 상점 아이템 하나의 프리팹과 재고 설정
     {
-        [SerializeField] PickupItem itemPrefab; // 구매 후 Dungeon에 전달할 아이템 프리팹
-        [SerializeField][Min(1)] int stockPerVisit = 1; // 마을 방문마다 제공할 재고
-        [SerializeField][Min(0)] int fallbackPrice = 50; // ItemData 가격 누락 시 사용할 가격
+        [Tooltip("구매 후 Dungeon에 전달할 아이템 프리팹")] [SerializeField] PickupItem itemPrefab; // 구매 후 Dungeon에 전달할 아이템 프리팹
+        [Tooltip("마을 방문마다 제공할 재고")] [SerializeField][Min(1)] int stockPerVisit = 1; // 마을 방문마다 제공할 재고
+        [Tooltip("ItemData 가격 누락 시 사용할 가격")] [SerializeField][Min(0)] int fallbackPrice = 50; // ItemData 가격 누락 시 사용할 가격
 
         int remainingStock; // 현재 마을 방문에서 남은 재고
 
@@ -59,11 +59,11 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         public static VillageShopManager Instance { get; private set; } // 현재 활성 상점 관리자 접근점
 
         [Header("Scene 설정")] // Inspector Scene 이름 설정 구분
-        [SerializeField] string villageSceneName = "Village"; // 상점 재고를 갱신할 마을 Scene 이름
-        [SerializeField] string dungeonSceneName = "Dungeon"; // 구매품을 전달할 던전 Scene 이름
+        [Tooltip("상점 재고를 갱신할 마을 Scene 이름")] [SerializeField] string villageSceneName = "Village"; // 상점 재고를 갱신할 마을 Scene 이름
+        [Tooltip("구매품을 전달할 던전 Scene 이름")] [SerializeField] string dungeonSceneName = "Dungeon"; // 구매품을 전달할 던전 Scene 이름
 
         [Header("상점 재고")] // Inspector 판매 아이템 설정 구분
-        [SerializeField] VillageShopStockEntry[] stockEntries; // 마을 상점 판매 목록
+        [Tooltip("마을 상점 판매 목록")] [SerializeField] VillageShopStockEntry[] stockEntries; // 마을 상점 판매 목록
 
         readonly List<PickupItem> pendingItemPrefabs = new List<PickupItem>(); // 다음 Dungeon에 전달할 구매품 프리팹 목록
 

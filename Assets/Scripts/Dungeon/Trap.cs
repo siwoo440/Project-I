@@ -15,26 +15,26 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
     public class Trap : MonoBehaviour // 플레이어 진입을 감지해 피해를 주는 함정
     {
         [Header("함정 설정")] // Inspector 함정 설정 구분
-        [SerializeField] TrapType trapType = TrapType.Spike; // 현재 프리팹의 함정 종류
-        [SerializeField] float damage = 20f; // 일반 함정이 플레이어에게 줄 피해
-        [SerializeField] float activationDelay = 0f; // 플레이어 감지 후 실제 발동까지의 지연시간
-        [SerializeField] float cooldown = 1.5f; // 재발동이 가능해질 때까지의 대기시간
-        [SerializeField] bool oneShot = false; // 한 번 발동한 뒤 영구 비활성화할지 결정
+        [Tooltip("현재 프리팹의 함정 종류")] [SerializeField] TrapType trapType = TrapType.Spike; // 현재 프리팹의 함정 종류
+        [Tooltip("일반 함정이 플레이어에게 줄 피해")] [SerializeField] float damage = 20f; // 일반 함정이 플레이어에게 줄 피해
+        [Tooltip("플레이어 감지 후 실제 발동까지의 지연시간")] [SerializeField] float activationDelay = 0f; // 플레이어 감지 후 실제 발동까지의 지연시간
+        [Tooltip("재발동이 가능해질 때까지의 대기시간")] [SerializeField] float cooldown = 1.5f; // 재발동이 가능해질 때까지의 대기시간
+        [Tooltip("한 번 발동한 뒤 영구 비활성화할지 결정")] [SerializeField] bool oneShot = false; // 한 번 발동한 뒤 영구 비활성화할지 결정
 
         [Header("상태 이상")] // Inspector 함정 상태 이상 설정 구분
-        [SerializeField] bool applyBleeding; // 발동 시 출혈 적용 여부
-        [SerializeField] float bleedingDuration = 8f; // 출혈 지속시간
-        [SerializeField] float bleedingDamagePerTick = 4f; // 출혈 1회 피해량
-        [SerializeField] float bleedingTickInterval = 2f; // 출혈 피해 간격
-        [SerializeField] bool applySlow; // 발동 시 둔화 적용 여부
-        [SerializeField] float slowDuration = 5f; // 둔화 지속시간
-        [SerializeField][Range(0.1f, 1f)] float slowMultiplier = 0.6f; // 둔화 이동속도 배율
+        [Tooltip("발동 시 출혈 적용 여부")] [SerializeField] bool applyBleeding; // 발동 시 출혈 적용 여부
+        [Tooltip("출혈 지속시간")] [SerializeField] float bleedingDuration = 8f; // 출혈 지속시간
+        [Tooltip("출혈 1회 피해량")] [SerializeField] float bleedingDamagePerTick = 4f; // 출혈 1회 피해량
+        [Tooltip("출혈 피해 간격")] [SerializeField] float bleedingTickInterval = 2f; // 출혈 피해 간격
+        [Tooltip("발동 시 둔화 적용 여부")] [SerializeField] bool applySlow; // 발동 시 둔화 적용 여부
+        [Tooltip("둔화 지속시간")] [SerializeField] float slowDuration = 5f; // 둔화 지속시간
+        [Tooltip("둔화 이동속도 배율")] [SerializeField][Range(0.1f, 1f)] float slowMultiplier = 0.6f; // 둔화 이동속도 배율
 
         [Header("피드백")] // Inspector 함정 피드백 설정 구분
-        [SerializeField] Vector3 feedbackOffset = new Vector3(0f, 0.2f, 0f); // 함정 루트 기준 피드백 발생 위치
+        [Tooltip("함정 루트 기준 피드백 발생 위치")] [SerializeField] Vector3 feedbackOffset = new Vector3(0f, 0.2f, 0f); // 함정 루트 기준 피드백 발생 위치
 
         [Header("디버그")] // 디버그 설정 구분
-        [SerializeField] bool showDebug = true; // 함정 발동 로그를 출력할지 결정
+        [Tooltip("함정 발동 로그를 출력할지 결정")] [SerializeField] bool showDebug = true; // 함정 발동 로그를 출력할지 결정
 
         BoxCollider triggerCollider; // 플레이어를 감지할 Trigger Collider
         Rigidbody trapRigidbody; // Trigger 이벤트를 안정적으로 발생시킬 Rigidbody
@@ -55,10 +55,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
 
         void OnTriggerEnter(Collider other) // 다른 Collider가 함정 영역에 진입했을 때 호출
         {
-            if (!canActivate) // 함정이 재사용 대기 중인지 확인
-            {
-                return; // 중복 발동을 방지
-            }
+            if (!canActivate) { return; }// 함정이 재사용 대기 중인지 확인 // 중복 발동을 방지
 
             PlayerController player = other.GetComponentInParent<PlayerController>(); // 진입한 Collider에서 플레이어 검색
 
@@ -75,10 +72,6 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             }
             StartCoroutine(ActivateTrap(player)); // 발동 지연과 피해 처리 시작
         }
-
-
-
-
 
         IEnumerator ActivateTrap(PlayerController player) // 설정된 지연 후 플레이어에게 함정 효과 적용
         {
@@ -122,7 +115,6 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
                     }
                 }
 
-
                 if (threatFeedback != null) // 함정 피드백 존재 여부 확인
                 {
                     Vector3 feedbackPosition = transform.position + feedbackOffset; // 함정 발동 피드백 위치 계산
@@ -155,14 +147,9 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         {
             switch (trapType) // 현재 함정 종류 확인
             {
-                case TrapType.Spike: // 가시 함정 처리
-                    return "가시 함정"; // 가시 함정 이름 반환
-
-                case TrapType.Axe: // 도끼 함정 처리
-                    return "도끼 함정"; // 도끼 함정 이름 반환
-
-                default: // 즉사 함정 처리
-                    return "즉사 함정"; // 즉사 함정 이름 반환
+                case TrapType.Spike:    return "가시 함정"; // 가시 함정 처리// 가시 함정 이름 반환
+                case TrapType.Axe:      return "도끼 함정"; // 도끼 함정 처리// 도끼 함정 이름 반환
+                default:                return "즉사 함정"; // 즉사 함정 처리// 즉사 함정 이름 반환
             }
         }
     }

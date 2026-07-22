@@ -7,7 +7,7 @@ namespace ProjectI
     /// </summary>
     public class WagonCargo : MonoBehaviour, IInteractable
     {
-        [SerializeField] Wagon wagon;
+        [Tooltip("확보한 회수품을 전달할 부모 Wagon 컴포넌트")] [SerializeField] Wagon wagon;
 
         void Awake() { if (wagon == null) wagon = GetComponentInParent<Wagon>(); }
         public string GetPrompt() => "[E] 마차에 싣기";

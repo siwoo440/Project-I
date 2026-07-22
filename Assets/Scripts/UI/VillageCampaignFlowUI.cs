@@ -7,10 +7,10 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
     public class VillageCampaignFlowUI : MonoBehaviour // 마을 날짜 안내와 다음 던전 출발 및 캠페인 결과 담당
     {
         [Header("Scene 설정")] // Inspector Scene 설정 구분
-        [SerializeField] string dungeonSceneName = "Dungeon"; // 다음 탐험에 사용할 Dungeon Scene 이름
+        [Tooltip("다음 탐험에 사용할 Dungeon Scene 이름")] [SerializeField] string dungeonSceneName = "Dungeon"; // 다음 탐험에 사용할 Dungeon Scene 이름
 
         [Header("임시 화면")] // Inspector OnGUI 설정 구분
-        [SerializeField] bool showFlowPanel = true; // 날짜와 출발 안내 패널 표시 여부
+        [Tooltip("날짜와 출발 안내 패널 표시 여부")] [SerializeField] bool showFlowPanel = true; // 날짜와 출발 안내 패널 표시 여부
         bool selectionUnlocked; // 마차 도착 후 던전 선택 허용 여부
 
         CampaignManager campaignManager; // 캠페인 날짜와 빚 상태 관리 매니저

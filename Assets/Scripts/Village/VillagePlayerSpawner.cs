@@ -6,12 +6,12 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
     public class VillagePlayerSpawner : MonoBehaviour // 마을 도착 시 플레이어를 마차 위에 배치
     {
         [Header("플레이어 설정")] // Inspector 플레이어 설정 구분
-        [SerializeField] PlayerController playerPrefab; // 마을에 생성할 플레이어 프리팹
-        [SerializeField] Transform spawnPoint; // 플레이어가 배치될 마차 위 지점
-        [SerializeField] bool reuseScenePlayer = true; // Scene에 있는 기존 플레이어 재사용 여부
+        [Tooltip("마을에 생성할 플레이어 프리팹")] [SerializeField] PlayerController playerPrefab; // 마을에 생성할 플레이어 프리팹
+        [Tooltip("플레이어가 배치될 마차 위 지점")] [SerializeField] Transform spawnPoint; // 플레이어가 배치될 마차 위 지점
+        [Tooltip("Scene에 있는 기존 플레이어 재사용 여부")] [SerializeField] bool reuseScenePlayer = true; // Scene에 있는 기존 플레이어 재사용 여부
 
         [Header("마을 UI")] // Inspector 마을 UI 설정 구분
-        [SerializeField] VillageSettlementUI settlementUI; // 정산 창 상태 확인용 UI
+        [Tooltip("정산 창 상태 확인용 UI")] [SerializeField] VillageSettlementUI settlementUI; // 정산 창 상태 확인용 UI
 
         PlayerController currentPlayer; // 현재 마을에 배치된 플레이어
         PlayerInteractor currentInteractor; // 플레이어 상호작용 컴포넌트

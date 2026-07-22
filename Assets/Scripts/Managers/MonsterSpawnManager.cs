@@ -6,24 +6,24 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
     public class MonsterSpawnManager : MonoBehaviour // 던전의 몬스터 자동 생성을 담당
     {
         [Header("필수 참조")] // Inspector 필수 참조 설정 구분
-        [SerializeField] DungeonGenerator dungeonGenerator; // 생성 완료 이벤트와 방 목록을 제공하는 던전 생성기
-        [SerializeField] MonsterAI[] monsterPrefabs; // 자동 생성할 몬스터 프리팹 목록
+        [Tooltip("생성 완료 이벤트와 방 목록을 제공하는 던전 생성기")] [SerializeField] DungeonGenerator dungeonGenerator; // 생성 완료 이벤트와 방 목록을 제공하는 던전 생성기
+        [Tooltip("자동 생성할 몬스터 프리팹 목록")] [SerializeField] MonsterAI[] monsterPrefabs; // 자동 생성할 몬스터 프리팹 목록
 
         [Header("방별 몬스터 수")] // 방별 몬스터 수 설정 구분
-        [SerializeField] int minMonstersPerRoom = 1; // 방 하나의 최소 기본 몬스터 수
-        [SerializeField] int maxMonstersPerRoom = 2; // 방 하나의 최대 기본 몬스터 수
-        [SerializeField] bool skipStartingRoom = true; // 시작 방에서 몬스터를 생성하지 않을지 결정
+        [Tooltip("방 하나의 최소 기본 몬스터 수")] [SerializeField] int minMonstersPerRoom = 1; // 방 하나의 최소 기본 몬스터 수
+        [Tooltip("방 하나의 최대 기본 몬스터 수")] [SerializeField] int maxMonstersPerRoom = 2; // 방 하나의 최대 기본 몬스터 수
+        [Tooltip("시작 방에서 몬스터를 생성하지 않을지 결정")] [SerializeField] bool skipStartingRoom = true; // 시작 방에서 몬스터를 생성하지 않을지 결정
 
         [Header("스폰 위치")] // 몬스터 위치 설정 구분
-        [SerializeField] float wallMargin = 1.5f; // 벽으로부터 떨어질 최소 거리
-        [SerializeField] float spawnHeight = 1.1f; // 바닥에서 몬스터를 생성할 높이
-        [SerializeField] float collisionCheckRadius = 0.45f; // 몬스터 생성 위치의 충돌 검사 반경
-        [SerializeField] int positionSearchAttempts = 30; // 방 안에서 위치를 검색할 최대 횟수
-        [SerializeField] float playerSafeDistance = 4f; // 플레이어 주변 몬스터 생성 금지 거리
-        [SerializeField] float navMeshSampleDistance = 2f; // 검색된 생성 위치 주변의 NavMesh 검색 거리
+        [Tooltip("벽으로부터 떨어질 최소 거리")] [SerializeField] float wallMargin = 1.5f; // 벽으로부터 떨어질 최소 거리
+        [Tooltip("바닥에서 몬스터를 생성할 높이")] [SerializeField] float spawnHeight = 1.1f; // 바닥에서 몬스터를 생성할 높이
+        [Tooltip("몬스터 생성 위치의 충돌 검사 반경")] [SerializeField] float collisionCheckRadius = 0.45f; // 몬스터 생성 위치의 충돌 검사 반경
+        [Tooltip("방 안에서 위치를 검색할 최대 횟수")] [SerializeField] int positionSearchAttempts = 30; // 방 안에서 위치를 검색할 최대 횟수
+        [Tooltip("플레이어 주변 몬스터 생성 금지 거리")] [SerializeField] float playerSafeDistance = 4f; // 플레이어 주변 몬스터 생성 금지 거리
+        [Tooltip("검색된 생성 위치 주변의 NavMesh 검색 거리")] [SerializeField] float navMeshSampleDistance = 2f; // 검색된 생성 위치 주변의 NavMesh 검색 거리
 
         [Header("디버그")] // 디버그 설정 구분
-        [SerializeField] bool showDebug = true; // 현재 몬스터 수를 화면에 표시할지 결정
+        [Tooltip("현재 몬스터 수를 화면에 표시할지 결정")] [SerializeField] bool showDebug = true; // 현재 몬스터 수를 화면에 표시할지 결정
 
         readonly List<MonsterAI> spawnedMonsters = new List<MonsterAI>(); // 이 매니저가 생성한 몬스터 목록
         Transform player; // 플레이어 위치를 확인하기 위한 Transform 참조

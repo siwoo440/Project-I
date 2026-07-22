@@ -16,12 +16,12 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         }
 
         [Header("Scene 설정")] // Inspector Scene 이름 설정 구분
-        [SerializeField] string dungeonSceneName = "Dungeon"; // 탐험 포기 버튼을 표시할 던전 Scene 이름
-        [SerializeField] string villageSceneName = "Village"; // 메인 메뉴 버튼을 표시할 마을 Scene 이름
-        [SerializeField] string mainMenuSceneName = "MainMenu"; // 마을에서 돌아갈 메인 메뉴 Scene 이름
+        [Tooltip("탐험 포기 버튼을 표시할 던전 Scene 이름")] [SerializeField] string dungeonSceneName = "Dungeon"; // 탐험 포기 버튼을 표시할 던전 Scene 이름
+        [Tooltip("메인 메뉴 버튼을 표시할 마을 Scene 이름")] [SerializeField] string villageSceneName = "Village"; // 메인 메뉴 버튼을 표시할 마을 Scene 이름
+        [Tooltip("마을에서 돌아갈 메인 메뉴 Scene 이름")] [SerializeField] string mainMenuSceneName = "MainMenu"; // 마을에서 돌아갈 메인 메뉴 Scene 이름
 
         [Header("설정 화면 연결")] // Inspector 설정 UI 연결 구분
-        [SerializeField] GameSettingsUI settingsUI; // 일시정지 메뉴에서 사용할 게임 설정 화면
+        [Tooltip("일시정지 메뉴에서 사용할 게임 설정 화면")] [SerializeField] GameSettingsUI settingsUI; // 일시정지 메뉴에서 사용할 게임 설정 화면
 
         bool isPaused; // 현재 게임 일시정지 여부
         bool leavingScene; // 현재 다른 Scene으로 이동 중인지 여부

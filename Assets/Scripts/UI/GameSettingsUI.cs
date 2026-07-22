@@ -5,7 +5,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
     public class GameSettingsUI : MonoBehaviour // 메인 메뉴 게임 설정 화면 관리
     {
         [Header("설정 연결")] // Inspector 설정 관리자 연결 구분
-        [SerializeField] GameSettingsManager settingsManager; // 설정값을 저장하고 적용할 관리자
+        [Tooltip("설정값을 저장하고 적용할 관리자")] [SerializeField] GameSettingsManager settingsManager; // 설정값을 저장하고 적용할 관리자
 
         bool windowOpen; // 현재 설정 화면 표시 여부
         float draftSensitivity = 1f; // 화면에서 편집 중인 마우스 감도

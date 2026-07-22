@@ -4,21 +4,39 @@ using UnityEngine.InputSystem;
 namespace ProjectI
 {
     /// <summary>
-    /// 카메라 전방으로 레이캐스트해 상호작용 대상 감지 + E(상호작용) / Q(선택 아이템 버리기). (기획서 PART 4.7)
+    /// 카메라 전방으로 레이캐스트해 E 일반 상호작용과 F 길게 누르기 상호작용을 감지. (기획서 PART 4.7)
     /// </summary>
     public class PlayerInteractor : MonoBehaviour
     {
-        [SerializeField] float interactDistance = 3f;
-        [SerializeField] Transform rayOrigin;   // 카메라 (없으면 자동)
+        [Tooltip("플레이어가 조준하여 상호작용할 수 있는 최대 거리(m)")] [SerializeField] float interactDistance = 3f;
+        [Tooltip("카메라 (없으면 자동)")] [SerializeField] Transform rayOrigin;   // 카메라 (없으면 자동)
 
         [Header("디버그")] // 임시 OnGUI 설정 구분
-        [SerializeField] bool showDebug = true; // 기존 OnGUI 표시 여부
+        [Tooltip("기존 OnGUI 표시 여부")] [SerializeField] bool showDebug = true; // 기존 OnGUI 표시 여부
 
         public InventorySystem Inventory { get; private set; } // 현재 플레이어 인벤토리 반환
-        public string CurrentPrompt => current != null ? current.GetPrompt() : string.Empty; // HUD에 현재 상호작용 문구 전달
+        public string CurrentPrompt // HUD에 현재 상호작용 문구 전달
+        {
+            get
+            {
+                if (currentHold != null) // 길게 누르기 대상 존재 여부 확인
+                {
+                    return currentHold.GetHoldPrompt(HoldProgress); // 진행률 포함 안내 반환
+                }
 
-        public event System.Action Interacted; // E 상호작용이 실행된 사실 전달
-        IInteractable current;
+                return current != null ? current.GetPrompt() : string.Empty; // 일반 상호작용 안내 반환
+            }
+        }
+
+        public float HoldProgress => currentHold != null // 현재 길게 누르기 진행률 반환
+            ? Mathf.Clamp01(holdElapsed / Mathf.Max(0.01f, currentHold.HoldDuration)) // 안전한 진행률 계산
+            : 0f; // 대상 없음 진행률
+
+        public event System.Action Interacted; // 일반 또는 길게 누르기 상호작용 완료 전달
+        IInteractable current; // 현재 일반 상호작용 대상
+        IHoldInteractable currentHold; // 현재 길게 누르기 상호작용 대상
+        float holdElapsed; // 현재 F 입력 유지시간
+        bool holdCompleted; // 같은 입력의 중복 완료 방지
         PlayerController playerController; // 회복 아이템 효과를 받을 플레이어
         void Awake()
         {
@@ -37,7 +55,14 @@ namespace ProjectI
             DetectTarget();
 
             var kb = Keyboard.current;
-            if (kb == null) return;
+            if (kb == null) // 키보드 존재 여부 확인
+            {
+                ResetHoldInteraction(); // 입력 유지 상태 초기화
+                return; // 입력 처리 중단
+            }
+
+            HandleHoldInteraction(kb); // F 길게 누르기 상호작용 처리
+
             if (kb.eKey.wasPressedThisFrame && current != null) // E 입력과 상호작용 대상 존재 여부 확인
             {
                 current.Interact(this); // 현재 대상의 상호작용 실행
@@ -49,6 +74,43 @@ namespace ProjectI
             {
                 TryUseSelectedRecoveryItem(); // 현재 선택한 회복 아이템 사용 시도
             }
+        }
+
+        void HandleHoldInteraction(Keyboard keyboard) // F 길게 누르기 입력 처리
+        {
+            if (currentHold == null) // 길게 누르기 대상 존재 여부 확인
+            {
+                ResetHoldInteraction(); // 남은 진행 상태 초기화
+                return; // 처리 중단
+            }
+
+            if (!keyboard.fKey.isPressed) // F키 유지 여부 확인
+            {
+                ResetHoldInteraction(); // 입력 취소 시 진행 초기화
+                return; // 처리 중단
+            }
+
+            if (holdCompleted) // 이미 완료된 입력인지 확인
+            {
+                return; // 중복 완료 방지
+            }
+
+            holdElapsed += Time.deltaTime; // 현재 프레임 시간 누적
+
+            if (holdElapsed < Mathf.Max(0.01f, currentHold.HoldDuration)) // 필요한 유지시간 도달 여부 확인
+            {
+                return; // 입력 유지 계속
+            }
+
+            holdCompleted = true; // 완료 상태 우선 저장
+            currentHold.CompleteHold(this); // 대상의 길게 누르기 완료 처리
+            Interacted?.Invoke(); // 상호작용 완료 이벤트 전달
+        }
+
+        void ResetHoldInteraction() // 길게 누르기 진행 상태 초기화
+        {
+            holdElapsed = 0f; // 누적시간 초기화
+            holdCompleted = false; // 완료 상태 초기화
         }
 
         void TryUseSelectedRecoveryItem() // 현재 선택한 회복 아이템 사용
@@ -84,10 +146,22 @@ namespace ProjectI
 
         void DetectTarget()
         {
-            current = null;
-            if (rayOrigin == null) return;
-            if (Physics.Raycast(rayOrigin.position, rayOrigin.forward, out RaycastHit hit, interactDistance))
-                current = hit.collider.GetComponentInParent<IInteractable>();
+            IInteractable detected = null; // 새 일반 상호작용 대상
+            IHoldInteractable detectedHold = null; // 새 길게 누르기 대상
+
+            if (rayOrigin != null && Physics.Raycast(rayOrigin.position, rayOrigin.forward, out RaycastHit hit, interactDistance)) // 전방 대상 감지
+            {
+                detected = hit.collider.GetComponentInParent<IInteractable>(); // 일반 상호작용 컴포넌트 검색
+                detectedHold = hit.collider.GetComponentInParent<IHoldInteractable>(); // 길게 누르기 컴포넌트 검색
+            }
+
+            if (!ReferenceEquals(currentHold, detectedHold)) // 길게 누르기 대상 변경 여부 확인
+            {
+                ResetHoldInteraction(); // 대상 변경 시 진행 초기화
+            }
+
+            current = detected; // 현재 일반 상호작용 대상 갱신
+            currentHold = detectedHold; // 현재 길게 누르기 대상 갱신
         }
 
         void OnGUI() // 기존 임시 조준점과 상호작용 문구 표시
@@ -99,9 +173,9 @@ namespace ProjectI
 
             GUI.Label(new Rect(Screen.width / 2f - 4f, Screen.height / 2f - 10f, 20f, 20f), "+"); // 임시 조준점 표시
 
-            if (current != null) // 상호작용 대상 존재 여부 확인
+            if (current != null || currentHold != null) // 상호작용 대상 존재 여부 확인
             {
-                GUI.Label(new Rect(Screen.width / 2f - 120f, Screen.height / 2f + 12f, 240f, 20f), current.GetPrompt()); // 임시 상호작용 문구 표시
+                GUI.Label(new Rect(Screen.width / 2f - 120f, Screen.height / 2f + 12f, 240f, 20f), CurrentPrompt); // 임시 상호작용 문구 표시
             }
         }
     }

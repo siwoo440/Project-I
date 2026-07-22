@@ -7,19 +7,19 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
     public class Stalker : MonoBehaviour // 목표 플레이어를 지속적으로 추적해 즉사시키는 특수 몬스터
     {
         [Header("추적 설정")] // Inspector 추적 설정 구분
-        [SerializeField] float moveSpeed = 5.2f; // 플레이어를 추적하는 이동속도
-        [SerializeField] float rotationSpeed = 10f; // 플레이어 방향으로 회전하는 속도
-        [SerializeField] float activationDelay = 3f; // 생성 후 추적을 시작하기 전 유예시간
+        [Tooltip("플레이어를 추적하는 이동속도")] [SerializeField] float moveSpeed = 5.2f; // 플레이어를 추적하는 이동속도
+        [Tooltip("플레이어 방향으로 회전하는 속도")] [SerializeField] float rotationSpeed = 10f; // 플레이어 방향으로 회전하는 속도
+        [Tooltip("생성 후 추적을 시작하기 전 유예시간")] [SerializeField] float activationDelay = 3f; // 생성 후 추적을 시작하기 전 유예시간
 
         [Header("즉사 공격")] // Inspector 즉사 공격 설정 구분
-        [SerializeField] float killRange = 1.3f; // 플레이어에게 즉사 공격을 적용할 거리
-        [SerializeField] float disappearDelay = 0.5f; // 즉사 공격 후 스토커가 제거되기까지의 시간
+        [Tooltip("플레이어에게 즉사 공격을 적용할 거리")] [SerializeField] float killRange = 1.3f; // 플레이어에게 즉사 공격을 적용할 거리
+        [Tooltip("즉사 공격 후 스토커가 제거되기까지의 시간")] [SerializeField] float disappearDelay = 0.5f; // 즉사 공격 후 스토커가 제거되기까지의 시간
 
         [Header("이동 물리")] // Inspector 이동 물리 설정 구분
-        [SerializeField] float gravity = -20f; // 스토커에 적용할 중력 가속도
+        [Tooltip("스토커에 적용할 중력 가속도")] [SerializeField] float gravity = -20f; // 스토커에 적용할 중력 가속도
 
         [Header("디버그")] // Inspector 디버그 설정 구분
-        [SerializeField] bool showDebug = true; // 스토커 상태 로그를 출력할지 결정
+        [Tooltip("스토커 상태 로그를 출력할지 결정")] [SerializeField] bool showDebug = true; // 스토커 상태 로그를 출력할지 결정
 
         CharacterController controller; // 스토커 이동을 처리할 CharacterController
         MonsterAI monsterAI; // 체력과 방어력 및 피격 처리를 담당할 기존 MonsterAI
@@ -73,10 +73,8 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
                     {
                         horizontalVelocity = direction * moveSpeed; // 플레이어 방향으로 추적 이동속도 계산
                     }
-                    else // 플레이어가 즉사 공격 범위 안에 들어온 경우
-                    {
-                        KillTarget(); // 플레이어에게 즉사 공격 적용
-                    }
+                    else { KillTarget(); } // 플레이어가 즉사 공격 범위 안에 들어온 경우// 플레이어에게 즉사 공격 적용
+                   
                 }
             }
 
@@ -92,10 +90,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
 
         public void Activate(PlayerController target) // 지정된 플레이어를 목표로 스토커 추적 활성화
         {
-            if (target == null) // 전달된 목표 플레이어가 없는지 확인
-            {
-                return; // 추적 활성화 중단
-            }
+            if (target == null) { return; } // 전달된 목표 플레이어가 없는지 확인 // 추적 활성화 중단
 
             targetPlayer = target; // 전달된 플레이어를 현재 추적 목표로 저장
             trackingStartTime = Time.time + Mathf.Max(0f, activationDelay); // 유예시간을 적용한 실제 추적 시작 시각 계산
@@ -110,16 +105,8 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
 
         bool CanTrackTarget() // 현재 플레이어를 추적할 수 있는 상태인지 확인
         {
-            if (!isTracking || hasAttacked) // 추적이 비활성화되었거나 이미 공격했는지 확인
-            {
-                return false; // 추적 불가능 반환
-            }
-
-            if (targetPlayer == null || targetPlayer.IsDead) // 목표가 없거나 이미 사망했는지 확인
-            {
-                return false; // 추적 불가능 반환
-            }
-
+            if (!isTracking || hasAttacked) { return false; } // 추적이 비활성화되었거나 이미 공격했는지 확인 ->추적 불가능 반환
+            if (targetPlayer == null || targetPlayer.IsDead) { return false; } // 목표가 없거나 이미 사망했는지 확인 ->추적 불가능 반환
             return Time.time >= trackingStartTime; // 유예시간이 끝났는지 반환
         }
 

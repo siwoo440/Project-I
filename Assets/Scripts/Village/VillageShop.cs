@@ -6,9 +6,9 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
     public class VillageShop : MonoBehaviour, IInteractable // 플레이어 상호작용형 마을 상점
     {
         [Header("상점 설정")] // Inspector 상점 설정 구분
-        [SerializeField] string shopName = "도굴단 물자 상점"; // 화면과 상호작용에 표시할 상점 이름
-        [SerializeField] VillageShopManager shopManager; // 재고와 구매품 전달을 관리할 매니저
-        [SerializeField] VillageSettlementUI settlementUI; // 정산 창 상태 확인용 UI
+        [Tooltip("화면과 상호작용에 표시할 상점 이름")] [SerializeField] string shopName = "도굴단 물자 상점"; // 화면과 상호작용에 표시할 상점 이름
+        [Tooltip("재고와 구매품 전달을 관리할 매니저")] [SerializeField] VillageShopManager shopManager; // 재고와 구매품 전달을 관리할 매니저
+        [Tooltip("정산 창 상태 확인용 UI")] [SerializeField] VillageSettlementUI settlementUI; // 정산 창 상태 확인용 UI
 
         PlayerInteractor customerInteractor; // 현재 상점을 이용하는 플레이어 상호작용 컴포넌트
         PlayerController customerController; // 현재 상점을 이용하는 플레이어 이동 컴포넌트

@@ -11,11 +11,11 @@ namespace ProjectI
     public class PickupItem : MonoBehaviour, IInteractable, ICarryable
     {
         [Header("데이터 (없으면 아래 fallback 사용)")]
-        [SerializeField] ItemData data;
-        [SerializeField] WeaponData weaponData; // 무기일 경우 지정 (PlayerCombat이 참조)
-        [SerializeField] string fallbackName = ""; // 비우면 오브젝트(GameObject) 이름 사용
-        [SerializeField] float fallbackWeight = 1f;
-        [SerializeField] int fallbackSlots = 1;
+        [Tooltip("아이템 이름과 무게 및 상점 정보를 가져올 ItemData 에셋")] [SerializeField] ItemData data;
+        [Tooltip("무기일 경우 지정 (PlayerCombat이 참조)")] [SerializeField] WeaponData weaponData; // 무기일 경우 지정 (PlayerCombat이 참조)
+        [Tooltip("비우면 오브젝트(GameObject) 이름 사용")] [SerializeField] string fallbackName = ""; // 비우면 오브젝트(GameObject) 이름 사용
+        [Tooltip("ItemData가 없을 때 적용할 기본 무게(kg)")] [SerializeField] float fallbackWeight = 1f;
+        [Tooltip("ItemData가 없을 때 차지할 기본 인벤토리 슬롯 수")] [SerializeField] int fallbackSlots = 1;
 
         Rigidbody rb;
         Collider col;

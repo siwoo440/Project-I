@@ -7,21 +7,21 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
     public class SmilingStatue : MonoBehaviour // 시선을 돌리면 움직이는 웃는 석상
     {
         [Header("활성화")] // Inspector 활성화 설정 구분
-        [SerializeField] float activationDelay = 1.5f; // 생성 후 행동 시작 대기시간
+        [Tooltip("생성 후 행동 시작 대기시간")] [SerializeField] float activationDelay = 1.5f; // 생성 후 행동 시작 대기시간
 
 
         [Header("이동")] // Inspector 이동 설정 구분
-        [SerializeField] float moveSpeed = 2.6f; // 시선이 벗어났을 때 이동속도
-        [SerializeField] float rotationSpeed = 8f; // 플레이어 방향 회전속도
-        [SerializeField] float gravity = -20f; // 석상 중력 가속도
+        [Tooltip("시선이 벗어났을 때 이동속도")] [SerializeField] float moveSpeed = 2.6f; // 시선이 벗어났을 때 이동속도
+        [Tooltip("플레이어 방향 회전속도")] [SerializeField] float rotationSpeed = 8f; // 플레이어 방향 회전속도
+        [Tooltip("석상 중력 가속도")] [SerializeField] float gravity = -20f; // 석상 중력 가속도
 
         [Header("공격")] // Inspector 공격 설정 구분
-        [SerializeField] float attackDamage = 45f; // 석상 공격 피해량
-        [SerializeField] float attackRange = 1.45f; // 석상 공격 사거리
-        [SerializeField] float attackCooldown = 1.2f; // 석상 공격 대기시간
+        [Tooltip("석상 공격 피해량")] [SerializeField] float attackDamage = 45f; // 석상 공격 피해량
+        [Tooltip("석상 공격 사거리")] [SerializeField] float attackRange = 1.45f; // 석상 공격 사거리
+        [Tooltip("석상 공격 대기시간")] [SerializeField] float attackCooldown = 1.2f; // 석상 공격 대기시간
 
         [Header("디버그")] // Inspector 디버그 설정 구분
-        [SerializeField] bool showDebug = true; // 상태 변경 로그 표시 여부
+        [Tooltip("상태 변경 로그 표시 여부")] [SerializeField] bool showDebug = true; // 상태 변경 로그 표시 여부
 
         CharacterController controller; // 석상 CharacterController
         MonsterAI monsterAI; // 석상 체력과 방어력 처리용 AI

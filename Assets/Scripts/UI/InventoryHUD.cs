@@ -8,23 +8,23 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
     public class InventoryHUD : MonoBehaviour // Canvas 인벤토리와 핫바 관리 컴포넌트
     {
         [Header("게임 참조")] // 인벤토리 시스템 참조 구분
-        [SerializeField] InventorySystem inventorySystem; // 현재 플레이어 인벤토리
+        [Tooltip("현재 플레이어 인벤토리")] [SerializeField] InventorySystem inventorySystem; // 현재 플레이어 인벤토리
 
         [Header("슬롯 생성")] // 동적 슬롯 생성 설정 구분
-        [SerializeField] InventorySlotUI slotPrefab; // 생성할 슬롯 UI 프리팹
-        [SerializeField] Transform slotContainer; // 생성한 슬롯을 배치할 부모 Transform
+        [Tooltip("생성할 슬롯 UI 프리팹")] [SerializeField] InventorySlotUI slotPrefab; // 생성할 슬롯 UI 프리팹
+        [Tooltip("생성한 슬롯을 배치할 부모 Transform")] [SerializeField] Transform slotContainer; // 생성한 슬롯을 배치할 부모 Transform
 
         [Header("인벤토리 정보")] // 인벤토리 정보 UI 참조 구분
-        [SerializeField] TMP_Text inventorySummaryText; // 사용 슬롯과 전체 슬롯 정보 글자
-        [SerializeField] TMP_Text weightText; // 현재 무게와 제한 무게 글자
-        [SerializeField] Image weightFillImage; // 현재 무게 비율 게이지
-        [SerializeField] TMP_Text selectedItemText; // 현재 선택 아이템 상세 정보
-        [SerializeField] TMP_Text twoHandText; // 두손 운반 상태 안내 글자
+        [Tooltip("사용 슬롯과 전체 슬롯 정보 글자")] [SerializeField] TMP_Text inventorySummaryText; // 사용 슬롯과 전체 슬롯 정보 글자
+        [Tooltip("현재 무게와 제한 무게 글자")] [SerializeField] TMP_Text weightText; // 현재 무게와 제한 무게 글자
+        [Tooltip("현재 무게 비율 게이지")] [SerializeField] Image weightFillImage; // 현재 무게 비율 게이지
+        [Tooltip("현재 선택 아이템 상세 정보")] [SerializeField] TMP_Text selectedItemText; // 현재 선택 아이템 상세 정보
+        [Tooltip("두손 운반 상태 안내 글자")] [SerializeField] TMP_Text twoHandText; // 두손 운반 상태 안내 글자
 
         [Header("무게 색상")] // 무게 상태별 게이지 색상 구분
-        [SerializeField] Color normalWeightColor = new Color(0.18f, 0.68f, 0.47f, 1f); // 가벼운 무게 게이지 색상
-        [SerializeField] Color warningWeightColor = new Color(0.92f, 0.65f, 0.12f, 1f); // 무거운 상태 경고 색상
-        [SerializeField] Color overweightColor = new Color(0.9f, 0.13f, 0.08f, 1f); // 무게 제한 초과 색상
+        [Tooltip("가벼운 무게 게이지 색상")] [SerializeField] Color normalWeightColor = new Color(0.18f, 0.68f, 0.47f, 1f); // 가벼운 무게 게이지 색상
+        [Tooltip("무거운 상태 경고 색상")] [SerializeField] Color warningWeightColor = new Color(0.92f, 0.65f, 0.12f, 1f); // 무거운 상태 경고 색상
+        [Tooltip("무게 제한 초과 색상")] [SerializeField] Color overweightColor = new Color(0.9f, 0.13f, 0.08f, 1f); // 무게 제한 초과 색상
 
         readonly List<InventorySlotUI> slotViews = new List<InventorySlotUI>(); // 현재 생성된 모든 슬롯 UI 목록
 

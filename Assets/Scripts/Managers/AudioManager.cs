@@ -9,11 +9,11 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         public static AudioManager Instance { get; private set; } // 현재 활성 AudioManager 접근점
 
         [Header("AudioMixer 연결")] // Inspector AudioMixer 출력 연결 구분
-        [SerializeField] AudioMixerGroup sfxOutputGroup; // 풀링된 3D AudioSource가 출력될 SFX 그룹
+        [Tooltip("풀링된 3D AudioSource가 출력될 SFX 그룹")] [SerializeField] AudioMixerGroup sfxOutputGroup; // 풀링된 3D AudioSource가 출력될 SFX 그룹
 
         [Header("AudioSource 풀")] // Inspector 오디오 풀 설정 구분
-        [SerializeField][Min(1)] int initialPoolSize = 12; // 시작할 때 미리 생성할 AudioSource 수
-        [SerializeField][Min(1)] int maximumPoolSize = 32; // 동시에 사용할 수 있는 최대 AudioSource 수
+        [Tooltip("시작할 때 미리 생성할 AudioSource 수")] [SerializeField][Min(1)] int initialPoolSize = 12; // 시작할 때 미리 생성할 AudioSource 수
+        [Tooltip("동시에 사용할 수 있는 최대 AudioSource 수")] [SerializeField][Min(1)] int maximumPoolSize = 32; // 동시에 사용할 수 있는 최대 AudioSource 수
 
         readonly Queue<AudioSource> availableSources = new Queue<AudioSource>(); // 재사용 대기 중인 AudioSource 목록
         readonly List<AudioSource> activeSources = new List<AudioSource>(); // 현재 재생 중인 AudioSource 목록

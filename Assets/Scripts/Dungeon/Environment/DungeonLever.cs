@@ -5,13 +5,13 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
     public class DungeonLever : MonoBehaviour, IInteractable // 연결된 문을 작동시키는 레버
     {
         [Header("연결 설정")] // Inspector 연결 설정 구분
-        [SerializeField] DungeonDoor targetDoor; // 레버가 작동시킬 문
-        [SerializeField] Transform leverHandle; // 회전시킬 레버 손잡이
+        [Tooltip("레버가 작동시킬 문")] [SerializeField] DungeonDoor targetDoor; // 레버가 작동시킬 문
+        [Tooltip("회전시킬 레버 손잡이")] [SerializeField] Transform leverHandle; // 회전시킬 레버 손잡이
 
         [Header("레버 설정")] // Inspector 레버 설정 구분
-        [SerializeField] Vector3 offRotation = new Vector3(0f, 0f, -30f); // 사용 전 손잡이 로컬 회전
-        [SerializeField] Vector3 onRotation = new Vector3(0f, 0f, 30f); // 사용 후 손잡이 로컬 회전
-        [SerializeField] bool oneUse = true; // 한 번만 사용할 수 있는지 결정
+        [Tooltip("사용 전 손잡이 로컬 회전")] [SerializeField] Vector3 offRotation = new Vector3(0f, 0f, -30f); // 사용 전 손잡이 로컬 회전
+        [Tooltip("사용 후 손잡이 로컬 회전")] [SerializeField] Vector3 onRotation = new Vector3(0f, 0f, 30f); // 사용 후 손잡이 로컬 회전
+        [Tooltip("한 번만 사용할 수 있는지 결정")] [SerializeField] bool oneUse = true; // 한 번만 사용할 수 있는지 결정
 
         bool isOn; // 현재 레버 작동 상태 저장
         bool hasBeenUsed; // 일회용 레버 사용 여부 저장

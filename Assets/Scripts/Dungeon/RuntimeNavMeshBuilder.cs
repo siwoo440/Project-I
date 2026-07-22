@@ -11,40 +11,31 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
     public class RuntimeNavMeshBuilder : MonoBehaviour // 절차적 던전용 런타임 NavMesh 생성 담당
     {
         [Header("필수 참조")] // Inspector 필수 참조 구분
-        [SerializeField] DungeonGenerator dungeonGenerator; // 던전 생성 완료 이벤트를 제공하는 생성기
-        [SerializeField] NavMeshSurface navMeshSurface; // 실제 NavMesh를 생성할 Surface
+        [Tooltip("던전 생성 완료 이벤트를 제공하는 생성기")] [SerializeField] DungeonGenerator dungeonGenerator; // 던전 생성 완료 이벤트를 제공하는 생성기
+        [Tooltip("실제 NavMesh를 생성할 Surface")] [SerializeField] NavMeshSurface navMeshSurface; // 실제 NavMesh를 생성할 Surface
 
         [Header("검증 설정")] // NavMesh 생성 결과 확인 설정 구분
-        [SerializeField] float startRoomSampleDistance = 4f; // 시작 방 주변 NavMesh 검색 거리
-        [SerializeField] bool showDebug = true; // NavMesh 생성 결과 로그 출력 여부
+        [Tooltip("시작 방 주변 NavMesh 검색 거리")] [SerializeField] float startRoomSampleDistance = 4f; // 시작 방 주변 NavMesh 검색 거리
+        [Tooltip("NavMesh 생성 결과 로그 출력 여부")] [SerializeField] bool showDebug = true; // NavMesh 생성 결과 로그 출력 여부
 
         public bool IsReady { get; private set; } // 현재 NavMesh 사용 가능 여부
         public event Action NavigationBuilt; // 외부 시스템에 NavMesh 생성 완료 전달
 
         void Awake() // 던전 생성기와 NavMeshSurface 참조 초기화
         {
-            if (dungeonGenerator == null) // DungeonGenerator가 Inspector에 연결되지 않았는지 확인
-            {
-                dungeonGenerator = GetComponent<DungeonGenerator>(); // 같은 오브젝트에서 DungeonGenerator 검색
-            }
+            if (dungeonGenerator == null) { dungeonGenerator = GetComponent<DungeonGenerator>(); }
+            // 같은 오브젝트에서 DungeonGenerator 검색 // DungeonGenerator가 Inspector에 연결되지 않았는지 확인
 
-            if (dungeonGenerator == null) // 같은 오브젝트에서 찾지 못했는지 확인
-            {
-                dungeonGenerator = FindFirstObjectByType<DungeonGenerator>(); // 현재 Scene 전체에서 DungeonGenerator 검색
-            }
+            if (dungeonGenerator == null) { dungeonGenerator = FindFirstObjectByType<DungeonGenerator>(); }
+            // 같은 오브젝트에서 찾지 못했는지 확인// 현재 Scene 전체에서 DungeonGenerator 검색
 
-            if (navMeshSurface == null) // NavMeshSurface가 Inspector에 연결되지 않았는지 확인
-            {
-                navMeshSurface = GetComponent<NavMeshSurface>(); // 같은 오브젝트에서 NavMeshSurface 검색
-            }
+            if (navMeshSurface == null) { navMeshSurface = GetComponent<NavMeshSurface>(); }
+            // NavMeshSurface가 Inspector에 연결되지 않았는지 확인// 같은 오브젝트에서 NavMeshSurface 검색
         }
 
         void OnEnable() // 던전 생성 이벤트 구독
         {
-            if (dungeonGenerator == null) // 던전 생성기 참조가 없는지 확인
-            {
-                return; // 이벤트 구독 중단
-            }
+            if (dungeonGenerator == null) { return; } // 던전 생성기 참조가 없는지 확인// 이벤트 구독 중단
 
             dungeonGenerator.GenerationStarted += HandleGenerationStarted; // 재생성 시작 시 기존 NavMesh 제거 연결
             dungeonGenerator.GenerationCompleted += HandleGenerationCompleted; // 방 생성 완료 시 NavMesh 생성 연결

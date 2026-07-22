@@ -6,10 +6,10 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
     public class VillageSaveLedger : MonoBehaviour, IInteractable // 마을 저장 창을 여는 장부
     {
         [Header("저장 연결")] // Inspector 저장 연결 구분
-        [SerializeField] CampaignSaveManager saveManager; // 저장과 불러오기를 처리할 관리자
+        [Tooltip("저장과 불러오기를 처리할 관리자")] [SerializeField] CampaignSaveManager saveManager; // 저장과 불러오기를 처리할 관리자
 
         [Header("화면 설정")] // Inspector 임시 화면 설정 구분
-        [SerializeField] string ledgerTitle = "도굴단 원정 장부"; // 저장 창 제목
+        [Tooltip("저장 창 제목")] [SerializeField] string ledgerTitle = "도굴단 원정 장부"; // 저장 창 제목
 
         bool windowOpen; // 현재 저장 창 표시 여부
         bool deleteConfirmation; // 저장 파일 삭제 재확인 여부

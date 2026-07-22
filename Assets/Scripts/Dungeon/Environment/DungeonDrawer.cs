@@ -6,12 +6,12 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
     public class DungeonDrawer : MonoBehaviour, IInteractable // 열고 닫으며 내부 아이템을 공개하는 서랍
     {
         [Header("서랍 설정")] // Inspector 서랍 설정 구분
-        [SerializeField] Transform drawerBody; // 실제로 이동할 서랍 몸체
-        [SerializeField] Vector3 openLocalOffset = new Vector3(0f, 0f, -0.8f); // 닫힌 위치에서 열린 위치까지의 이동량
-        [SerializeField] float moveDuration = 0.4f; // 서랍 이동에 걸리는 시간
+        [Tooltip("실제로 이동할 서랍 몸체")] [SerializeField] Transform drawerBody; // 실제로 이동할 서랍 몸체
+        [Tooltip("닫힌 위치에서 열린 위치까지의 이동량")] [SerializeField] Vector3 openLocalOffset = new Vector3(0f, 0f, -0.8f); // 닫힌 위치에서 열린 위치까지의 이동량
+        [Tooltip("서랍 이동에 걸리는 시간")] [SerializeField] float moveDuration = 0.4f; // 서랍 이동에 걸리는 시간
 
         [Header("내용물")] // Inspector 서랍 내용물 설정 구분
-        [SerializeField] GameObject[] hiddenContents; // 처음에는 숨겼다가 서랍을 열면 표시할 아이템
+        [Tooltip("처음에는 숨겼다가 서랍을 열면 표시할 아이템")] [SerializeField] GameObject[] hiddenContents; // 처음에는 숨겼다가 서랍을 열면 표시할 아이템
 
         Vector3 closedLocalPosition; // 서랍 몸체의 닫힌 로컬 위치
         bool isOpen; // 현재 서랍이 열려 있는지 저장

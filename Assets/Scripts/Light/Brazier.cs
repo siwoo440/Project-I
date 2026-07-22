@@ -7,15 +7,13 @@ namespace ProjectI
     /// </summary>
     public class Brazier : MonoBehaviour, IInteractable
     {
-        [SerializeField] float maxBrightness = 40f;   // 최대 기여치
-        [SerializeField] float decayPerSec = 1.5f;    // 초당 감소량
-        [SerializeField] Light visualLight;           // 실제 조명(없으면 자식 검색)
-        [SerializeField] float maxIntensity = 2.5f;   // 최대 조명 세기
+        [Tooltip("최대 기여치")] [SerializeField] float maxBrightness = 40f;   // 최대 기여치
+        [Tooltip("초당 감소량")] [SerializeField] float decayPerSec = 1.5f;    // 초당 감소량
+        [Tooltip("실제 조명(없으면 자식 검색)")] [SerializeField] Light visualLight;           // 실제 조명(없으면 자식 검색)
+        [Tooltip("최대 조명 세기")] [SerializeField] float maxIntensity = 2.5f;   // 최대 조명 세기
 
         float current;
-
         public float Contribution => current;         // LightRoom이 합산
-
         void Awake()
         {
             if (visualLight == null) visualLight = GetComponentInChildren<Light>(true);

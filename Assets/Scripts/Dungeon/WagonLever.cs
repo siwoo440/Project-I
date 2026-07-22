@@ -7,7 +7,7 @@ namespace ProjectI
     /// </summary>
     public class WagonLever : MonoBehaviour, IInteractable
     {
-        [SerializeField] Wagon wagon;
+        [Tooltip("레버 작동 시 탈출을 요청할 부모 Wagon 컴포넌트")] [SerializeField] Wagon wagon;
 
         void Awake() { if (wagon == null) wagon = GetComponentInParent<Wagon>(); }
 

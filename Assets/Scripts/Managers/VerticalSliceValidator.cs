@@ -8,33 +8,33 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
     public class VerticalSliceValidator : MonoBehaviour // 싱글 수직 슬라이스 필수 설정 검증
     {
         [Header("핵심 진행")] // Inspector 핵심 진행 참조 구분
-        [SerializeField] DungeonGenerator dungeonGenerator; // 절차적 던전 생성기
-        [SerializeField] DungeonTimeSystem dungeonTimeSystem; // 던전 제한시간 시스템
-        [SerializeField] Wagon wagon; // 보물 적재와 탈출용 마차
-        [SerializeField] WagonCargo wagonCargo; // 마차 적재 상호작용 지점
-        [SerializeField] WagonLever wagonLever; // 마차 탈출 상호작용 지점
+        [Tooltip("절차적 던전 생성기")] [SerializeField] DungeonGenerator dungeonGenerator; // 절차적 던전 생성기
+        [Tooltip("던전 제한시간 시스템")] [SerializeField] DungeonTimeSystem dungeonTimeSystem; // 던전 제한시간 시스템
+        [Tooltip("보물 적재와 탈출용 마차")] [SerializeField] Wagon wagon; // 보물 적재와 탈출용 마차
+        [Tooltip("마차 적재 상호작용 지점")] [SerializeField] WagonCargo wagonCargo; // 마차 적재 상호작용 지점
+        [Tooltip("마차 탈출 상호작용 지점")] [SerializeField] WagonLever wagonLever; // 마차 탈출 상호작용 지점
 
         [Header("플레이어")] // Inspector 플레이어 참조 구분
-        [SerializeField] PlayerController playerController; // 플레이어 이동과 생존 상태
-        [SerializeField] InventorySystem inventorySystem; // 플레이어 인벤토리
-        [SerializeField] LightSystem lightSystem; // 플레이어 밝기 시스템
-        [SerializeField] PlayerStatusEffectSystem statusEffectSystem; // 출혈과 둔화 상태 시스템
-        [SerializeField] PlayerDamageFeedback damageFeedback; // 플레이어 피격 피드백
+        [Tooltip("플레이어 이동과 생존 상태")] [SerializeField] PlayerController playerController; // 플레이어 이동과 생존 상태
+        [Tooltip("플레이어 인벤토리")] [SerializeField] InventorySystem inventorySystem; // 플레이어 인벤토리
+        [Tooltip("플레이어 밝기 시스템")] [SerializeField] LightSystem lightSystem; // 플레이어 밝기 시스템
+        [Tooltip("출혈과 둔화 상태 시스템")] [SerializeField] PlayerStatusEffectSystem statusEffectSystem; // 출혈과 둔화 상태 시스템
+        [Tooltip("플레이어 피격 피드백")] [SerializeField] PlayerDamageFeedback damageFeedback; // 플레이어 피격 피드백
 
         [Header("자동 생성")] // Inspector 자동 생성 매니저 참조 구분
-        [SerializeField] MonsterSpawnManager monsterSpawnManager; // 일반 몬스터 스폰 매니저
-        [SerializeField] TreasureSpawnManager treasureSpawnManager; // 보물과 미믹 스폰 매니저
-        [SerializeField] TrapSpawnManager trapSpawnManager; // 함정 스폰 매니저
-        [SerializeField] StalkerSpawnManager stalkerSpawnManager; // 스토커 스폰 매니저
-        [SerializeField] GimmickMonsterSpawnManager gimmickSpawnManager; // 고스트와 웃는 석상 스폰 매니저
+        [Tooltip("일반 몬스터 스폰 매니저")] [SerializeField] MonsterSpawnManager monsterSpawnManager; // 일반 몬스터 스폰 매니저
+        [Tooltip("보물과 미믹 스폰 매니저")] [SerializeField] TreasureSpawnManager treasureSpawnManager; // 보물과 미믹 스폰 매니저
+        [Tooltip("함정 스폰 매니저")] [SerializeField] TrapSpawnManager trapSpawnManager; // 함정 스폰 매니저
+        [Tooltip("스토커 스폰 매니저")] [SerializeField] StalkerSpawnManager stalkerSpawnManager; // 스토커 스폰 매니저
+        [Tooltip("고스트와 웃는 석상 스폰 매니저")] [SerializeField] GimmickMonsterSpawnManager gimmickSpawnManager; // 고스트와 웃는 석상 스폰 매니저
 
         [Header("기타 시스템")] // Inspector 기타 필수 시스템 참조 구분
-        [SerializeField] AudioManager audioManager; // 3D 효과음 시스템
+        [Tooltip("3D 효과음 시스템")] [SerializeField] AudioManager audioManager; // 3D 효과음 시스템
 
         [Header("검증 설정")] // Inspector 검증 기준 설정 구분
-        [SerializeField] int minimumRoomCount = 8; // 정상 던전으로 인정할 최소 방 수
-        [SerializeField] float validationDelay = 0.5f; // 자동 생성 완료 후 검증 대기시간
-        [SerializeField] bool showValidationPanel = false; // Scene 시작 시 검증 패널을 숨김
+        [Tooltip("정상 던전으로 인정할 최소 방 수")] [SerializeField] int minimumRoomCount = 8; // 정상 던전으로 인정할 최소 방 수
+        [Tooltip("자동 생성 완료 후 검증 대기시간")] [SerializeField] float validationDelay = 0.5f; // 자동 생성 완료 후 검증 대기시간
+        [Tooltip("Scene 시작 시 검증 패널을 숨김")] [SerializeField] bool showValidationPanel = false; // Scene 시작 시 검증 패널을 숨김
 
         readonly List<string> errors = new List<string>(); // 진행 불가 오류 목록
         readonly List<string> warnings = new List<string>(); // 확인이 필요한 경고 목록
@@ -61,9 +61,15 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             }
         }
 
-        void Start() // Scene 시작 후 초기 검증 예약
+        void Start() // Scene 시작 시 생성 상태 확인
         {
-            ScheduleValidation(); // 초기 Scene 설정과 생성 결과 검증 예약
+            if (dungeonGenerator == null || !dungeonGenerator.IsGenerated) // 입구 진입 전 상태 확인
+            {
+                return; // 자동 검증 보류
+            }
+
+            generationCompleted = true; // 기존 생성 상태 반영
+            ScheduleValidation(); // 생성 결과 검증 예약
         }
 
         void OnDisable() // 던전 생성 완료 이벤트 구독 해제
@@ -277,7 +283,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
                 return; // 던전 생성 검사 중단
             }
 
-            if (!generationCompleted && dungeonGenerator.StartRoom != null) // 이벤트 이전에 방이 생성되었는지 확인
+            if (!generationCompleted && dungeonGenerator.IsGenerated) // 실제 던전 생성 여부 확인
             {
                 generationCompleted = true; // 생성 완료 상태 보정
             }
@@ -384,7 +390,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             float y = 40f; // 검증 패널 위쪽 위치
             float height = 235f + (errors.Count + warnings.Count) * 18f; // 오류와 경고를 포함한 패널 높이 계산
 
-            GUI.Box(new Rect(x, y, width, height), "25일차 수직 슬라이스 검증"); // 검증 패널 배경 표시
+            GUI.Box(new Rect(x, y, width, height), "46일차 던전 수직 슬라이스 검증"); // 최신 던전 검증 패널 배경
 
             string validationText = validationFinished ? IsValid ? "통과" : "실패" : "검증 중"; // 현재 검증 상태 문구 계산
             GUI.Label(new Rect(x + 10f, y + 25f, width - 20f, 20f), $"필수 검증: {validationText} / 오류 {errors.Count} / 경고 {warnings.Count}"); // 검증 상태 표시

@@ -6,15 +6,15 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
     public class MainMenuUI : MonoBehaviour // 새 게임과 이어하기를 제공하는 임시 메인 메뉴
     {
         [Header("Scene 설정")] // Inspector Scene 설정 구분
-        [SerializeField] string villageSceneName = "Village"; // 게임 시작 후 이동할 마을 Scene 이름
+        [Tooltip("게임 시작 후 이동할 마을 Scene 이름")] [SerializeField] string villageSceneName = "Village"; // 게임 시작 후 이동할 마을 Scene 이름
 
         [Header("저장 연결")] // Inspector 저장 관리자 연결 구분
-        [SerializeField] CampaignSaveManager saveManager; // 저장 파일 존재 여부를 확인할 관리자
-        [SerializeField] GameSettingsUI settingsUI; // 메인 메뉴에서 열 게임 설정 화면
+        [Tooltip("저장 파일 존재 여부를 확인할 관리자")] [SerializeField] CampaignSaveManager saveManager; // 저장 파일 존재 여부를 확인할 관리자
+        [Tooltip("메인 메뉴에서 열 게임 설정 화면")] [SerializeField] GameSettingsUI settingsUI; // 메인 메뉴에서 열 게임 설정 화면
 
         [Header("화면 설정")] // Inspector 메인 메뉴 문구 설정 구분
-        [SerializeField] string gameTitle = "PROJECT I"; // 메인 메뉴 게임 제목
-        [SerializeField] string gameSubtitle = "도굴단 원정 기록"; // 메인 메뉴 보조 제목
+        [Tooltip("메인 메뉴 게임 제목")] [SerializeField] string gameTitle = "PROJECT I"; // 메인 메뉴 게임 제목
+        [Tooltip("메인 메뉴 보조 제목")] [SerializeField] string gameSubtitle = "도굴단 원정 기록"; // 메인 메뉴 보조 제목
 
         bool newGameConfirmation; // 기존 저장 기록 덮어쓰기 확인 여부
         string statusMessage = string.Empty; // 메인 메뉴 안내 문구

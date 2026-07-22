@@ -6,14 +6,14 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
     public class VillageWagonTravelController : MonoBehaviour // 출발 레버 이후 마차 이동 담당
     {
         [Header("이동 설정")] // Inspector 마차 이동 설정 구분
-        [SerializeField][Min(0.1f)] float moveSpeed = 4f; // 마차 초당 이동 거리
-        [SerializeField][Min(1f)] float travelDistance = 25f; // 던전 선택 창이 열리는 이동 거리
-        [SerializeField] Vector3 localTravelDirection = Vector3.back; // 마차 모델 기준 앞쪽 이동 방향
-        [SerializeField] Transform passengerAnchor; // 이동 중 플레이어를 붙잡아 둘 부모 지점
+        [Tooltip("마차 초당 이동 거리")] [SerializeField][Min(0.1f)] float moveSpeed = 4f; // 마차 초당 이동 거리
+        [Tooltip("던전 선택 창이 열리는 이동 거리")] [SerializeField][Min(1f)] float travelDistance = 25f; // 던전 선택 창이 열리는 이동 거리
+        [Tooltip("마차 모델 기준 앞쪽 이동 방향")] [SerializeField] Vector3 localTravelDirection = Vector3.back; // 마차 모델 기준 앞쪽 이동 방향
+        [Tooltip("이동 중 플레이어를 붙잡아 둘 부모 지점")] [SerializeField] Transform passengerAnchor; // 이동 중 플레이어를 붙잡아 둘 부모 지점
 
         [Header("마을 UI")] // Inspector 마을 UI 설정 구분
-        [SerializeField] VillageSettlementUI settlementUI; // 정산 창 상태 확인용 UI
-        [SerializeField] VillageDungeonSelectionUI dungeonSelectionUI; // 도착 후 활성화할 던전 선택 UI
+        [Tooltip("정산 창 상태 확인용 UI")] [SerializeField] VillageSettlementUI settlementUI; // 정산 창 상태 확인용 UI
+        [Tooltip("도착 후 활성화할 던전 선택 UI")] [SerializeField] VillageDungeonSelectionUI dungeonSelectionUI; // 도착 후 활성화할 던전 선택 UI
 
         Rigidbody wagonBody; // 마차 이동에 사용할 Rigidbody
         CampaignManager campaignManager; // 다음 탐험 출발 가능 여부 확인용 매니저

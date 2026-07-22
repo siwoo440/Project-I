@@ -8,15 +8,15 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
     public class MonsterNavigation : MonoBehaviour // CharacterController용 NavMesh 이동 방향 제공
     {
         [Header("경로 검색")] // Inspector 경로 검색 설정 구분
-        [SerializeField] float selfSampleDistance = 2f; // 몬스터 주변 NavMesh 검색 거리
-        [SerializeField] float targetSampleDistance = 3f; // 목표 주변 NavMesh 검색 거리
-        [SerializeField] float repathInterval = 0.15f; // 새로운 경로를 계산하는 시간 간격
-        [SerializeField] float targetMoveThreshold = 0.5f; // 목표가 이동했을 때 경로를 갱신할 최소 거리
+        [Tooltip("몬스터 주변 NavMesh 검색 거리")] [SerializeField] float selfSampleDistance = 2f; // 몬스터 주변 NavMesh 검색 거리
+        [Tooltip("목표 주변 NavMesh 검색 거리")] [SerializeField] float targetSampleDistance = 3f; // 목표 주변 NavMesh 검색 거리
+        [Tooltip("새로운 경로를 계산하는 시간 간격")] [SerializeField] float repathInterval = 0.15f; // 새로운 경로를 계산하는 시간 간격
+        [Tooltip("목표가 이동했을 때 경로를 갱신할 최소 거리")] [SerializeField] float targetMoveThreshold = 0.5f; // 목표가 이동했을 때 경로를 갱신할 최소 거리
 
         [Header("이동 설정")] // Inspector NavMeshAgent 설정 구분
-        [SerializeField] float stoppingDistance = 0.1f; // 목표 앞에서 멈출 거리
-        [SerializeField] float acceleration = 20f; // 경로 이동 방향 가속도
-        [SerializeField] bool showDebugWarning = true; // NavMesh 진입 실패 경고 표시 여부
+        [Tooltip("목표 앞에서 멈출 거리")] [SerializeField] float stoppingDistance = 0.1f; // 목표 앞에서 멈출 거리
+        [Tooltip("경로 이동 방향 가속도")] [SerializeField] float acceleration = 20f; // 경로 이동 방향 가속도
+        [Tooltip("NavMesh 진입 실패 경고 표시 여부")] [SerializeField] bool showDebugWarning = true; // NavMesh 진입 실패 경고 표시 여부
 
         NavMeshAgent agent; // 실제 경로를 계산할 NavMeshAgent
         Vector3 lastTarget; // 마지막으로 경로를 요청한 목표 위치

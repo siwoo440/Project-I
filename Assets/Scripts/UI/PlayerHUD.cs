@@ -7,37 +7,37 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
     public class PlayerHUD : MonoBehaviour // 던전 플레이어 HUD 관리 컴포넌트
     {
         [Header("게임 참조")] // 게임 시스템 참조 구분
-        [SerializeField] PlayerController playerController; // 체력과 스태미너를 가져올 플레이어
-        [SerializeField] PlayerInteractor playerInteractor; // 상호작용 문구를 가져올 플레이어 상호작용 컴포넌트
-        [SerializeField] DungeonTimeSystem dungeonTimeSystem; // 던전 시간 정보를 가져올 시스템
-        [SerializeField] LightSystem lightSystem; // 현재 밝기 정보를 가져올 시스템
+        [Tooltip("체력과 스태미너를 가져올 플레이어")] [SerializeField] PlayerController playerController; // 체력과 스태미너를 가져올 플레이어
+        [Tooltip("상호작용 문구를 가져올 플레이어 상호작용 컴포넌트")] [SerializeField] PlayerInteractor playerInteractor; // 상호작용 문구를 가져올 플레이어 상호작용 컴포넌트
+        [Tooltip("던전 시간 정보를 가져올 시스템")] [SerializeField] DungeonTimeSystem dungeonTimeSystem; // 던전 시간 정보를 가져올 시스템
+        [Tooltip("현재 밝기 정보를 가져올 시스템")] [SerializeField] LightSystem lightSystem; // 현재 밝기 정보를 가져올 시스템
 
         [Header("체력 UI")] // 체력 UI 참조 구분
-        [SerializeField] Image healthFill; // 체력 게이지 채움 이미지
-        [SerializeField] TMP_Text healthValueText; // 현재 체력 수치 글자
+        [Tooltip("체력 게이지 채움 이미지")] [SerializeField] Image healthFill; // 체력 게이지 채움 이미지
+        [Tooltip("현재 체력 수치 글자")] [SerializeField] TMP_Text healthValueText; // 현재 체력 수치 글자
 
         [Header("스태미너 UI")] // 스태미너 UI 참조 구분
-        [SerializeField] Image staminaFill; // 스태미너 게이지 채움 이미지
-        [SerializeField] TMP_Text staminaValueText; // 현재 스태미너 수치 글자
+        [Tooltip("스태미너 게이지 채움 이미지")] [SerializeField] Image staminaFill; // 스태미너 게이지 채움 이미지
+        [Tooltip("현재 스태미너 수치 글자")] [SerializeField] TMP_Text staminaValueText; // 현재 스태미너 수치 글자
 
         [Header("던전 정보 UI")] // 던전 정보 UI 참조 구분
-        [SerializeField] GameObject dungeonInfoPanel; // Dungeon Scene에서만 표시할 던전 정보 패널
-        [SerializeField] TMP_Text timeText; // 던전 시간과 남은 시간 글자
-        [SerializeField] TMP_Text brightnessText; // 현재 밝기와 밝기 단계 글자
+        [Tooltip("Dungeon Scene에서만 표시할 던전 정보 패널")] [SerializeField] GameObject dungeonInfoPanel; // Dungeon Scene에서만 표시할 던전 정보 패널
+        [Tooltip("던전 시간과 남은 시간 글자")] [SerializeField] TMP_Text timeText; // 던전 시간과 남은 시간 글자
+        [Tooltip("현재 밝기와 밝기 단계 글자")] [SerializeField] TMP_Text brightnessText; // 현재 밝기와 밝기 단계 글자
 
         [Header("안내 UI")] // 안내 UI 참조 구분
-        [SerializeField] TMP_Text interactionText; // 현재 상호작용 문구
-        [SerializeField] TMP_Text controlGuideText; // 기본 조작 안내 문구
+        [Tooltip("현재 상호작용 문구")] [SerializeField] TMP_Text interactionText; // 현재 상호작용 문구
+        [Tooltip("기본 조작 안내 문구")] [SerializeField] TMP_Text controlGuideText; // 기본 조작 안내 문구
 
         [Header("색상")] // HUD 색상 설정 구분
-        [SerializeField] Color healthColor = new Color(0.72f, 0.15f, 0.12f, 1f); // 정상 체력 색상
-        [SerializeField] Color healthDangerColor = new Color(1f, 0.05f, 0.03f, 1f); // 낮은 체력 경고 색상
-        [SerializeField] Color staminaColor = new Color(0.16f, 0.68f, 0.52f, 1f); // 정상 스태미너 색상
-        [SerializeField] Color staminaDangerColor = new Color(0.72f, 0.58f, 0.08f, 1f); // 낮은 스태미너 경고 색상
-        [SerializeField] Color normalTextColor = new Color(0.92f, 0.9f, 0.82f, 1f); // 일반 정보 글자 색상
-        [SerializeField] Color timeWarningColor = new Color(1f, 0.2f, 0.12f, 1f); // 제한시간 경고 글자 색상
-        [SerializeField] Color darkBrightnessColor = new Color(0.45f, 0.48f, 0.55f, 1f); // 어두운 방 밝기 글자 색상
-        [SerializeField] Color brightBrightnessColor = new Color(1f, 0.82f, 0.34f, 1f); // 밝은 방 밝기 글자 색상
+        [Tooltip("정상 체력 색상")] [SerializeField] Color healthColor = new Color(0.72f, 0.15f, 0.12f, 1f); // 정상 체력 색상
+        [Tooltip("낮은 체력 경고 색상")] [SerializeField] Color healthDangerColor = new Color(1f, 0.05f, 0.03f, 1f); // 낮은 체력 경고 색상
+        [Tooltip("정상 스태미너 색상")] [SerializeField] Color staminaColor = new Color(0.16f, 0.68f, 0.52f, 1f); // 정상 스태미너 색상
+        [Tooltip("낮은 스태미너 경고 색상")] [SerializeField] Color staminaDangerColor = new Color(0.72f, 0.58f, 0.08f, 1f); // 낮은 스태미너 경고 색상
+        [Tooltip("일반 정보 글자 색상")] [SerializeField] Color normalTextColor = new Color(0.92f, 0.9f, 0.82f, 1f); // 일반 정보 글자 색상
+        [Tooltip("제한시간 경고 글자 색상")] [SerializeField] Color timeWarningColor = new Color(1f, 0.2f, 0.12f, 1f); // 제한시간 경고 글자 색상
+        [Tooltip("어두운 방 밝기 글자 색상")] [SerializeField] Color darkBrightnessColor = new Color(0.45f, 0.48f, 0.55f, 1f); // 어두운 방 밝기 글자 색상
+        [Tooltip("밝은 방 밝기 글자 색상")] [SerializeField] Color brightBrightnessColor = new Color(1f, 0.82f, 0.34f, 1f); // 밝은 방 밝기 글자 색상
 
         float nextReferenceSearchTime; // 다음 Scene 참조 검색 시각
 
@@ -168,7 +168,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
                 return; // 조작 안내 설정 중단
             }
 
-            controlGuideText.text = "WASD 이동  ·  Shift 달리기  ·  Space 점프  ·  Ctrl 앉기  ·  E 상호작용  ·  Q 버리기  ·  R 사용  ·  F 광원"; // 기본 조작 안내 표시
+            controlGuideText.text = "WASD 이동  ·  Shift 달리기  ·  Space 점프  ·  Ctrl 앉기  ·  E 상호작용  ·  F 입구  ·  Q 버리기  ·  R 사용  ·  T 광원"; // 기본 조작 안내 표시
         }
     }
 }

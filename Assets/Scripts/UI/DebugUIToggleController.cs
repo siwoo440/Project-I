@@ -6,10 +6,10 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
     public class DebugUIToggleController : MonoBehaviour // 기존 OnGUI 디버그 화면의 표시 상태 관리
     {
         [Header("시작 표시 상태")] // Scene 시작 시 디버그 UI 표시 여부 구분
-        [SerializeField] bool playerInfoVisibleAtStart = false; // 플레이어 관련 디버그 UI 시작 표시 여부
-        [SerializeField] bool inventoryInfoVisibleAtStart = false; // 인벤토리 관련 디버그 UI 시작 표시 여부
-        [SerializeField] bool spawnInfoVisibleAtStart = false; // 자동 스폰 관련 디버그 UI 시작 표시 여부
-        [SerializeField] bool campaignInfoVisibleAtStart = false; // 캠페인 관련 디버그 UI 시작 표시 여부
+        [Tooltip("플레이어 관련 디버그 UI 시작 표시 여부")] [SerializeField] bool playerInfoVisibleAtStart = false; // 플레이어 관련 디버그 UI 시작 표시 여부
+        [Tooltip("인벤토리 관련 디버그 UI 시작 표시 여부")] [SerializeField] bool inventoryInfoVisibleAtStart = false; // 인벤토리 관련 디버그 UI 시작 표시 여부
+        [Tooltip("자동 스폰 관련 디버그 UI 시작 표시 여부")] [SerializeField] bool spawnInfoVisibleAtStart = false; // 자동 스폰 관련 디버그 UI 시작 표시 여부
+        [Tooltip("캠페인 관련 디버그 UI 시작 표시 여부")] [SerializeField] bool campaignInfoVisibleAtStart = false; // 캠페인 관련 디버그 UI 시작 표시 여부
 
         public static bool PlayerInfoVisible { get; private set; } // 플레이어 관련 디버그 UI 표시 상태
         public static bool InventoryInfoVisible { get; private set; } // 인벤토리 관련 디버그 UI 표시 상태

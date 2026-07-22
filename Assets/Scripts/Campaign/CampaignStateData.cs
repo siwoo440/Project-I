@@ -5,13 +5,13 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
     [System.Serializable] // Unity Inspector와 이후 저장 시스템에서 사용할 수 있도록 지정
     public class CampaignStateData // 골드와 빚 및 날짜를 보관하는 캠페인 상태
     {
-        [SerializeField] int currentDay; // 현재 진행할 날짜
-        [SerializeField] int deadlineDay; // 빚 상환 마지막 날짜
-        [SerializeField] int gold; // 현재 보유 골드
-        [SerializeField] int remainingDebt; // 현재 남은 빚
-        [SerializeField] int completedRuns; // 완료한 던전 탐험 횟수
-        [SerializeField] bool campaignWon; // 빚 상환 성공 여부
-        [SerializeField] bool campaignFailed; // 상환 기한 초과 여부
+        [Tooltip("현재 진행할 날짜")] [SerializeField] int currentDay; // 현재 진행할 날짜
+        [Tooltip("빚 상환 마지막 날짜")] [SerializeField] int deadlineDay; // 빚 상환 마지막 날짜
+        [Tooltip("현재 보유 골드")] [SerializeField] int gold; // 현재 보유 골드
+        [Tooltip("현재 남은 빚")] [SerializeField] int remainingDebt; // 현재 남은 빚
+        [Tooltip("완료한 던전 탐험 횟수")] [SerializeField] int completedRuns; // 완료한 던전 탐험 횟수
+        [Tooltip("빚 상환 성공 여부")] [SerializeField] bool campaignWon; // 빚 상환 성공 여부
+        [Tooltip("상환 기한 초과 여부")] [SerializeField] bool campaignFailed; // 상환 기한 초과 여부
 
         public int CurrentDay => currentDay; // 현재 날짜 반환
         public int DeadlineDay => deadlineDay; // 상환 마지막 날짜 반환

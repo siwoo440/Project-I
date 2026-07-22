@@ -12,9 +12,9 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         const int CurrentSaveVersion = 1; // 현재 지원하는 저장 파일 버전
 
         [Header("저장 설정")] // Inspector 저장 설정 구분
-        [SerializeField] string villageSceneName = "Village"; // 저장을 허용할 마을 Scene 이름
-        [SerializeField] string saveFolderName = "ProjectI"; // 저장 파일을 보관할 하위 폴더 이름
-        [SerializeField] string saveFileName = "campaign_save.json"; // 캠페인 저장 파일 이름
+        [Tooltip("저장을 허용할 마을 Scene 이름")] [SerializeField] string villageSceneName = "Village"; // 저장을 허용할 마을 Scene 이름
+        [Tooltip("저장 파일을 보관할 하위 폴더 이름")] [SerializeField] string saveFolderName = "ProjectI"; // 저장 파일을 보관할 하위 폴더 이름
+        [Tooltip("캠페인 저장 파일 이름")] [SerializeField] string saveFileName = "campaign_save.json"; // 캠페인 저장 파일 이름
 
         string lastMessage = "저장 기록을 확인하지 않았습니다."; // 최근 저장 처리 결과 안내
 

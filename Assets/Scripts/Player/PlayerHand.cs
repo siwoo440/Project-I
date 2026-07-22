@@ -8,7 +8,7 @@ namespace ProjectI
     /// </summary>
     public class PlayerHand : MonoBehaviour
     {
-        [SerializeField] Transform handAnchor;   // 없으면 카메라 밑에 자동 생성
+        [Tooltip("없으면 카메라 밑에 자동 생성")] [SerializeField] Transform handAnchor;   // 없으면 카메라 밑에 자동 생성
         public Transform Anchor => handAnchor;
 
         void Awake()

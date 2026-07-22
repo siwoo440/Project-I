@@ -7,23 +7,23 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
     public class Ghost : MonoBehaviour // 플레이어 뒤로 순간이동하는 고스트 기믹
     {
         [Header("외형")] // Inspector 외형 설정 구분
-        [SerializeField] GameObject ghostVisual; // 순간이동 후 표시할 고스트 외형
+        [Tooltip("순간이동 후 표시할 고스트 외형")] [SerializeField] GameObject ghostVisual; // 순간이동 후 표시할 고스트 외형
 
         [Header("순간이동")] // Inspector 순간이동 설정 구분
-        [SerializeField] float activationDelay = 2.5f; // 생성 후 순간이동 대기시간
-        [SerializeField] float warningLeadTime = 0.7f; // 순간이동 전 경고를 재생할 시간
-        [SerializeField] float teleportDistance = 3f; // 플레이어 뒤쪽 순간이동 거리
-        [SerializeField] float groundSearchHeight = 4f; // 바닥 검색 시작 높이
-        [SerializeField] float groundSearchDistance = 8f; // 바닥 검색 최대 거리
+        [Tooltip("생성 후 순간이동 대기시간")] [SerializeField] float activationDelay = 2.5f; // 생성 후 순간이동 대기시간
+        [Tooltip("순간이동 전 경고를 재생할 시간")] [SerializeField] float warningLeadTime = 0.7f; // 순간이동 전 경고를 재생할 시간
+        [Tooltip("플레이어 뒤쪽 순간이동 거리")] [SerializeField] float teleportDistance = 3f; // 플레이어 뒤쪽 순간이동 거리
+        [Tooltip("바닥 검색 시작 높이")] [SerializeField] float groundSearchHeight = 4f; // 바닥 검색 시작 높이
+        [Tooltip("바닥 검색 최대 거리")] [SerializeField] float groundSearchDistance = 8f; // 바닥 검색 최대 거리
 
         [Header("기습 공격")] // Inspector 기습 공격 설정 구분
-        [SerializeField] float ambushDelay = 0.35f; // 순간이동 후 공격 대기시간
-        [SerializeField] float ambushDamage = 35f; // 고스트 기습 피해량
-        [SerializeField] float ambushRange = 4f; // 고스트 기습 공격 거리
-        [SerializeField] float rotationSpeed = 12f; // 플레이어 방향 회전속도
+        [Tooltip("순간이동 후 공격 대기시간")] [SerializeField] float ambushDelay = 0.35f; // 순간이동 후 공격 대기시간
+        [Tooltip("고스트 기습 피해량")] [SerializeField] float ambushDamage = 35f; // 고스트 기습 피해량
+        [Tooltip("고스트 기습 공격 거리")] [SerializeField] float ambushRange = 4f; // 고스트 기습 공격 거리
+        [Tooltip("플레이어 방향 회전속도")] [SerializeField] float rotationSpeed = 12f; // 플레이어 방향 회전속도
 
         [Header("디버그")] // Inspector 디버그 설정 구분
-        [SerializeField] bool showDebug = true; // 고스트 상태 로그 표시 여부
+        [Tooltip("고스트 상태 로그 표시 여부")] [SerializeField] bool showDebug = true; // 고스트 상태 로그 표시 여부
 
         static readonly float[] TeleportAngles = // 순간이동 위치 검색 각도 목록
         {

@@ -10,10 +10,10 @@ namespace ProjectI
     {
         public enum Kind { Torch, Lantern }
 
-        [SerializeField] Kind kind = Kind.Lantern;
-        [SerializeField] float brightnessValue = 50f;  // 방 밝기 기여치 (횃불 30 / 랜턴 50)
-        [SerializeField] Light visualLight;            // 실제 조명(없으면 자식에서 검색)
-        [SerializeField] bool isOn = false;            // 휴대 광원 초기값 = 꺼짐 (F로 켬)
+        [Tooltip("광원의 종류와 밝기 계산 방식을 구분하는 값")] [SerializeField] Kind kind = Kind.Lantern;
+        [Tooltip("방 밝기 기여치 (횃불 30 / 랜턴 50)")] [SerializeField] float brightnessValue = 50f;  // 방 밝기 기여치 (횃불 30 / 랜턴 50)
+        [Tooltip("실제 조명(없으면 자식에서 검색)")] [SerializeField] Light visualLight;            // 실제 조명(없으면 자식에서 검색)
+        [Tooltip("휴대 광원 초기값 = 꺼짐 (T로 켬)")] [SerializeField] bool isOn = false;            // 휴대 광원 초기값 = 꺼짐 (T로 켬)
 
         public Kind LightType => kind;
         public bool IsOn => isOn;

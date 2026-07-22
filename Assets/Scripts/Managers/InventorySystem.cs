@@ -12,12 +12,12 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
     public class InventorySystem : MonoBehaviour // 플레이어 인벤토리 관리 컴포넌트
     {
         [Header("인벤토리 기본 설정")] // 기본 인벤토리 설정 구분
-        [SerializeField] int baseSlots = 5; // 기본 인벤토리 슬롯 수
-        [SerializeField] float weightLimit = 30f; // 무게 페널티 기준 무게
+        [Tooltip("기본 인벤토리 슬롯 수")] [SerializeField] int baseSlots = 5; // 기본 인벤토리 슬롯 수
+        [Tooltip("무게 페널티 기준 무게")] [SerializeField] float weightLimit = 30f; // 무게 페널티 기준 무게
 
         [Header("전체 아이템 드랍")] // 전체 드랍 설정 구분
-        [SerializeField] float dropRadius = 0.8f; // 플레이어 주변 드랍 반경
-        [SerializeField] float dropImpulse = 2.5f; // 드랍 아이템의 튀어나가는 힘
+        [Tooltip("플레이어 주변 드랍 반경")] [SerializeField] float dropRadius = 0.8f; // 플레이어 주변 드랍 반경
+        [Tooltip("드랍 아이템의 튀어나가는 힘")] [SerializeField] float dropImpulse = 2.5f; // 드랍 아이템의 튀어나가는 힘
 
         readonly List<ICarryable> items = new List<ICarryable>(); // 일반 슬롯 소지품 목록
         ICarryable twoHand; // 현재 두손으로 운반하는 소지품

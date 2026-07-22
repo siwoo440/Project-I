@@ -6,14 +6,14 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
     public class DungeonDoor : MonoBehaviour, IInteractable // 직접 또는 레버로 작동하는 던전 문
     {
         [Header("문 설정")] // Inspector 문 설정 구분
-        [SerializeField] Transform doorPanel; // 실제로 움직일 문 패널
-        [SerializeField] Vector3 openLocalOffset = new Vector3(0f, 3.2f, 0f); // 닫힌 위치에서 열린 위치까지의 이동량
-        [SerializeField] float moveDuration = 0.75f; // 문이 완전히 이동하는 데 걸리는 시간
-        [SerializeField] bool allowDirectInteraction = true; // 플레이어가 문을 직접 작동할 수 있는지 결정
+        [Tooltip("실제로 움직일 문 패널")] [SerializeField] Transform doorPanel; // 실제로 움직일 문 패널
+        [Tooltip("닫힌 위치에서 열린 위치까지의 이동량")] [SerializeField] Vector3 openLocalOffset = new Vector3(0f, 3.2f, 0f); // 닫힌 위치에서 열린 위치까지의 이동량
+        [Tooltip("문이 완전히 이동하는 데 걸리는 시간")] [SerializeField] float moveDuration = 0.75f; // 문이 완전히 이동하는 데 걸리는 시간
+        [Tooltip("플레이어가 문을 직접 작동할 수 있는지 결정")] [SerializeField] bool allowDirectInteraction = true; // 플레이어가 문을 직접 작동할 수 있는지 결정
 
         [Header("잠금 설정")] // Inspector 잠금 설정 구분
-        [SerializeField] bool requiresItem = false; // 문을 처음 열 때 아이템이 필요한지 결정
-        [SerializeField] string requiredItemName = "열쇠"; // 잠금 해제에 사용할 아이템 이름
+        [Tooltip("문을 처음 열 때 아이템이 필요한지 결정")] [SerializeField] bool requiresItem = false; // 문을 처음 열 때 아이템이 필요한지 결정
+        [Tooltip("잠금 해제에 사용할 아이템 이름")] [SerializeField] string requiredItemName = "열쇠"; // 잠금 해제에 사용할 아이템 이름
 
         bool isOpen; // 현재 문이 열려 있는지 저장
         bool isMoving; // 현재 문이 이동 중인지 저장

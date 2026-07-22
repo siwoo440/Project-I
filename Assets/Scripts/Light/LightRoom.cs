@@ -9,7 +9,7 @@ namespace ProjectI
     /// </summary>
     public class LightRoom : MonoBehaviour
     {
-        [SerializeField] float baseBrightness = 0f;   // 구역 기본 밝기(기본 0 = 칠흑)
+        [Tooltip("구역 기본 밝기(기본 0 = 칠흑)")] [SerializeField] float baseBrightness = 0f;   // 구역 기본 밝기(기본 0 = 칠흑)
         readonly List<Brazier> braziers = new List<Brazier>();
         Collider zone;
 

@@ -1,0 +1,2072 @@
+diff --git a/Assets/Scripts/Audio/SceneAudioController.cs b/Assets/Scripts/Audio/SceneAudioController.cs
+index 369c955..18c7da3 100644
+--- a/Assets/Scripts/Audio/SceneAudioController.cs
++++ b/Assets/Scripts/Audio/SceneAudioController.cs
+@@ -5,13 +5,13 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+     public class SceneAudioController : MonoBehaviour // Scene 시작 시 배경음과 환경음 및 테스트 효과음 재생
+     {
+         [Header("Scene 오디오")] // Inspector Scene 오디오 설정 구분
+-        [SerializeField] AudioClip bgmClip; // 현재 Scene에서 재생할 배경음
+-        [SerializeField] AudioClip ambientClip; // 현재 Scene에서 재생할 전체 환경음
+-        [SerializeField] AudioClip startupSfxClip; // Scene 시작 시 한 번 재생할 테스트 효과음
++        [Tooltip("현재 Scene에서 재생할 배경음")] [SerializeField] AudioClip bgmClip; // 현재 Scene에서 재생할 배경음
++        [Tooltip("현재 Scene에서 재생할 전체 환경음")] [SerializeField] AudioClip ambientClip; // 현재 Scene에서 재생할 전체 환경음
++        [Tooltip("Scene 시작 시 한 번 재생할 테스트 효과음")] [SerializeField] AudioClip startupSfxClip; // Scene 시작 시 한 번 재생할 테스트 효과음
+ 
+         [Header("Scene 종료 설정")] // Inspector Scene 종료 설정 구분
+-        [SerializeField] bool stopBgmOnSceneExit = true; // 현재 Scene 종료 시 배경음 정지 여부
+-        [SerializeField] bool stopAmbientOnSceneExit = true; // 현재 Scene 종료 시 환경음 정지 여부
++        [Tooltip("현재 Scene 종료 시 배경음 정지 여부")] [SerializeField] bool stopBgmOnSceneExit = true; // 현재 Scene 종료 시 배경음 정지 여부
++        [Tooltip("현재 Scene 종료 시 환경음 정지 여부")] [SerializeField] bool stopAmbientOnSceneExit = true; // 현재 Scene 종료 시 환경음 정지 여부
+ 
+         void Start() // Scene 시작 시 연결된 AudioClip 재생
+         {
+diff --git a/Assets/Scripts/Campaign/CampaignStateData.cs b/Assets/Scripts/Campaign/CampaignStateData.cs
+index 6db4dc4..21d2b6e 100644
+--- a/Assets/Scripts/Campaign/CampaignStateData.cs
++++ b/Assets/Scripts/Campaign/CampaignStateData.cs
+@@ -5,13 +5,13 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+     [System.Serializable] // Unity Inspector와 이후 저장 시스템에서 사용할 수 있도록 지정
+     public class CampaignStateData // 골드와 빚 및 날짜를 보관하는 캠페인 상태
+     {
+-        [SerializeField] int currentDay; // 현재 진행할 날짜
+-        [SerializeField] int deadlineDay; // 빚 상환 마지막 날짜
+-        [SerializeField] int gold; // 현재 보유 골드
+-        [SerializeField] int remainingDebt; // 현재 남은 빚
+-        [SerializeField] int completedRuns; // 완료한 던전 탐험 횟수
+-        [SerializeField] bool campaignWon; // 빚 상환 성공 여부
+-        [SerializeField] bool campaignFailed; // 상환 기한 초과 여부
++        [Tooltip("현재 진행할 날짜")] [SerializeField] int currentDay; // 현재 진행할 날짜
++        [Tooltip("빚 상환 마지막 날짜")] [SerializeField] int deadlineDay; // 빚 상환 마지막 날짜
++        [Tooltip("현재 보유 골드")] [SerializeField] int gold; // 현재 보유 골드
++        [Tooltip("현재 남은 빚")] [SerializeField] int remainingDebt; // 현재 남은 빚
++        [Tooltip("완료한 던전 탐험 횟수")] [SerializeField] int completedRuns; // 완료한 던전 탐험 횟수
++        [Tooltip("빚 상환 성공 여부")] [SerializeField] bool campaignWon; // 빚 상환 성공 여부
++        [Tooltip("상환 기한 초과 여부")] [SerializeField] bool campaignFailed; // 상환 기한 초과 여부
+ 
+         public int CurrentDay => currentDay; // 현재 날짜 반환
+         public int DeadlineDay => deadlineDay; // 상환 마지막 날짜 반환
+diff --git a/Assets/Scripts/Dungeon/DungeonEntrance.cs b/Assets/Scripts/Dungeon/DungeonEntrance.cs
+index 4beb3b8..deec1a7 100644
+--- a/Assets/Scripts/Dungeon/DungeonEntrance.cs
++++ b/Assets/Scripts/Dungeon/DungeonEntrance.cs
+@@ -11,9 +11,9 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+         }
+ 
+         [Header("입구 설정")] // 입구 Inspector 설정 구분
+-        [SerializeField] EntranceType entranceType = EntranceType.Main; // 현재 Cube 입구 종류
+-        [SerializeField] DungeonGenerator dungeonGenerator; // 내부 맵 생성과 도착 지점 제공자
+-        [SerializeField] float holdDuration = 1.5f; // F키 필요 유지시간
++        [Tooltip("현재 Cube 입구 종류")] [SerializeField] EntranceType entranceType = EntranceType.Main; // 현재 Cube 입구 종류
++        [Tooltip("내부 맵 생성과 도착 지점 제공자")] [SerializeField] DungeonGenerator dungeonGenerator; // 내부 맵 생성과 도착 지점 제공자
++        [Tooltip("F키 필요 유지시간")] [SerializeField] float holdDuration = 1.5f; // F키 필요 유지시간
+ 
+         public float HoldDuration => Mathf.Max(0.1f, holdDuration); // 안전한 필요 유지시간 반환
+ 
+diff --git a/Assets/Scripts/Dungeon/DungeonGenerator.cs b/Assets/Scripts/Dungeon/DungeonGenerator.cs
+index c372b73..15214c7 100644
+--- a/Assets/Scripts/Dungeon/DungeonGenerator.cs
++++ b/Assets/Scripts/Dungeon/DungeonGenerator.cs
+@@ -6,38 +6,38 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+     public class DungeonGenerator : MonoBehaviour // 다층 절차적 던전 생성기
+     {
+         [Header("고정 시작 방")] // 고정 내부 구조 설정 구분
+-        [SerializeField] private Room fixedStartRoom; // Scene에 배치된 고정 Room_Start
+-        [SerializeField] private Transform generationAnchor; // 첫 생성 방의 방향 기준점
+-        [SerializeField] private Transform generatedRoomsRoot; // 생성 방 전용 부모
++        [Tooltip("Scene에 배치된 고정 Room_Start")] [SerializeField] private Room fixedStartRoom; // Scene에 배치된 고정 Room_Start
++        [Tooltip("첫 생성 방의 방향 기준점")] [SerializeField] private Transform generationAnchor; // 첫 생성 방의 방향 기준점
++        [Tooltip("생성 방 전용 부모")] [SerializeField] private Transform generatedRoomsRoot; // 생성 방 전용 부모
+ 
+         [Header("일반 방 프리팹")] // 일반 방 설정 구분
+-        [SerializeField] private Room[] roomPrefabs; // 일반 방 프리팹 목록
++        [Tooltip("일반 방 프리팹 목록")] [SerializeField] private Room[] roomPrefabs; // 일반 방 프리팹 목록
+ 
+         [Header("수직 연결 방 프리팹")] // 계단 방 설정 구분
+-        [SerializeField] private Room[] stairUpRoomPrefabs; // 위층 계단 방 목록
+-        [SerializeField] private Room[] stairDownRoomPrefabs; // 아래층 계단 방 목록
+-        [SerializeField] private Room[] stairBothRoomPrefabs; // 양방향 계단 방 목록
++        [Tooltip("위층 계단 방 목록")] [SerializeField] private Room[] stairUpRoomPrefabs; // 위층 계단 방 목록
++        [Tooltip("아래층 계단 방 목록")] [SerializeField] private Room[] stairDownRoomPrefabs; // 아래층 계단 방 목록
++        [Tooltip("양방향 계단 방 목록")] [SerializeField] private Room[] stairBothRoomPrefabs; // 양방향 계단 방 목록
+ 
+         [Header("생성 크기")] // 던전 크기 설정 구분
+-        [SerializeField] private int roomCount = 12; // 기본 목표 방 개수
+-        [SerializeField] private float cellSize = 12f; // 방의 수평 격자 크기
+-        [SerializeField] private float floorHeight = 4f; // 층 사이 높이
++        [Tooltip("기본 목표 방 개수")] [SerializeField] private int roomCount = 12; // 기본 목표 방 개수
++        [Tooltip("방의 수평 격자 크기")] [SerializeField] private float cellSize = 12f; // 방의 수평 격자 크기
++        [Tooltip("층 사이 높이")] [SerializeField] private float floorHeight = 4f; // 층 사이 높이
+ 
+         [Header("층 설정")] // 층 생성 설정 구분
+-        [SerializeField] private int minimumFloor = -1; // 가장 낮은 층
+-        [SerializeField] private int maximumFloor = 1; // 가장 높은 층
+-        [SerializeField][Range(0f, 0.5f)] private float verticalConnectionChance = 0.18f; // 수직 이동 확률
+-        [SerializeField] private bool guaranteeBasement = true; // 지하층 생성 보장
+-        [SerializeField] private bool guaranteeUpperFloor = true; // 위층 생성 보장
+-        [SerializeField] private int minimumRoomsPerExtraFloor = 2; // 추가 층 최소 방 개수
++        [Tooltip("가장 낮은 층")] [SerializeField] private int minimumFloor = -1; // 가장 낮은 층
++        [Tooltip("가장 높은 층")] [SerializeField] private int maximumFloor = 1; // 가장 높은 층
++        [Tooltip("수직 이동 확률")] [SerializeField][Range(0f, 0.5f)] private float verticalConnectionChance = 0.18f; // 수직 이동 확률
++        [Tooltip("지하층 생성 보장")] [SerializeField] private bool guaranteeBasement = true; // 지하층 생성 보장
++        [Tooltip("위층 생성 보장")] [SerializeField] private bool guaranteeUpperFloor = true; // 위층 생성 보장
++        [Tooltip("추가 층 최소 방 개수")] [SerializeField] private int minimumRoomsPerExtraFloor = 2; // 추가 층 최소 방 개수
+ 
+         [Header("시드")] // 시드 설정 구분
+-        [SerializeField] private bool randomSeed = true; // 무작위 시드 사용 여부
+-        [SerializeField] private int seed; // 현재 생성 시드
++        [Tooltip("무작위 시드 사용 여부")] [SerializeField] private bool randomSeed = true; // 무작위 시드 사용 여부
++        [Tooltip("현재 생성 시드")] [SerializeField] private int seed; // 현재 생성 시드
+ 
+         [Header("내부 서브 입구")] // 런타임 서브 입구 설정 구분
+-        [SerializeField] private GameObject subEntranceMarkerPrefab; // 선택 벽면에 표시할 임시 Cube 프리팹
+-        [SerializeField] private float subEntranceInset = 1.5f; // 벽에서 방 안쪽으로 떨어질 거리
++        [Tooltip("선택 벽면에 표시할 임시 Cube 프리팹")] [SerializeField] private GameObject subEntranceMarkerPrefab; // 선택 벽면에 표시할 임시 Cube 프리팹
++        [Tooltip("벽에서 방 안쪽으로 떨어질 거리")] [SerializeField] private float subEntranceInset = 1.5f; // 벽에서 방 안쪽으로 떨어질 거리
+ 
+         private readonly Dictionary<Vector3Int, Room> placed = new Dictionary<Vector3Int, Room>(); // 좌표별 생성 방
+         private readonly List<Vector3Int> layoutCells = new List<Vector3Int>(); // 생성 예정 좌표
+diff --git a/Assets/Scripts/Dungeon/DungeonRouteData.cs b/Assets/Scripts/Dungeon/DungeonRouteData.cs
+index 8d0c382..8c6fce1 100644
+--- a/Assets/Scripts/Dungeon/DungeonRouteData.cs
++++ b/Assets/Scripts/Dungeon/DungeonRouteData.cs
+@@ -6,20 +6,20 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+     public class DungeonRouteData : ScriptableObject // 선택 가능한 던전 경로 원본 데이터
+     {
+         [Header("표시 정보")] // Inspector 표시 정보 구분
+-        [SerializeField] string routeId = "route"; // 저장과 비교에 사용할 고유 경로 ID
+-        [SerializeField] string displayName = "던전"; // 플레이어에게 표시할 던전 이름
+-        [SerializeField][TextArea(2, 4)] string description = "던전 설명"; // 던전 선택 화면에 표시할 설명
++        [Tooltip("저장과 비교에 사용할 고유 경로 ID")] [SerializeField] string routeId = "route"; // 저장과 비교에 사용할 고유 경로 ID
++        [Tooltip("플레이어에게 표시할 던전 이름")] [SerializeField] string displayName = "던전"; // 플레이어에게 표시할 던전 이름
++        [Tooltip("던전 선택 화면에 표시할 설명")] [SerializeField][TextArea(2, 4)] string description = "던전 설명"; // 던전 선택 화면에 표시할 설명
+ 
+         [Header("Scene")] // Inspector Scene 설정 구분
+-        [SerializeField] string sceneName = "Dungeon"; // 선택 후 이동할 Dungeon Scene 이름
++        [Tooltip("선택 후 이동할 Dungeon Scene 이름")] [SerializeField] string sceneName = "Dungeon"; // 선택 후 이동할 Dungeon Scene 이름
+ 
+         [Header("난이도")] // Inspector 던전 난이도 설정 구분
+-        [SerializeField][Range(1, 5)] int dangerLevel = 1; // 화면에 표시할 위험 단계
+-        [SerializeField][Min(8)] int roomCount = 8; // 생성할 던전 방 개수
+-        [SerializeField][Min(0f)] float monsterSpawnMultiplier = 1f; // 일반 몬스터 생성 수 배율
+-        [SerializeField][Min(0f)] float trapSpawnMultiplier = 1f; // 함정 생성 수 배율
+-        [SerializeField][Min(0f)] float rewardValueMultiplier = 1f; // 보물 가치 배율
+-        [SerializeField] int seedOffset; // 경로마다 다른 던전 배치를 만들 시드 보정값
++        [Tooltip("화면에 표시할 위험 단계")] [SerializeField][Range(1, 5)] int dangerLevel = 1; // 화면에 표시할 위험 단계
++        [Tooltip("생성할 던전 방 개수")] [SerializeField][Min(8)] int roomCount = 8; // 생성할 던전 방 개수
++        [Tooltip("일반 몬스터 생성 수 배율")] [SerializeField][Min(0f)] float monsterSpawnMultiplier = 1f; // 일반 몬스터 생성 수 배율
++        [Tooltip("함정 생성 수 배율")] [SerializeField][Min(0f)] float trapSpawnMultiplier = 1f; // 함정 생성 수 배율
++        [Tooltip("보물 가치 배율")] [SerializeField][Min(0f)] float rewardValueMultiplier = 1f; // 보물 가치 배율
++        [Tooltip("경로마다 다른 던전 배치를 만들 시드 보정값")] [SerializeField] int seedOffset; // 경로마다 다른 던전 배치를 만들 시드 보정값
+ 
+         public string RouteId => routeId; // 경로 고유 ID 반환
+         public string DisplayName => displayName; // 던전 표시 이름 반환
+diff --git a/Assets/Scripts/Dungeon/DungeonTimeSystem.cs b/Assets/Scripts/Dungeon/DungeonTimeSystem.cs
+index 53a990e..f6e19e6 100644
+--- a/Assets/Scripts/Dungeon/DungeonTimeSystem.cs
++++ b/Assets/Scripts/Dungeon/DungeonTimeSystem.cs
+@@ -10,13 +10,13 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+     public class DungeonTimeSystem : MonoBehaviour // 던전 제한시간 관리 컴포넌트
+     {
+         [Header("시간 설정")] // 던전 시간 설정 구분
+-        [SerializeField] float realDurationSeconds = 18f * 60f; // 던전 제한시간 18분
+-        [SerializeField] float startHour = 6f; // 던전 시작 게임시간
+-        [SerializeField] float endHour = 24f; // 던전 종료 게임시간
+-        [SerializeField] float wagonProximity = 5f; // 마차 탈출 인정 거리
++        [Tooltip("던전 제한시간 18분")] [SerializeField] float realDurationSeconds = 18f * 60f; // 던전 제한시간 18분
++        [Tooltip("던전 시작 게임시간")] [SerializeField] float startHour = 6f; // 던전 시작 게임시간
++        [Tooltip("던전 종료 게임시간")] [SerializeField] float endHour = 24f; // 던전 종료 게임시간
++        [Tooltip("마차 탈출 인정 거리")] [SerializeField] float wagonProximity = 5f; // 마차 탈출 인정 거리
+ 
+         [Header("디버그")] // 임시 시간 UI 설정 구분
+-        [SerializeField] bool showDebug = true; // 기존 OnGUI 시간 표시 여부
++        [Tooltip("기존 OnGUI 시간 표시 여부")] [SerializeField] bool showDebug = true; // 기존 OnGUI 시간 표시 여부
+ 
+         float elapsed; // 현재까지 흐른 현실시간
+         bool deadlineFired; // 제한시간 처리 완료 여부
+diff --git a/Assets/Scripts/Dungeon/Environment/BuffStatue.cs b/Assets/Scripts/Dungeon/Environment/BuffStatue.cs
+index 05c8941..38d06c2 100644
+--- a/Assets/Scripts/Dungeon/Environment/BuffStatue.cs
++++ b/Assets/Scripts/Dungeon/Environment/BuffStatue.cs
+@@ -5,9 +5,9 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+     public class BuffStatue : MonoBehaviour, IInteractable // 플레이어에게 일시적인 이동속도 버프를 주는 조각상
+     {
+         [Header("버프 설정")] // Inspector 버프 설정 구분
+-        [SerializeField] float speedMultiplier = 1.25f; // 적용할 이동속도 배율
+-        [SerializeField] float duration = 30f; // 이동속도 버프 지속시간
+-        [SerializeField] bool oneUse = true; // 조각상을 한 번만 사용할 수 있는지 결정
++        [Tooltip("적용할 이동속도 배율")] [SerializeField] float speedMultiplier = 1.25f; // 적용할 이동속도 배율
++        [Tooltip("이동속도 버프 지속시간")] [SerializeField] float duration = 30f; // 이동속도 버프 지속시간
++        [Tooltip("조각상을 한 번만 사용할 수 있는지 결정")] [SerializeField] bool oneUse = true; // 조각상을 한 번만 사용할 수 있는지 결정
+ 
+         bool hasBeenUsed; // 일회용 조각상 사용 여부 저장
+ 
+diff --git a/Assets/Scripts/Dungeon/Environment/CrackedWall.cs b/Assets/Scripts/Dungeon/Environment/CrackedWall.cs
+index 0d5a443..b78e33f 100644
+--- a/Assets/Scripts/Dungeon/Environment/CrackedWall.cs
++++ b/Assets/Scripts/Dungeon/Environment/CrackedWall.cs
+@@ -5,8 +5,8 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+     public class CrackedWall : MonoBehaviour, IInteractable // 폭탄을 소모해 파괴하는 금간 벽
+     {
+         [Header("파괴 설정")] // Inspector 파괴 설정 구분
+-        [SerializeField] GameObject wallVisual; // 파괴할 벽 외형과 Collider가 포함된 오브젝트
+-        [SerializeField] string requiredItemName = "폭탄"; // 벽 파괴에 필요한 아이템 이름
++        [Tooltip("파괴할 벽 외형과 Collider가 포함된 오브젝트")] [SerializeField] GameObject wallVisual; // 파괴할 벽 외형과 Collider가 포함된 오브젝트
++        [Tooltip("벽 파괴에 필요한 아이템 이름")] [SerializeField] string requiredItemName = "폭탄"; // 벽 파괴에 필요한 아이템 이름
+ 
+         bool isDestroyed; // 벽이 이미 파괴되었는지 저장
+ 
+diff --git a/Assets/Scripts/Dungeon/Environment/DungeonDoor.cs b/Assets/Scripts/Dungeon/Environment/DungeonDoor.cs
+index 7eed5d9..e705ca4 100644
+--- a/Assets/Scripts/Dungeon/Environment/DungeonDoor.cs
++++ b/Assets/Scripts/Dungeon/Environment/DungeonDoor.cs
+@@ -6,14 +6,14 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+     public class DungeonDoor : MonoBehaviour, IInteractable // 직접 또는 레버로 작동하는 던전 문
+     {
+         [Header("문 설정")] // Inspector 문 설정 구분
+-        [SerializeField] Transform doorPanel; // 실제로 움직일 문 패널
+-        [SerializeField] Vector3 openLocalOffset = new Vector3(0f, 3.2f, 0f); // 닫힌 위치에서 열린 위치까지의 이동량
+-        [SerializeField] float moveDuration = 0.75f; // 문이 완전히 이동하는 데 걸리는 시간
+-        [SerializeField] bool allowDirectInteraction = true; // 플레이어가 문을 직접 작동할 수 있는지 결정
++        [Tooltip("실제로 움직일 문 패널")] [SerializeField] Transform doorPanel; // 실제로 움직일 문 패널
++        [Tooltip("닫힌 위치에서 열린 위치까지의 이동량")] [SerializeField] Vector3 openLocalOffset = new Vector3(0f, 3.2f, 0f); // 닫힌 위치에서 열린 위치까지의 이동량
++        [Tooltip("문이 완전히 이동하는 데 걸리는 시간")] [SerializeField] float moveDuration = 0.75f; // 문이 완전히 이동하는 데 걸리는 시간
++        [Tooltip("플레이어가 문을 직접 작동할 수 있는지 결정")] [SerializeField] bool allowDirectInteraction = true; // 플레이어가 문을 직접 작동할 수 있는지 결정
+ 
+         [Header("잠금 설정")] // Inspector 잠금 설정 구분
+-        [SerializeField] bool requiresItem = false; // 문을 처음 열 때 아이템이 필요한지 결정
+-        [SerializeField] string requiredItemName = "열쇠"; // 잠금 해제에 사용할 아이템 이름
++        [Tooltip("문을 처음 열 때 아이템이 필요한지 결정")] [SerializeField] bool requiresItem = false; // 문을 처음 열 때 아이템이 필요한지 결정
++        [Tooltip("잠금 해제에 사용할 아이템 이름")] [SerializeField] string requiredItemName = "열쇠"; // 잠금 해제에 사용할 아이템 이름
+ 
+         bool isOpen; // 현재 문이 열려 있는지 저장
+         bool isMoving; // 현재 문이 이동 중인지 저장
+diff --git a/Assets/Scripts/Dungeon/Environment/DungeonDrawer.cs b/Assets/Scripts/Dungeon/Environment/DungeonDrawer.cs
+index b3c7e7a..3ea9b7e 100644
+--- a/Assets/Scripts/Dungeon/Environment/DungeonDrawer.cs
++++ b/Assets/Scripts/Dungeon/Environment/DungeonDrawer.cs
+@@ -6,12 +6,12 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+     public class DungeonDrawer : MonoBehaviour, IInteractable // 열고 닫으며 내부 아이템을 공개하는 서랍
+     {
+         [Header("서랍 설정")] // Inspector 서랍 설정 구분
+-        [SerializeField] Transform drawerBody; // 실제로 이동할 서랍 몸체
+-        [SerializeField] Vector3 openLocalOffset = new Vector3(0f, 0f, -0.8f); // 닫힌 위치에서 열린 위치까지의 이동량
+-        [SerializeField] float moveDuration = 0.4f; // 서랍 이동에 걸리는 시간
++        [Tooltip("실제로 이동할 서랍 몸체")] [SerializeField] Transform drawerBody; // 실제로 이동할 서랍 몸체
++        [Tooltip("닫힌 위치에서 열린 위치까지의 이동량")] [SerializeField] Vector3 openLocalOffset = new Vector3(0f, 0f, -0.8f); // 닫힌 위치에서 열린 위치까지의 이동량
++        [Tooltip("서랍 이동에 걸리는 시간")] [SerializeField] float moveDuration = 0.4f; // 서랍 이동에 걸리는 시간
+ 
+         [Header("내용물")] // Inspector 서랍 내용물 설정 구분
+-        [SerializeField] GameObject[] hiddenContents; // 처음에는 숨겼다가 서랍을 열면 표시할 아이템
++        [Tooltip("처음에는 숨겼다가 서랍을 열면 표시할 아이템")] [SerializeField] GameObject[] hiddenContents; // 처음에는 숨겼다가 서랍을 열면 표시할 아이템
+ 
+         Vector3 closedLocalPosition; // 서랍 몸체의 닫힌 로컬 위치
+         bool isOpen; // 현재 서랍이 열려 있는지 저장
+diff --git a/Assets/Scripts/Dungeon/Environment/DungeonLever.cs b/Assets/Scripts/Dungeon/Environment/DungeonLever.cs
+index 482de86..832fb4a 100644
+--- a/Assets/Scripts/Dungeon/Environment/DungeonLever.cs
++++ b/Assets/Scripts/Dungeon/Environment/DungeonLever.cs
+@@ -5,13 +5,13 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+     public class DungeonLever : MonoBehaviour, IInteractable // 연결된 문을 작동시키는 레버
+     {
+         [Header("연결 설정")] // Inspector 연결 설정 구분
+-        [SerializeField] DungeonDoor targetDoor; // 레버가 작동시킬 문
+-        [SerializeField] Transform leverHandle; // 회전시킬 레버 손잡이
++        [Tooltip("레버가 작동시킬 문")] [SerializeField] DungeonDoor targetDoor; // 레버가 작동시킬 문
++        [Tooltip("회전시킬 레버 손잡이")] [SerializeField] Transform leverHandle; // 회전시킬 레버 손잡이
+ 
+         [Header("레버 설정")] // Inspector 레버 설정 구분
+-        [SerializeField] Vector3 offRotation = new Vector3(0f, 0f, -30f); // 사용 전 손잡이 로컬 회전
+-        [SerializeField] Vector3 onRotation = new Vector3(0f, 0f, 30f); // 사용 후 손잡이 로컬 회전
+-        [SerializeField] bool oneUse = true; // 한 번만 사용할 수 있는지 결정
++        [Tooltip("사용 전 손잡이 로컬 회전")] [SerializeField] Vector3 offRotation = new Vector3(0f, 0f, -30f); // 사용 전 손잡이 로컬 회전
++        [Tooltip("사용 후 손잡이 로컬 회전")] [SerializeField] Vector3 onRotation = new Vector3(0f, 0f, 30f); // 사용 후 손잡이 로컬 회전
++        [Tooltip("한 번만 사용할 수 있는지 결정")] [SerializeField] bool oneUse = true; // 한 번만 사용할 수 있는지 결정
+ 
+         bool isOn; // 현재 레버 작동 상태 저장
+         bool hasBeenUsed; // 일회용 레버 사용 여부 저장
+diff --git a/Assets/Scripts/Dungeon/MonsterNavigation.cs b/Assets/Scripts/Dungeon/MonsterNavigation.cs
+index fe55074..52e911e 100644
+--- a/Assets/Scripts/Dungeon/MonsterNavigation.cs
++++ b/Assets/Scripts/Dungeon/MonsterNavigation.cs
+@@ -8,15 +8,15 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+     public class MonsterNavigation : MonoBehaviour // CharacterController용 NavMesh 이동 방향 제공
+     {
+         [Header("경로 검색")] // Inspector 경로 검색 설정 구분
+-        [SerializeField] float selfSampleDistance = 2f; // 몬스터 주변 NavMesh 검색 거리
+-        [SerializeField] float targetSampleDistance = 3f; // 목표 주변 NavMesh 검색 거리
+-        [SerializeField] float repathInterval = 0.15f; // 새로운 경로를 계산하는 시간 간격
+-        [SerializeField] float targetMoveThreshold = 0.5f; // 목표가 이동했을 때 경로를 갱신할 최소 거리
++        [Tooltip("몬스터 주변 NavMesh 검색 거리")] [SerializeField] float selfSampleDistance = 2f; // 몬스터 주변 NavMesh 검색 거리
++        [Tooltip("목표 주변 NavMesh 검색 거리")] [SerializeField] float targetSampleDistance = 3f; // 목표 주변 NavMesh 검색 거리
++        [Tooltip("새로운 경로를 계산하는 시간 간격")] [SerializeField] float repathInterval = 0.15f; // 새로운 경로를 계산하는 시간 간격
++        [Tooltip("목표가 이동했을 때 경로를 갱신할 최소 거리")] [SerializeField] float targetMoveThreshold = 0.5f; // 목표가 이동했을 때 경로를 갱신할 최소 거리
+ 
+         [Header("이동 설정")] // Inspector NavMeshAgent 설정 구분
+-        [SerializeField] float stoppingDistance = 0.1f; // 목표 앞에서 멈출 거리
+-        [SerializeField] float acceleration = 20f; // 경로 이동 방향 가속도
+-        [SerializeField] bool showDebugWarning = true; // NavMesh 진입 실패 경고 표시 여부
++        [Tooltip("목표 앞에서 멈출 거리")] [SerializeField] float stoppingDistance = 0.1f; // 목표 앞에서 멈출 거리
++        [Tooltip("경로 이동 방향 가속도")] [SerializeField] float acceleration = 20f; // 경로 이동 방향 가속도
++        [Tooltip("NavMesh 진입 실패 경고 표시 여부")] [SerializeField] bool showDebugWarning = true; // NavMesh 진입 실패 경고 표시 여부
+ 
+         NavMeshAgent agent; // 실제 경로를 계산할 NavMeshAgent
+         Vector3 lastTarget; // 마지막으로 경로를 요청한 목표 위치
+diff --git a/Assets/Scripts/Dungeon/Room.cs b/Assets/Scripts/Dungeon/Room.cs
+index 174a39f..24f2363 100644
+--- a/Assets/Scripts/Dungeon/Room.cs
++++ b/Assets/Scripts/Dungeon/Room.cs
+@@ -15,21 +15,21 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+         }
+ 
+         [Header("수평 벽")] // 수평 연결을 막는 벽 오브젝트 구분
+-        [SerializeField] GameObject wallN; // 북쪽 벽
+-        [SerializeField] GameObject wallE; // 동쪽 벽
+-        [SerializeField] GameObject wallS; // 남쪽 벽
+-        [SerializeField] GameObject wallW; // 서쪽 벽
++        [Tooltip("북쪽 벽")] [SerializeField] GameObject wallN; // 북쪽 벽
++        [Tooltip("동쪽 벽")] [SerializeField] GameObject wallE; // 동쪽 벽
++        [Tooltip("남쪽 벽")] [SerializeField] GameObject wallS; // 남쪽 벽
++        [Tooltip("서쪽 벽")] [SerializeField] GameObject wallW; // 서쪽 벽
+ 
+         [Header("수직 연결 차단물")] // 층간 연결을 막는 오브젝트 구분
+-        [SerializeField] GameObject ceilingBlock; // 위층 연결부를 막는 천장 또는 해치
+-        [SerializeField] GameObject floorBlock; // 아래층 연결부를 막는 바닥 또는 해치
++        [Tooltip("위층 연결부를 막는 천장 또는 해치")] [SerializeField] GameObject ceilingBlock; // 위층 연결부를 막는 천장 또는 해치
++        [Tooltip("아래층 연결부를 막는 바닥 또는 해치")] [SerializeField] GameObject floorBlock; // 아래층 연결부를 막는 바닥 또는 해치
+ 
+         [Header("수직 연결 외형")] // 연결될 때 표시할 계단과 난간 구분
+-        [SerializeField] GameObject stairsUpVisual; // 위층으로 올라가는 계단 외형
+-        [SerializeField] GameObject stairsDownVisual; // 아래층으로 내려가는 입구 외형
++        [Tooltip("위층으로 올라가는 계단 외형")] [SerializeField] GameObject stairsUpVisual; // 위층으로 올라가는 계단 외형
++        [Tooltip("아래층으로 내려가는 입구 외형")] [SerializeField] GameObject stairsDownVisual; // 아래층으로 내려가는 입구 외형
+ 
+         [Header("자동 스폰")] // 방 내부 자동 생성 허용 설정
+-        [SerializeField] bool allowAutomaticSpawning = true; // 몬스터와 보물 및 함정 생성 허용 여부
++        [Tooltip("몬스터와 보물 및 함정 생성 허용 여부")] [SerializeField] bool allowAutomaticSpawning = true; // 몬스터와 보물 및 함정 생성 허용 여부
+ 
+         public bool AllowAutomaticSpawning => allowAutomaticSpawning; // 외부 스폰 매니저에 생성 허용 상태 반환
+ 
+diff --git a/Assets/Scripts/Dungeon/RuntimeNavMeshBuilder.cs b/Assets/Scripts/Dungeon/RuntimeNavMeshBuilder.cs
+index e618168..3ebdf80 100644
+--- a/Assets/Scripts/Dungeon/RuntimeNavMeshBuilder.cs
++++ b/Assets/Scripts/Dungeon/RuntimeNavMeshBuilder.cs
+@@ -11,12 +11,12 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+     public class RuntimeNavMeshBuilder : MonoBehaviour // 절차적 던전용 런타임 NavMesh 생성 담당
+     {
+         [Header("필수 참조")] // Inspector 필수 참조 구분
+-        [SerializeField] DungeonGenerator dungeonGenerator; // 던전 생성 완료 이벤트를 제공하는 생성기
+-        [SerializeField] NavMeshSurface navMeshSurface; // 실제 NavMesh를 생성할 Surface
++        [Tooltip("던전 생성 완료 이벤트를 제공하는 생성기")] [SerializeField] DungeonGenerator dungeonGenerator; // 던전 생성 완료 이벤트를 제공하는 생성기
++        [Tooltip("실제 NavMesh를 생성할 Surface")] [SerializeField] NavMeshSurface navMeshSurface; // 실제 NavMesh를 생성할 Surface
+ 
+         [Header("검증 설정")] // NavMesh 생성 결과 확인 설정 구분
+-        [SerializeField] float startRoomSampleDistance = 4f; // 시작 방 주변 NavMesh 검색 거리
+-        [SerializeField] bool showDebug = true; // NavMesh 생성 결과 로그 출력 여부
++        [Tooltip("시작 방 주변 NavMesh 검색 거리")] [SerializeField] float startRoomSampleDistance = 4f; // 시작 방 주변 NavMesh 검색 거리
++        [Tooltip("NavMesh 생성 결과 로그 출력 여부")] [SerializeField] bool showDebug = true; // NavMesh 생성 결과 로그 출력 여부
+ 
+         public bool IsReady { get; private set; } // 현재 NavMesh 사용 가능 여부
+         public event Action NavigationBuilt; // 외부 시스템에 NavMesh 생성 완료 전달
+diff --git a/Assets/Scripts/Dungeon/Trap.cs b/Assets/Scripts/Dungeon/Trap.cs
+index 8b2ea12..3334cce 100644
+--- a/Assets/Scripts/Dungeon/Trap.cs
++++ b/Assets/Scripts/Dungeon/Trap.cs
+@@ -15,26 +15,26 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+     public class Trap : MonoBehaviour // 플레이어 진입을 감지해 피해를 주는 함정
+     {
+         [Header("함정 설정")] // Inspector 함정 설정 구분
+-        [SerializeField] TrapType trapType = TrapType.Spike; // 현재 프리팹의 함정 종류
+-        [SerializeField] float damage = 20f; // 일반 함정이 플레이어에게 줄 피해
+-        [SerializeField] float activationDelay = 0f; // 플레이어 감지 후 실제 발동까지의 지연시간
+-        [SerializeField] float cooldown = 1.5f; // 재발동이 가능해질 때까지의 대기시간
+-        [SerializeField] bool oneShot = false; // 한 번 발동한 뒤 영구 비활성화할지 결정
++        [Tooltip("현재 프리팹의 함정 종류")] [SerializeField] TrapType trapType = TrapType.Spike; // 현재 프리팹의 함정 종류
++        [Tooltip("일반 함정이 플레이어에게 줄 피해")] [SerializeField] float damage = 20f; // 일반 함정이 플레이어에게 줄 피해
++        [Tooltip("플레이어 감지 후 실제 발동까지의 지연시간")] [SerializeField] float activationDelay = 0f; // 플레이어 감지 후 실제 발동까지의 지연시간
++        [Tooltip("재발동이 가능해질 때까지의 대기시간")] [SerializeField] float cooldown = 1.5f; // 재발동이 가능해질 때까지의 대기시간
++        [Tooltip("한 번 발동한 뒤 영구 비활성화할지 결정")] [SerializeField] bool oneShot = false; // 한 번 발동한 뒤 영구 비활성화할지 결정
+ 
+         [Header("상태 이상")] // Inspector 함정 상태 이상 설정 구분
+-        [SerializeField] bool applyBleeding; // 발동 시 출혈 적용 여부
+-        [SerializeField] float bleedingDuration = 8f; // 출혈 지속시간
+-        [SerializeField] float bleedingDamagePerTick = 4f; // 출혈 1회 피해량
+-        [SerializeField] float bleedingTickInterval = 2f; // 출혈 피해 간격
+-        [SerializeField] bool applySlow; // 발동 시 둔화 적용 여부
+-        [SerializeField] float slowDuration = 5f; // 둔화 지속시간
+-        [SerializeField][Range(0.1f, 1f)] float slowMultiplier = 0.6f; // 둔화 이동속도 배율
++        [Tooltip("발동 시 출혈 적용 여부")] [SerializeField] bool applyBleeding; // 발동 시 출혈 적용 여부
++        [Tooltip("출혈 지속시간")] [SerializeField] float bleedingDuration = 8f; // 출혈 지속시간
++        [Tooltip("출혈 1회 피해량")] [SerializeField] float bleedingDamagePerTick = 4f; // 출혈 1회 피해량
++        [Tooltip("출혈 피해 간격")] [SerializeField] float bleedingTickInterval = 2f; // 출혈 피해 간격
++        [Tooltip("발동 시 둔화 적용 여부")] [SerializeField] bool applySlow; // 발동 시 둔화 적용 여부
++        [Tooltip("둔화 지속시간")] [SerializeField] float slowDuration = 5f; // 둔화 지속시간
++        [Tooltip("둔화 이동속도 배율")] [SerializeField][Range(0.1f, 1f)] float slowMultiplier = 0.6f; // 둔화 이동속도 배율
+ 
+         [Header("피드백")] // Inspector 함정 피드백 설정 구분
+-        [SerializeField] Vector3 feedbackOffset = new Vector3(0f, 0.2f, 0f); // 함정 루트 기준 피드백 발생 위치
++        [Tooltip("함정 루트 기준 피드백 발생 위치")] [SerializeField] Vector3 feedbackOffset = new Vector3(0f, 0.2f, 0f); // 함정 루트 기준 피드백 발생 위치
+ 
+         [Header("디버그")] // 디버그 설정 구분
+-        [SerializeField] bool showDebug = true; // 함정 발동 로그를 출력할지 결정
++        [Tooltip("함정 발동 로그를 출력할지 결정")] [SerializeField] bool showDebug = true; // 함정 발동 로그를 출력할지 결정
+ 
+         BoxCollider triggerCollider; // 플레이어를 감지할 Trigger Collider
+         Rigidbody trapRigidbody; // Trigger 이벤트를 안정적으로 발생시킬 Rigidbody
+diff --git a/Assets/Scripts/Dungeon/WagonCargo.cs b/Assets/Scripts/Dungeon/WagonCargo.cs
+index ecef974..dc19790 100644
+--- a/Assets/Scripts/Dungeon/WagonCargo.cs
++++ b/Assets/Scripts/Dungeon/WagonCargo.cs
+@@ -7,7 +7,7 @@ namespace ProjectI
+     /// </summary>
+     public class WagonCargo : MonoBehaviour, IInteractable
+     {
+-        [SerializeField] Wagon wagon;
++        [Tooltip("확보한 회수품을 전달할 부모 Wagon 컴포넌트")] [SerializeField] Wagon wagon;
+ 
+         void Awake() { if (wagon == null) wagon = GetComponentInParent<Wagon>(); }
+         public string GetPrompt() => "[E] 마차에 싣기";
+diff --git a/Assets/Scripts/Dungeon/WagonLever.cs b/Assets/Scripts/Dungeon/WagonLever.cs
+index 5803a36..37886ae 100644
+--- a/Assets/Scripts/Dungeon/WagonLever.cs
++++ b/Assets/Scripts/Dungeon/WagonLever.cs
+@@ -7,7 +7,7 @@ namespace ProjectI
+     /// </summary>
+     public class WagonLever : MonoBehaviour, IInteractable
+     {
+-        [SerializeField] Wagon wagon;
++        [Tooltip("레버 작동 시 탈출을 요청할 부모 Wagon 컴포넌트")] [SerializeField] Wagon wagon;
+ 
+         void Awake() { if (wagon == null) wagon = GetComponentInParent<Wagon>(); }
+ 
+diff --git a/Assets/Scripts/Feedback/PlayerDamageFeedback.cs b/Assets/Scripts/Feedback/PlayerDamageFeedback.cs
+index aaa074d..3527a55 100644
+--- a/Assets/Scripts/Feedback/PlayerDamageFeedback.cs
++++ b/Assets/Scripts/Feedback/PlayerDamageFeedback.cs
+@@ -6,24 +6,24 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+     public class PlayerDamageFeedback : MonoBehaviour // 플레이어 피격 화면과 카메라 피드백 처리
+     {
+         [Header("필수 참조")] // Inspector 필수 참조 설정 구분
+-        [SerializeField] Transform cameraShakePivot; // 카메라 흔들림 전용 부모 Transform
++        [Tooltip("카메라 흔들림 전용 부모 Transform")] [SerializeField] Transform cameraShakePivot; // 카메라 흔들림 전용 부모 Transform
+ 
+         [Header("화면 점멸")] // Inspector 화면 점멸 설정 구분
+-        [SerializeField] Color flashColor = new Color(0.65f, 0f, 0f, 1f); // 피격 화면 색상
+-        [SerializeField][Range(0f, 1f)] float maximumFlashAlpha = 0.35f; // 화면 점멸 최대 투명도
+-        [SerializeField] float flashDuration = 0.35f; // 화면 점멸 지속시간
+-        [SerializeField] float damageForMaximumIntensity = 60f; // 최대 강도에 도달할 피해량
++        [Tooltip("피격 화면 색상")] [SerializeField] Color flashColor = new Color(0.65f, 0f, 0f, 1f); // 피격 화면 색상
++        [Tooltip("화면 점멸 최대 투명도")] [SerializeField][Range(0f, 1f)] float maximumFlashAlpha = 0.35f; // 화면 점멸 최대 투명도
++        [Tooltip("화면 점멸 지속시간")] [SerializeField] float flashDuration = 0.35f; // 화면 점멸 지속시간
++        [Tooltip("최대 강도에 도달할 피해량")] [SerializeField] float damageForMaximumIntensity = 60f; // 최대 강도에 도달할 피해량
+ 
+         [Header("카메라 흔들림")] // Inspector 카메라 흔들림 설정 구분
+-        [SerializeField] float shakeDuration = 0.22f; // 일반 피격 흔들림 지속시간
+-        [SerializeField] float shakeStrength = 0.08f; // 일반 피격 흔들림 세기
+-        [SerializeField] float fatalShakeMultiplier = 1.8f; // 즉사 피해 흔들림 배율
++        [Tooltip("일반 피격 흔들림 지속시간")] [SerializeField] float shakeDuration = 0.22f; // 일반 피격 흔들림 지속시간
++        [Tooltip("일반 피격 흔들림 세기")] [SerializeField] float shakeStrength = 0.08f; // 일반 피격 흔들림 세기
++        [Tooltip("즉사 피해 흔들림 배율")] [SerializeField] float fatalShakeMultiplier = 1.8f; // 즉사 피해 흔들림 배율
+ 
+         [Header("피격 효과음")] // Inspector 피격 효과음 설정 구분
+-        [SerializeField] AudioClip damageClip; // 일반 피해 효과음
+-        [SerializeField] AudioClip fatalDamageClip; // 즉사 피해 효과음
+-        [SerializeField][Range(0f, 1f)] float audioVolume = 0.7f; // 피격 효과음 음량
+-        [SerializeField] bool useFallbackTone = true; // 효과음 누락 시 임시 전자음 사용 여부
++        [Tooltip("일반 피해 효과음")] [SerializeField] AudioClip damageClip; // 일반 피해 효과음
++        [Tooltip("즉사 피해 효과음")] [SerializeField] AudioClip fatalDamageClip; // 즉사 피해 효과음
++        [Tooltip("피격 효과음 음량")] [SerializeField][Range(0f, 1f)] float audioVolume = 0.7f; // 피격 효과음 음량
++        [Tooltip("효과음 누락 시 임시 전자음 사용 여부")] [SerializeField] bool useFallbackTone = true; // 효과음 누락 시 임시 전자음 사용 여부
+ 
+         PlayerController playerController; // 피해 이벤트를 제공하는 플레이어
+         Vector3 pivotBaseLocalPosition; // 카메라 흔들림 Pivot 기본 위치
+diff --git a/Assets/Scripts/Feedback/ThreatFeedback.cs b/Assets/Scripts/Feedback/ThreatFeedback.cs
+index a26fedb..6685a94 100644
+--- a/Assets/Scripts/Feedback/ThreatFeedback.cs
++++ b/Assets/Scripts/Feedback/ThreatFeedback.cs
+@@ -5,30 +5,30 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+     public class ThreatFeedback : MonoBehaviour // 몬스터와 기믹의 공통 소리 및 파티클 피드백
+     {
+         [Header("효과음")] // Inspector 효과음 설정 구분
+-        [SerializeField] AudioClip warningClip; // 위험 행동 시작 경고음
+-        [SerializeField] AudioClip appearClip; // 고스트 출현 효과음
+-        [SerializeField] AudioClip attackClip; // 공격 실행 효과음
+-        [SerializeField] AudioClip hitClip; // 피격 효과음
++        [Tooltip("위험 행동 시작 경고음")] [SerializeField] AudioClip warningClip; // 위험 행동 시작 경고음
++        [Tooltip("고스트 출현 효과음")] [SerializeField] AudioClip appearClip; // 고스트 출현 효과음
++        [Tooltip("공격 실행 효과음")] [SerializeField] AudioClip attackClip; // 공격 실행 효과음
++        [Tooltip("피격 효과음")] [SerializeField] AudioClip hitClip; // 피격 효과음
+ 
+         [Header("파티클")] // Inspector 파티클 설정 구분
+-        [SerializeField] ParticleSystem warningEffectPrefab; // 위험 경고 파티클 프리팹
+-        [SerializeField] ParticleSystem appearEffectPrefab; // 출현 파티클 프리팹
+-        [SerializeField] ParticleSystem attackEffectPrefab; // 공격 파티클 프리팹
+-        [SerializeField] ParticleSystem hitEffectPrefab; // 피격 파티클 프리팹
++        [Tooltip("위험 경고 파티클 프리팹")] [SerializeField] ParticleSystem warningEffectPrefab; // 위험 경고 파티클 프리팹
++        [Tooltip("출현 파티클 프리팹")] [SerializeField] ParticleSystem appearEffectPrefab; // 출현 파티클 프리팹
++        [Tooltip("공격 파티클 프리팹")] [SerializeField] ParticleSystem attackEffectPrefab; // 공격 파티클 프리팹
++        [Tooltip("피격 파티클 프리팹")] [SerializeField] ParticleSystem hitEffectPrefab; // 피격 파티클 프리팹
+ 
+         [Header("3D 사운드")] // Inspector 3D 사운드 설정 구분
+-        [SerializeField][Range(0f, 1f)] float volume = 0.7f; // 전체 효과음 음량
+-        [SerializeField] float maxDistance = 20f; // 효과음 최대 도달 거리
+-        [SerializeField] bool useFallbackTones = true; // 효과음 누락 시 임시 전자음 사용 여부
++        [Tooltip("전체 효과음 음량")] [SerializeField][Range(0f, 1f)] float volume = 0.7f; // 전체 효과음 음량
++        [Tooltip("효과음 최대 도달 거리")] [SerializeField] float maxDistance = 20f; // 효과음 최대 도달 거리
++        [Tooltip("효과음 누락 시 임시 전자음 사용 여부")] [SerializeField] bool useFallbackTones = true; // 효과음 누락 시 임시 전자음 사용 여부
+ 
+         [Header("임시 전자음")] // Inspector 임시 전자음 설정 구분
+-        [SerializeField] float warningTone = 180f; // 경고용 낮은 전자음 주파수
+-        [SerializeField] float appearTone = 340f; // 출현용 전자음 주파수
+-        [SerializeField] float attackTone = 100f; // 공격용 낮은 전자음 주파수
+-        [SerializeField] float hitTone = 520f; // 피격용 높은 전자음 주파수
++        [Tooltip("경고용 낮은 전자음 주파수")] [SerializeField] float warningTone = 180f; // 경고용 낮은 전자음 주파수
++        [Tooltip("출현용 전자음 주파수")] [SerializeField] float appearTone = 340f; // 출현용 전자음 주파수
++        [Tooltip("공격용 낮은 전자음 주파수")] [SerializeField] float attackTone = 100f; // 공격용 낮은 전자음 주파수
++        [Tooltip("피격용 높은 전자음 주파수")] [SerializeField] float hitTone = 520f; // 피격용 높은 전자음 주파수
+ 
+         [Header("재생 제한")] // Inspector 반복 재생 제한 설정 구분
+-        [SerializeField] float minimumInterval = 0.08f; // 같은 피드백의 최소 재생 간격
++        [Tooltip("같은 피드백의 최소 재생 간격")] [SerializeField] float minimumInterval = 0.08f; // 같은 피드백의 최소 재생 간격
+ 
+         float lastWarningTime = -999f; // 마지막 경고 피드백 재생 시각
+         float lastAppearTime = -999f; // 마지막 출현 피드백 재생 시각
+diff --git a/Assets/Scripts/Items/ItemData.cs b/Assets/Scripts/Items/ItemData.cs
+index b46c6c4..b090b40 100644
+--- a/Assets/Scripts/Items/ItemData.cs
++++ b/Assets/Scripts/Items/ItemData.cs
+@@ -11,22 +11,22 @@ namespace ProjectI
+     public class ItemData : ScriptableObject
+     {
+         [Header("기본")]
+-        public string displayName = "아이템";
+-        [TextArea] public string description;
+-        public string category = "소모품";        // 분류
++        [Tooltip("게임 화면과 상점에 표시할 아이템 이름")] public string displayName = "아이템";
++        [Tooltip("상점과 정보 UI에 표시할 아이템 설명")] [TextArea] public string description;
++        [Tooltip("소모품과 장비 등 아이템을 구분하는 분류 이름")] public string category = "소모품";        // 분류
+ 
+         [Header("무게·슬롯")]
+-        public float weightKg = 1f;               // 무게
+-        public int inventorySlots = 1;            // 차지 칸
+-        public int bonusSlots = 0;                // 가방류: 인벤토리 칸 추가(가방=4)
++        [Tooltip("아이템 하나가 더하는 운반 무게(kg)")] public float weightKg = 1f;               // 무게
++        [Tooltip("아이템 하나가 차지하는 인벤토리 슬롯 수")] public int inventorySlots = 1;            // 차지 칸
++        [Tooltip("가방처럼 소지 시 추가로 제공하는 인벤토리 슬롯 수")] public int bonusSlots = 0;                // 가방류: 인벤토리 칸 추가(가방=4)
+ 
+         [Header("속성")]
+-        [Range(0, 3)] public int noise = 0;       // 소음 (0무음~3대)
+-        public bool usesBattery = false;          // 배터리 사용
+-        public string interaction = "없음";       // F 상호작용
++        [Tooltip("아이템 사용 시 발생하는 소음 단계(0: 무음, 3: 최대)")] [Range(0, 3)] public int noise = 0;       // 소음 (0무음~3대)
++        [Tooltip("아이템 작동에 배터리를 소비하는지 여부")] public bool usesBattery = false;          // 배터리 사용
++        [Tooltip("F키로 실행하는 아이템 전용 상호작용 이름")] public string interaction = "없음";       // F 상호작용
+ 
+         [Header("가격")]
+-        public int buyPrice = 0;
+-        public int sellPrice = 0;                 // = buyPrice × 0.8
++        [Tooltip("마을 상점에서 아이템을 구매할 때 지불할 가격")] public int buyPrice = 0;
++        [Tooltip("마을 상점에서 아이템을 판매할 때 받을 가격")] public int sellPrice = 0;                 // = buyPrice × 0.8
+     }
+ }
+diff --git a/Assets/Scripts/Items/PickupItem.cs b/Assets/Scripts/Items/PickupItem.cs
+index be04f80..874447b 100644
+--- a/Assets/Scripts/Items/PickupItem.cs
++++ b/Assets/Scripts/Items/PickupItem.cs
+@@ -11,11 +11,11 @@ namespace ProjectI
+     public class PickupItem : MonoBehaviour, IInteractable, ICarryable
+     {
+         [Header("데이터 (없으면 아래 fallback 사용)")]
+-        [SerializeField] ItemData data;
+-        [SerializeField] WeaponData weaponData; // 무기일 경우 지정 (PlayerCombat이 참조)
+-        [SerializeField] string fallbackName = ""; // 비우면 오브젝트(GameObject) 이름 사용
+-        [SerializeField] float fallbackWeight = 1f;
+-        [SerializeField] int fallbackSlots = 1;
++        [Tooltip("아이템 이름과 무게 및 상점 정보를 가져올 ItemData 에셋")] [SerializeField] ItemData data;
++        [Tooltip("무기일 경우 지정 (PlayerCombat이 참조)")] [SerializeField] WeaponData weaponData; // 무기일 경우 지정 (PlayerCombat이 참조)
++        [Tooltip("비우면 오브젝트(GameObject) 이름 사용")] [SerializeField] string fallbackName = ""; // 비우면 오브젝트(GameObject) 이름 사용
++        [Tooltip("ItemData가 없을 때 적용할 기본 무게(kg)")] [SerializeField] float fallbackWeight = 1f;
++        [Tooltip("ItemData가 없을 때 차지할 기본 인벤토리 슬롯 수")] [SerializeField] int fallbackSlots = 1;
+ 
+         Rigidbody rb;
+         Collider col;
+diff --git a/Assets/Scripts/Items/RecoveryItem.cs b/Assets/Scripts/Items/RecoveryItem.cs
+index ffd700c..c053901 100644
+--- a/Assets/Scripts/Items/RecoveryItem.cs
++++ b/Assets/Scripts/Items/RecoveryItem.cs
+@@ -6,9 +6,9 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+     public class RecoveryItem : MonoBehaviour // 체력과 상태 이상을 회복하는 소모품
+     {
+         [Header("회복 설정")] // Inspector 회복 설정 구분
+-        [SerializeField] float healAmount = 15f; // 사용할 때 회복할 체력
+-        [SerializeField] bool removeBleeding = true; // 사용할 때 출혈 제거 여부
+-        [SerializeField] bool removeSlow; // 사용할 때 둔화 제거 여부
++        [Tooltip("사용할 때 회복할 체력")] [SerializeField] float healAmount = 15f; // 사용할 때 회복할 체력
++        [Tooltip("사용할 때 출혈 제거 여부")] [SerializeField] bool removeBleeding = true; // 사용할 때 출혈 제거 여부
++        [Tooltip("사용할 때 둔화 제거 여부")] [SerializeField] bool removeSlow; // 사용할 때 둔화 제거 여부
+ 
+         public bool TryUse(PlayerController player) // 플레이어에게 회복 효과 적용 시도
+         {
+diff --git a/Assets/Scripts/Items/Treasure.cs b/Assets/Scripts/Items/Treasure.cs
+index 93ac3c1..aa91eb6 100644
+--- a/Assets/Scripts/Items/Treasure.cs
++++ b/Assets/Scripts/Items/Treasure.cs
+@@ -10,12 +10,12 @@ namespace ProjectI
+     public class Treasure : MonoBehaviour, IInteractable, ICarryable
+     {
+         [Header("데이터 (없으면 아래 fallback)")]
+-        [SerializeField] TreasureData data;
+-        [SerializeField] int fbMinValue = 100;
+-        [SerializeField] int fbMaxValue = 300;
+-        [SerializeField] float fbWeight = 2f;
+-        [SerializeField] int fbSlots = 1;
+-        [SerializeField] bool fbTwoHanded = false;
++        [Tooltip("보물 이름과 가치 및 운반 정보를 가져올 TreasureData 에셋")] [SerializeField] TreasureData data;
++        [Tooltip("TreasureData가 없을 때 사용할 최소 감정 가치")] [SerializeField] int fbMinValue = 100;
++        [Tooltip("TreasureData가 없을 때 사용할 최대 감정 가치")] [SerializeField] int fbMaxValue = 300;
++        [Tooltip("TreasureData가 없을 때 적용할 기본 무게(kg)")] [SerializeField] float fbWeight = 2f;
++        [Tooltip("TreasureData가 없을 때 차지할 기본 인벤토리 슬롯 수")] [SerializeField] int fbSlots = 1;
++        [Tooltip("TreasureData가 없을 때 적용할 양손 운반 여부")] [SerializeField] bool fbTwoHanded = false;
+ 
+         int lockedValue = -1;
+         Rigidbody rb;
+diff --git a/Assets/Scripts/Items/TreasureData.cs b/Assets/Scripts/Items/TreasureData.cs
+index 1cea616..82a10ee 100644
+--- a/Assets/Scripts/Items/TreasureData.cs
++++ b/Assets/Scripts/Items/TreasureData.cs
+@@ -9,12 +9,12 @@ namespace ProjectI
+     [CreateAssetMenu(fileName = "TreasureData", menuName = "ProjectI/Treasure Data")]
+     public class TreasureData : ScriptableObject
+     {
+-        public string displayName = "보물";
+-        public int minValue = 100;        // 최소가
+-        public int maxValue = 300;        // 최대가
+-        public float weightKg = 1f;
+-        public int inventorySlots = 1;
+-        public bool twoHanded = false;    // 두손 운반
+-        [Range(0, 3)] public int noise = 0;
++        [Tooltip("게임 화면과 정산 결과에 표시할 보물 이름")] public string displayName = "보물";
++        [Tooltip("보물을 처음 생성할 때 결정할 수 있는 최소 감정 가치")] public int minValue = 100;        // 최소가
++        [Tooltip("보물을 처음 생성할 때 결정할 수 있는 최대 감정 가치")] public int maxValue = 300;        // 최대가
++        [Tooltip("보물 하나가 더하는 운반 무게(kg)")] public float weightKg = 1f;
++        [Tooltip("보물 하나가 차지하는 인벤토리 슬롯 수")] public int inventorySlots = 1;
++        [Tooltip("보물을 양손으로만 운반해야 하는지 여부")] public bool twoHanded = false;    // 두손 운반
++        [Tooltip("보물 운반 시 발생하는 소음 단계(0: 무음, 3: 최대)")] [Range(0, 3)] public int noise = 0;
+     }
+ }
+diff --git a/Assets/Scripts/Items/WeaponData.cs b/Assets/Scripts/Items/WeaponData.cs
+index 9694f77..826fe3a 100644
+--- a/Assets/Scripts/Items/WeaponData.cs
++++ b/Assets/Scripts/Items/WeaponData.cs
+@@ -11,13 +11,13 @@ namespace ProjectI
+     [CreateAssetMenu(fileName = "WeaponData", menuName = "ProjectI/Weapon Data")]
+     public class WeaponData : ScriptableObject
+     {
+-        public string displayName = "무기";
+-        public WeaponType type = WeaponType.Sword;
+-        public float attackDamage = 30f;
+-        public float attackCooldown = 0.5f;
+-        public float attackRange = 2.5f;      // 근접 사거리 / 활은 크게(예: 20)
+-        [Range(0f, 1f)] public float critChance = 0.15f;
+-        public float critMultiplier = 1.5f;
+-        [Range(0f, 1f)] public float blockReduction = 0.6f; // 방패: 막을 때 피해 감소율
++        [Tooltip("게임 화면과 인벤토리에 표시할 무기 이름")] public string displayName = "무기";
++        [Tooltip("검과 도끼 및 활과 방패 중 적용할 무기 종류")] public WeaponType type = WeaponType.Sword;
++        [Tooltip("공격이 적에게 명중했을 때 적용할 기본 피해량")] public float attackDamage = 30f;
++        [Tooltip("공격 후 다음 공격까지 기다릴 시간(초)")] public float attackCooldown = 0.5f;
++        [Tooltip("공격 판정이 도달하는 최대 거리(m)")] public float attackRange = 2.5f;      // 근접 사거리 / 활은 크게(예: 20)
++        [Tooltip("공격 한 번이 치명타가 될 확률(0~1)")] [Range(0f, 1f)] public float critChance = 0.15f;
++        [Tooltip("치명타 발생 시 기본 피해에 곱할 배율")] public float critMultiplier = 1.5f;
++        [Tooltip("방패 방어 중 감소시킬 피해 비율(0~1)")] [Range(0f, 1f)] public float blockReduction = 0.6f; // 방패: 막을 때 피해 감소율
+     }
+ }
+diff --git a/Assets/Scripts/Light/Brazier.cs b/Assets/Scripts/Light/Brazier.cs
+index f6c0a8d..258ac99 100644
+--- a/Assets/Scripts/Light/Brazier.cs
++++ b/Assets/Scripts/Light/Brazier.cs
+@@ -7,10 +7,10 @@ namespace ProjectI
+     /// </summary>
+     public class Brazier : MonoBehaviour, IInteractable
+     {
+-        [SerializeField] float maxBrightness = 40f;   // 최대 기여치
+-        [SerializeField] float decayPerSec = 1.5f;    // 초당 감소량
+-        [SerializeField] Light visualLight;           // 실제 조명(없으면 자식 검색)
+-        [SerializeField] float maxIntensity = 2.5f;   // 최대 조명 세기
++        [Tooltip("최대 기여치")] [SerializeField] float maxBrightness = 40f;   // 최대 기여치
++        [Tooltip("초당 감소량")] [SerializeField] float decayPerSec = 1.5f;    // 초당 감소량
++        [Tooltip("실제 조명(없으면 자식 검색)")] [SerializeField] Light visualLight;           // 실제 조명(없으면 자식 검색)
++        [Tooltip("최대 조명 세기")] [SerializeField] float maxIntensity = 2.5f;   // 최대 조명 세기
+ 
+         float current;
+         public float Contribution => current;         // LightRoom이 합산
+diff --git a/Assets/Scripts/Light/LightRoom.cs b/Assets/Scripts/Light/LightRoom.cs
+index af10a5f..d676038 100644
+--- a/Assets/Scripts/Light/LightRoom.cs
++++ b/Assets/Scripts/Light/LightRoom.cs
+@@ -9,7 +9,7 @@ namespace ProjectI
+     /// </summary>
+     public class LightRoom : MonoBehaviour
+     {
+-        [SerializeField] float baseBrightness = 0f;   // 구역 기본 밝기(기본 0 = 칠흑)
++        [Tooltip("구역 기본 밝기(기본 0 = 칠흑)")] [SerializeField] float baseBrightness = 0f;   // 구역 기본 밝기(기본 0 = 칠흑)
+         readonly List<Brazier> braziers = new List<Brazier>();
+         Collider zone;
+ 
+diff --git a/Assets/Scripts/Light/LightSource.cs b/Assets/Scripts/Light/LightSource.cs
+index fbe6d2a..e6d9798 100644
+--- a/Assets/Scripts/Light/LightSource.cs
++++ b/Assets/Scripts/Light/LightSource.cs
+@@ -10,10 +10,10 @@ namespace ProjectI
+     {
+         public enum Kind { Torch, Lantern }
+ 
+-        [SerializeField] Kind kind = Kind.Lantern;
+-        [SerializeField] float brightnessValue = 50f;  // 방 밝기 기여치 (횃불 30 / 랜턴 50)
+-        [SerializeField] Light visualLight;            // 실제 조명(없으면 자식에서 검색)
+-        [SerializeField] bool isOn = false;            // 휴대 광원 초기값 = 꺼짐 (T로 켬)
++        [Tooltip("광원의 종류와 밝기 계산 방식을 구분하는 값")] [SerializeField] Kind kind = Kind.Lantern;
++        [Tooltip("방 밝기 기여치 (횃불 30 / 랜턴 50)")] [SerializeField] float brightnessValue = 50f;  // 방 밝기 기여치 (횃불 30 / 랜턴 50)
++        [Tooltip("실제 조명(없으면 자식에서 검색)")] [SerializeField] Light visualLight;            // 실제 조명(없으면 자식에서 검색)
++        [Tooltip("휴대 광원 초기값 = 꺼짐 (T로 켬)")] [SerializeField] bool isOn = false;            // 휴대 광원 초기값 = 꺼짐 (T로 켬)
+ 
+         public Kind LightType => kind;
+         public bool IsOn => isOn;
+diff --git a/Assets/Scripts/Managers/AudioManager.cs b/Assets/Scripts/Managers/AudioManager.cs
+index dbe51da..7e67b77 100644
+--- a/Assets/Scripts/Managers/AudioManager.cs
++++ b/Assets/Scripts/Managers/AudioManager.cs
+@@ -9,11 +9,11 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+         public static AudioManager Instance { get; private set; } // 현재 활성 AudioManager 접근점
+ 
+         [Header("AudioMixer 연결")] // Inspector AudioMixer 출력 연결 구분
+-        [SerializeField] AudioMixerGroup sfxOutputGroup; // 풀링된 3D AudioSource가 출력될 SFX 그룹
++        [Tooltip("풀링된 3D AudioSource가 출력될 SFX 그룹")] [SerializeField] AudioMixerGroup sfxOutputGroup; // 풀링된 3D AudioSource가 출력될 SFX 그룹
+ 
+         [Header("AudioSource 풀")] // Inspector 오디오 풀 설정 구분
+-        [SerializeField][Min(1)] int initialPoolSize = 12; // 시작할 때 미리 생성할 AudioSource 수
+-        [SerializeField][Min(1)] int maximumPoolSize = 32; // 동시에 사용할 수 있는 최대 AudioSource 수
++        [Tooltip("시작할 때 미리 생성할 AudioSource 수")] [SerializeField][Min(1)] int initialPoolSize = 12; // 시작할 때 미리 생성할 AudioSource 수
++        [Tooltip("동시에 사용할 수 있는 최대 AudioSource 수")] [SerializeField][Min(1)] int maximumPoolSize = 32; // 동시에 사용할 수 있는 최대 AudioSource 수
+ 
+         readonly Queue<AudioSource> availableSources = new Queue<AudioSource>(); // 재사용 대기 중인 AudioSource 목록
+         readonly List<AudioSource> activeSources = new List<AudioSource>(); // 현재 재생 중인 AudioSource 목록
+diff --git a/Assets/Scripts/Managers/CampaignManager.cs b/Assets/Scripts/Managers/CampaignManager.cs
+index b3d64ec..59907c9 100644
+--- a/Assets/Scripts/Managers/CampaignManager.cs
++++ b/Assets/Scripts/Managers/CampaignManager.cs
+@@ -7,14 +7,14 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+         public static CampaignManager Instance { get; private set; } // 현재 활성 캠페인 매니저 접근점
+ 
+         [Header("시작 설정")] // Inspector 캠페인 시작 설정 구분
+-        [SerializeField][Min(0)] int startingGold = 0; // 캠페인 시작 보유 골드
+-        [SerializeField][Min(0)] int startingDebt = 10000; // 캠페인 시작 빚
+-        [SerializeField][Min(1)] int deadlineDay = 10; // 빚 상환 마지막 날짜
++        [Tooltip("캠페인 시작 보유 골드")] [SerializeField][Min(0)] int startingGold = 0; // 캠페인 시작 보유 골드
++        [Tooltip("캠페인 시작 빚")] [SerializeField][Min(0)] int startingDebt = 10000; // 캠페인 시작 빚
++        [Tooltip("빚 상환 마지막 날짜")] [SerializeField][Min(1)] int deadlineDay = 10; // 빚 상환 마지막 날짜
+ 
+         [Header("임시 HUD")] // Inspector 캠페인 상태 화면 설정 구분
+-        [SerializeField] bool showCampaignHud = true; // 보유 골드와 빚 HUD 표시 여부
++        [Tooltip("보유 골드와 빚 HUD 표시 여부")] [SerializeField] bool showCampaignHud = true; // 보유 골드와 빚 HUD 표시 여부
+ 
+-        [SerializeField] CampaignStateData state = new CampaignStateData(); // 현재 캠페인 진행 상태
++        [Tooltip("현재 캠페인 진행 상태")] [SerializeField] CampaignStateData state = new CampaignStateData(); // 현재 캠페인 진행 상태
+ 
+         bool settlementOpen; // 현재 플레이어 납부 선택을 기다리는 상태
+         int lastRunReward; // 최근 탐험에서 정산한 보물 가치
+diff --git a/Assets/Scripts/Managers/DungeonSelectionManager.cs b/Assets/Scripts/Managers/DungeonSelectionManager.cs
+index 7245c27..07cc9c5 100644
+--- a/Assets/Scripts/Managers/DungeonSelectionManager.cs
++++ b/Assets/Scripts/Managers/DungeonSelectionManager.cs
+@@ -8,8 +8,8 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+         public static DungeonSelectionManager Instance { get; private set; } // 현재 활성 던전 선택 매니저 접근점
+ 
+         [Header("선택 가능한 경로")] // Inspector 던전 경로 목록 구분
+-        [SerializeField] DungeonRouteData[] routes; // 마차에서 선택할 던전 경로 목록
+-        [SerializeField] int defaultRouteIndex; // 새 캠페인의 기본 던전 경로 번호
++        [Tooltip("마차에서 선택할 던전 경로 목록")] [SerializeField] DungeonRouteData[] routes; // 마차에서 선택할 던전 경로 목록
++        [Tooltip("새 캠페인의 기본 던전 경로 번호")] [SerializeField] int defaultRouteIndex; // 새 캠페인의 기본 던전 경로 번호
+ 
+         int selectedRouteIndex; // 현재 선택한 던전 경로 번호
+ 
+diff --git a/Assets/Scripts/Managers/GameAudioManager.cs b/Assets/Scripts/Managers/GameAudioManager.cs
+index 1384276..e4cdf6a 100644
+--- a/Assets/Scripts/Managers/GameAudioManager.cs
++++ b/Assets/Scripts/Managers/GameAudioManager.cs
+@@ -8,21 +8,21 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+         public static GameAudioManager Instance { get; private set; } // 현재 활성 오디오 관리자 접근점
+ 
+         [Header("AudioMixer 연결")] // Inspector AudioMixer 연결 구분
+-        [SerializeField] AudioMixer audioMixer; // 전체 오디오 그룹을 관리할 AudioMixer
+-        [SerializeField] AudioMixerGroup bgmOutputGroup; // BGM AudioSource 출력 그룹
+-        [SerializeField] AudioMixerGroup sfxOutputGroup; // SFX AudioSource 출력 그룹
+-        [SerializeField] AudioMixerGroup ambientOutputGroup; // Ambient AudioSource 출력 그룹
++        [Tooltip("전체 오디오 그룹을 관리할 AudioMixer")] [SerializeField] AudioMixer audioMixer; // 전체 오디오 그룹을 관리할 AudioMixer
++        [Tooltip("BGM AudioSource 출력 그룹")] [SerializeField] AudioMixerGroup bgmOutputGroup; // BGM AudioSource 출력 그룹
++        [Tooltip("SFX AudioSource 출력 그룹")] [SerializeField] AudioMixerGroup sfxOutputGroup; // SFX AudioSource 출력 그룹
++        [Tooltip("Ambient AudioSource 출력 그룹")] [SerializeField] AudioMixerGroup ambientOutputGroup; // Ambient AudioSource 출력 그룹
+ 
+         [Header("전역 AudioSource 연결")] // Inspector AudioSource 연결 구분
+-        [SerializeField] AudioSource bgmSource; // 배경음 반복 재생 AudioSource
+-        [SerializeField] AudioSource ambientSource; // 환경음 반복 재생 AudioSource
+-        [SerializeField] AudioSource sfxSource; // 2D 공통 효과음 재생 AudioSource
++        [Tooltip("배경음 반복 재생 AudioSource")] [SerializeField] AudioSource bgmSource; // 배경음 반복 재생 AudioSource
++        [Tooltip("환경음 반복 재생 AudioSource")] [SerializeField] AudioSource ambientSource; // 환경음 반복 재생 AudioSource
++        [Tooltip("2D 공통 효과음 재생 AudioSource")] [SerializeField] AudioSource sfxSource; // 2D 공통 효과음 재생 AudioSource
+ 
+         [Header("노출된 Parameter 이름")] // Inspector AudioMixer Parameter 이름 구분
+-        [SerializeField] string masterVolumeParameter = "MasterVolume"; // Master 볼륨 Parameter 이름
+-        [SerializeField] string bgmVolumeParameter = "BGMVolume"; // BGM 볼륨 Parameter 이름
+-        [SerializeField] string sfxVolumeParameter = "SFXVolume"; // SFX 볼륨 Parameter 이름
+-        [SerializeField] string ambientVolumeParameter = "AmbientVolume"; // Ambient 볼륨 Parameter 이름
++        [Tooltip("Master 볼륨 Parameter 이름")] [SerializeField] string masterVolumeParameter = "MasterVolume"; // Master 볼륨 Parameter 이름
++        [Tooltip("BGM 볼륨 Parameter 이름")] [SerializeField] string bgmVolumeParameter = "BGMVolume"; // BGM 볼륨 Parameter 이름
++        [Tooltip("SFX 볼륨 Parameter 이름")] [SerializeField] string sfxVolumeParameter = "SFXVolume"; // SFX 볼륨 Parameter 이름
++        [Tooltip("Ambient 볼륨 Parameter 이름")] [SerializeField] string ambientVolumeParameter = "AmbientVolume"; // Ambient 볼륨 Parameter 이름
+ 
+         void Awake() // 오디오 관리자 싱글톤과 AudioSource 초기 설정
+         {
+diff --git a/Assets/Scripts/Managers/GimmickMonsterSpawnManager.cs b/Assets/Scripts/Managers/GimmickMonsterSpawnManager.cs
+index 2e2a7c8..bff524b 100644
+--- a/Assets/Scripts/Managers/GimmickMonsterSpawnManager.cs
++++ b/Assets/Scripts/Managers/GimmickMonsterSpawnManager.cs
+@@ -6,25 +6,25 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+     public class GimmickMonsterSpawnManager : MonoBehaviour // 고스트와 웃는 석상의 독립 출현 관리
+     {
+         [Header("필수 참조")] // Inspector 필수 참조 구분
+-        [SerializeField] DungeonGenerator dungeonGenerator; // 던전 생성 완료 이벤트 제공자
+-        [SerializeField] Ghost ghostPrefab; // 자동 생성할 고스트 프리팹
+-        [SerializeField] SmilingStatue smilingStatuePrefab; // 자동 생성할 웃는 석상 프리팹
++        [Tooltip("던전 생성 완료 이벤트 제공자")] [SerializeField] DungeonGenerator dungeonGenerator; // 던전 생성 완료 이벤트 제공자
++        [Tooltip("자동 생성할 고스트 프리팹")] [SerializeField] Ghost ghostPrefab; // 자동 생성할 고스트 프리팹
++        [Tooltip("자동 생성할 웃는 석상 프리팹")] [SerializeField] SmilingStatue smilingStatuePrefab; // 자동 생성할 웃는 석상 프리팹
+ 
+         [Header("독립 출현 확률")] // Inspector 출현 확률 구분
+-        [SerializeField][Range(0f, 1f)] float ghostSpawnChance = 0.3f; // 던전당 고스트 출현 확률
+-        [SerializeField][Range(0f, 1f)] float statueSpawnChance = 0.4f; // 던전당 웃는 석상 출현 확률
+-        [SerializeField] bool skipStartingRoom = true; // 시작 방을 후보에서 제외할지 결정
++        [Tooltip("던전당 고스트 출현 확률")] [SerializeField][Range(0f, 1f)] float ghostSpawnChance = 0.3f; // 던전당 고스트 출현 확률
++        [Tooltip("던전당 웃는 석상 출현 확률")] [SerializeField][Range(0f, 1f)] float statueSpawnChance = 0.4f; // 던전당 웃는 석상 출현 확률
++        [Tooltip("시작 방을 후보에서 제외할지 결정")] [SerializeField] bool skipStartingRoom = true; // 시작 방을 후보에서 제외할지 결정
+ 
+         [Header("스폰 위치")] // Inspector 위치 검색 설정 구분
+-        [SerializeField] float wallMargin = 1.5f; // 벽에서 떨어질 최소 거리
+-        [SerializeField] float positionSearchHeight = 1.2f; // 장애물 검사 중심 높이
+-        [SerializeField] float groundOffset = 0f; // 프리팹 루트 바닥 높이 보정
+-        [SerializeField] float collisionCheckRadius = 0.5f; // 생성 위치 충돌 검사 반경
+-        [SerializeField] int positionSearchAttempts = 30; // 방마다 위치 검색 횟수
+-        [SerializeField] float playerSafeDistance = 6f; // 플레이어 주변 생성 금지 거리
++        [Tooltip("벽에서 떨어질 최소 거리")] [SerializeField] float wallMargin = 1.5f; // 벽에서 떨어질 최소 거리
++        [Tooltip("장애물 검사 중심 높이")] [SerializeField] float positionSearchHeight = 1.2f; // 장애물 검사 중심 높이
++        [Tooltip("프리팹 루트 바닥 높이 보정")] [SerializeField] float groundOffset = 0f; // 프리팹 루트 바닥 높이 보정
++        [Tooltip("생성 위치 충돌 검사 반경")] [SerializeField] float collisionCheckRadius = 0.5f; // 생성 위치 충돌 검사 반경
++        [Tooltip("방마다 위치 검색 횟수")] [SerializeField] int positionSearchAttempts = 30; // 방마다 위치 검색 횟수
++        [Tooltip("플레이어 주변 생성 금지 거리")] [SerializeField] float playerSafeDistance = 6f; // 플레이어 주변 생성 금지 거리
+ 
+         [Header("디버그")] // Inspector 디버그 설정 구분
+-        [SerializeField] bool showDebug = true; // 임시 OnGUI 표시 여부
++        [Tooltip("임시 OnGUI 표시 여부")] [SerializeField] bool showDebug = true; // 임시 OnGUI 표시 여부
+ 
+         PlayerController player; // 두 기믹 몬스터의 목표 플레이어
+         Ghost spawnedGhost; // 현재 자동 생성된 고스트
+diff --git a/Assets/Scripts/Managers/InventorySystem.cs b/Assets/Scripts/Managers/InventorySystem.cs
+index 89be071..d18c093 100644
+--- a/Assets/Scripts/Managers/InventorySystem.cs
++++ b/Assets/Scripts/Managers/InventorySystem.cs
+@@ -12,12 +12,12 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+     public class InventorySystem : MonoBehaviour // 플레이어 인벤토리 관리 컴포넌트
+     {
+         [Header("인벤토리 기본 설정")] // 기본 인벤토리 설정 구분
+-        [SerializeField] int baseSlots = 5; // 기본 인벤토리 슬롯 수
+-        [SerializeField] float weightLimit = 30f; // 무게 페널티 기준 무게
++        [Tooltip("기본 인벤토리 슬롯 수")] [SerializeField] int baseSlots = 5; // 기본 인벤토리 슬롯 수
++        [Tooltip("무게 페널티 기준 무게")] [SerializeField] float weightLimit = 30f; // 무게 페널티 기준 무게
+ 
+         [Header("전체 아이템 드랍")] // 전체 드랍 설정 구분
+-        [SerializeField] float dropRadius = 0.8f; // 플레이어 주변 드랍 반경
+-        [SerializeField] float dropImpulse = 2.5f; // 드랍 아이템의 튀어나가는 힘
++        [Tooltip("플레이어 주변 드랍 반경")] [SerializeField] float dropRadius = 0.8f; // 플레이어 주변 드랍 반경
++        [Tooltip("드랍 아이템의 튀어나가는 힘")] [SerializeField] float dropImpulse = 2.5f; // 드랍 아이템의 튀어나가는 힘
+ 
+         readonly List<ICarryable> items = new List<ICarryable>(); // 일반 슬롯 소지품 목록
+         ICarryable twoHand; // 현재 두손으로 운반하는 소지품
+diff --git a/Assets/Scripts/Managers/LightSystem.cs b/Assets/Scripts/Managers/LightSystem.cs
+index f77e864..e2f3a9b 100644
+--- a/Assets/Scripts/Managers/LightSystem.cs
++++ b/Assets/Scripts/Managers/LightSystem.cs
+@@ -15,7 +15,7 @@ namespace ProjectI
+         Transform searchRoot;   // 손에 든 광원 탐색 기준(카메라)
+ 
+         [Header("디버그")] // 임시 밝기 UI 설정 구분
+-        [SerializeField] bool showDebug = true; // 기존 OnGUI 밝기 표시 여부
++        [Tooltip("기존 OnGUI 밝기 표시 여부")] [SerializeField] bool showDebug = true; // 기존 OnGUI 밝기 표시 여부
+ 
+         public float CurrentBrightness { get; private set; }
+         public string Stage { get; private set; } = "완전한 어둠";
+diff --git a/Assets/Scripts/Managers/ManagerHub.cs b/Assets/Scripts/Managers/ManagerHub.cs
+index 96bd222..90c68ae 100644
+--- a/Assets/Scripts/Managers/ManagerHub.cs
++++ b/Assets/Scripts/Managers/ManagerHub.cs
+@@ -5,27 +5,27 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+     public class ManagerHub : MonoBehaviour // Scene의 주요 매니저 참조를 한곳에서 관리
+     {
+         [Header("던전 시스템")] // 던전 관련 참조 구분
+-        [SerializeField] DungeonGenerator dungeonGenerator; // 절차적 던전 생성기
+-        [SerializeField] DungeonTimeSystem dungeonTimeSystem; // 던전 제한시간 시스템
+-        [SerializeField] LightSystem lightSystem; // 현재 방 밝기 관리 시스템
++        [Tooltip("절차적 던전 생성기")] [SerializeField] DungeonGenerator dungeonGenerator; // 절차적 던전 생성기
++        [Tooltip("던전 제한시간 시스템")] [SerializeField] DungeonTimeSystem dungeonTimeSystem; // 던전 제한시간 시스템
++        [Tooltip("현재 방 밝기 관리 시스템")] [SerializeField] LightSystem lightSystem; // 현재 방 밝기 관리 시스템
+ 
+         [Header("스폰 시스템")] // 자동 생성 매니저 참조 구분
+-        [SerializeField] MonsterSpawnManager monsterSpawnManager; // 일반 몬스터 스폰 매니저
+-        [SerializeField] TreasureSpawnManager treasureSpawnManager; // 보물과 미믹 스폰 매니저
+-        [SerializeField] TrapSpawnManager trapSpawnManager; // 함정 스폰 매니저
+-        [SerializeField] StalkerSpawnManager stalkerSpawnManager; // 스토커 스폰 매니저
+-        [SerializeField] GimmickMonsterSpawnManager gimmickSpawnManager; // 고스트와 웃는 석상 스폰 매니저
++        [Tooltip("일반 몬스터 스폰 매니저")] [SerializeField] MonsterSpawnManager monsterSpawnManager; // 일반 몬스터 스폰 매니저
++        [Tooltip("보물과 미믹 스폰 매니저")] [SerializeField] TreasureSpawnManager treasureSpawnManager; // 보물과 미믹 스폰 매니저
++        [Tooltip("함정 스폰 매니저")] [SerializeField] TrapSpawnManager trapSpawnManager; // 함정 스폰 매니저
++        [Tooltip("스토커 스폰 매니저")] [SerializeField] StalkerSpawnManager stalkerSpawnManager; // 스토커 스폰 매니저
++        [Tooltip("고스트와 웃는 석상 스폰 매니저")] [SerializeField] GimmickMonsterSpawnManager gimmickSpawnManager; // 고스트와 웃는 석상 스폰 매니저
+ 
+         [Header("영구 시스템")] // Scene 전환 후 유지되는 매니저 참조 구분
+-        [SerializeField] AudioManager audioManager; // 효과음과 AudioSource 풀 관리
+-        [SerializeField] ParticleEffectPool particleEffectPool; // 파티클 풀 관리
+-        [SerializeField] RunResultManager runResultManager; // Scene 간 던전 결과 보관 매니저
+-        [SerializeField] CampaignManager campaignManager; // 골드와 빚 및 날짜 관리 매니저
+-        [SerializeField] DungeonSelectionManager dungeonSelectionManager; // 선택한 던전 경로를 Scene 간 유지하는 매니저
++        [Tooltip("효과음과 AudioSource 풀 관리")] [SerializeField] AudioManager audioManager; // 효과음과 AudioSource 풀 관리
++        [Tooltip("파티클 풀 관리")] [SerializeField] ParticleEffectPool particleEffectPool; // 파티클 풀 관리
++        [Tooltip("Scene 간 던전 결과 보관 매니저")] [SerializeField] RunResultManager runResultManager; // Scene 간 던전 결과 보관 매니저
++        [Tooltip("골드와 빚 및 날짜 관리 매니저")] [SerializeField] CampaignManager campaignManager; // 골드와 빚 및 날짜 관리 매니저
++        [Tooltip("선택한 던전 경로를 Scene 간 유지하는 매니저")] [SerializeField] DungeonSelectionManager dungeonSelectionManager; // 선택한 던전 경로를 Scene 간 유지하는 매니저
+ 
+         [Header("검증 시스템")] // 개발용 검사 시스템 참조 구분
+-        [SerializeField] VerticalSliceValidator verticalSliceValidator; // 수직 슬라이스 구성 검사
+-        [SerializeField] RuntimePerformanceMonitor performanceMonitor; // 성능과 반복 생성 검사
++        [Tooltip("수직 슬라이스 구성 검사")] [SerializeField] VerticalSliceValidator verticalSliceValidator; // 수직 슬라이스 구성 검사
++        [Tooltip("성능과 반복 생성 검사")] [SerializeField] RuntimePerformanceMonitor performanceMonitor; // 성능과 반복 생성 검사
+        
+ 
+         public DungeonGenerator DungeonGenerator => dungeonGenerator; // 던전 생성기 공개 접근점
+diff --git a/Assets/Scripts/Managers/MonsterSpawnManager.cs b/Assets/Scripts/Managers/MonsterSpawnManager.cs
+index 13e5620..52ff167 100644
+--- a/Assets/Scripts/Managers/MonsterSpawnManager.cs
++++ b/Assets/Scripts/Managers/MonsterSpawnManager.cs
+@@ -6,24 +6,24 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+     public class MonsterSpawnManager : MonoBehaviour // 던전의 몬스터 자동 생성을 담당
+     {
+         [Header("필수 참조")] // Inspector 필수 참조 설정 구분
+-        [SerializeField] DungeonGenerator dungeonGenerator; // 생성 완료 이벤트와 방 목록을 제공하는 던전 생성기
+-        [SerializeField] MonsterAI[] monsterPrefabs; // 자동 생성할 몬스터 프리팹 목록
++        [Tooltip("생성 완료 이벤트와 방 목록을 제공하는 던전 생성기")] [SerializeField] DungeonGenerator dungeonGenerator; // 생성 완료 이벤트와 방 목록을 제공하는 던전 생성기
++        [Tooltip("자동 생성할 몬스터 프리팹 목록")] [SerializeField] MonsterAI[] monsterPrefabs; // 자동 생성할 몬스터 프리팹 목록
+ 
+         [Header("방별 몬스터 수")] // 방별 몬스터 수 설정 구분
+-        [SerializeField] int minMonstersPerRoom = 1; // 방 하나의 최소 기본 몬스터 수
+-        [SerializeField] int maxMonstersPerRoom = 2; // 방 하나의 최대 기본 몬스터 수
+-        [SerializeField] bool skipStartingRoom = true; // 시작 방에서 몬스터를 생성하지 않을지 결정
++        [Tooltip("방 하나의 최소 기본 몬스터 수")] [SerializeField] int minMonstersPerRoom = 1; // 방 하나의 최소 기본 몬스터 수
++        [Tooltip("방 하나의 최대 기본 몬스터 수")] [SerializeField] int maxMonstersPerRoom = 2; // 방 하나의 최대 기본 몬스터 수
++        [Tooltip("시작 방에서 몬스터를 생성하지 않을지 결정")] [SerializeField] bool skipStartingRoom = true; // 시작 방에서 몬스터를 생성하지 않을지 결정
+ 
+         [Header("스폰 위치")] // 몬스터 위치 설정 구분
+-        [SerializeField] float wallMargin = 1.5f; // 벽으로부터 떨어질 최소 거리
+-        [SerializeField] float spawnHeight = 1.1f; // 바닥에서 몬스터를 생성할 높이
+-        [SerializeField] float collisionCheckRadius = 0.45f; // 몬스터 생성 위치의 충돌 검사 반경
+-        [SerializeField] int positionSearchAttempts = 30; // 방 안에서 위치를 검색할 최대 횟수
+-        [SerializeField] float playerSafeDistance = 4f; // 플레이어 주변 몬스터 생성 금지 거리
+-        [SerializeField] float navMeshSampleDistance = 2f; // 검색된 생성 위치 주변의 NavMesh 검색 거리
++        [Tooltip("벽으로부터 떨어질 최소 거리")] [SerializeField] float wallMargin = 1.5f; // 벽으로부터 떨어질 최소 거리
++        [Tooltip("바닥에서 몬스터를 생성할 높이")] [SerializeField] float spawnHeight = 1.1f; // 바닥에서 몬스터를 생성할 높이
++        [Tooltip("몬스터 생성 위치의 충돌 검사 반경")] [SerializeField] float collisionCheckRadius = 0.45f; // 몬스터 생성 위치의 충돌 검사 반경
++        [Tooltip("방 안에서 위치를 검색할 최대 횟수")] [SerializeField] int positionSearchAttempts = 30; // 방 안에서 위치를 검색할 최대 횟수
++        [Tooltip("플레이어 주변 몬스터 생성 금지 거리")] [SerializeField] float playerSafeDistance = 4f; // 플레이어 주변 몬스터 생성 금지 거리
++        [Tooltip("검색된 생성 위치 주변의 NavMesh 검색 거리")] [SerializeField] float navMeshSampleDistance = 2f; // 검색된 생성 위치 주변의 NavMesh 검색 거리
+ 
+         [Header("디버그")] // 디버그 설정 구분
+-        [SerializeField] bool showDebug = true; // 현재 몬스터 수를 화면에 표시할지 결정
++        [Tooltip("현재 몬스터 수를 화면에 표시할지 결정")] [SerializeField] bool showDebug = true; // 현재 몬스터 수를 화면에 표시할지 결정
+ 
+         readonly List<MonsterAI> spawnedMonsters = new List<MonsterAI>(); // 이 매니저가 생성한 몬스터 목록
+         Transform player; // 플레이어 위치를 확인하기 위한 Transform 참조
+diff --git a/Assets/Scripts/Managers/ParticleEffectPool.cs b/Assets/Scripts/Managers/ParticleEffectPool.cs
+index b69ed12..63ce5d8 100644
+--- a/Assets/Scripts/Managers/ParticleEffectPool.cs
++++ b/Assets/Scripts/Managers/ParticleEffectPool.cs
+@@ -15,7 +15,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+         public static ParticleEffectPool Instance { get; private set; } // 현재 활성 파티클 풀 접근점
+ 
+         [Header("풀 설정")] // Inspector 풀 설정 구분
+-        [SerializeField][Min(1)] int maxInstancesPerPrefab = 12; // 프리팹 종류별 최대 생성 개수
++        [Tooltip("프리팹 종류별 최대 생성 개수")] [SerializeField][Min(1)] int maxInstancesPerPrefab = 12; // 프리팹 종류별 최대 생성 개수
+ 
+         readonly Dictionary<int, Queue<ParticleSystem>> availableEffects = new Dictionary<int, Queue<ParticleSystem>>(); // 프리팹별 대기 파티클 목록
+         readonly Dictionary<int, int> createdCounts = new Dictionary<int, int>(); // 프리팹별 생성된 전체 개수
+diff --git a/Assets/Scripts/Managers/RunResultManager.cs b/Assets/Scripts/Managers/RunResultManager.cs
+index 4b432da..a016658 100644
+--- a/Assets/Scripts/Managers/RunResultManager.cs
++++ b/Assets/Scripts/Managers/RunResultManager.cs
+@@ -9,9 +9,9 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+         public static RunResultManager Instance { get; private set; } // 현재 활성 결과 매니저 접근점
+ 
+         [Header("임시 결과 화면")] // Inspector 결과 화면 설정 구분
+-        [SerializeField] bool showResultPanel = true; // OnGUI 결과 화면 표시 여부
+-        [SerializeField] string villageSceneName = "Village"; // 정산을 진행할 마을 Scene 이름
+-        [SerializeField][Min(0f)] float villageTransitionDelay = 10f; // 결과 확정 후 마을로 이동할 실제 대기시간
++        [Tooltip("OnGUI 결과 화면 표시 여부")] [SerializeField] bool showResultPanel = true; // OnGUI 결과 화면 표시 여부
++        [Tooltip("정산을 진행할 마을 Scene 이름")] [SerializeField] string villageSceneName = "Village"; // 정산을 진행할 마을 Scene 이름
++        [Tooltip("결과 확정 후 마을로 이동할 실제 대기시간")] [SerializeField][Min(0f)] float villageTransitionDelay = 10f; // 결과 확정 후 마을로 이동할 실제 대기시간
+ 
+ 
+         readonly RunResultData currentResult = new RunResultData(); // 현재 보관 중인 던전 결과
+diff --git a/Assets/Scripts/Managers/RuntimePerformanceMonitor.cs b/Assets/Scripts/Managers/RuntimePerformanceMonitor.cs
+index ff6d4fb..2c2758a 100644
+--- a/Assets/Scripts/Managers/RuntimePerformanceMonitor.cs
++++ b/Assets/Scripts/Managers/RuntimePerformanceMonitor.cs
+@@ -7,21 +7,21 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+     public class RuntimePerformanceMonitor : MonoBehaviour // 성능과 반복 던전 생성 안정성을 검사
+     {
+         [Header("필수 참조")] // Inspector 참조 설정 구분
+-        [SerializeField] DungeonGenerator dungeonGenerator; // 반복 생성할 던전 생성기
+-        [SerializeField] MonsterSpawnManager monsterSpawnManager; // 일반 몬스터 개수 확인
+-        [SerializeField] TreasureSpawnManager treasureSpawnManager; // 보물과 미믹 개수 확인
+-        [SerializeField] TrapSpawnManager trapSpawnManager; // 함정 개수 확인
+-        [SerializeField] StalkerSpawnManager stalkerSpawnManager; // 스토커 개수 확인
+-        [SerializeField] GimmickMonsterSpawnManager gimmickSpawnManager; // 기믹 몬스터 개수 확인
++        [Tooltip("반복 생성할 던전 생성기")] [SerializeField] DungeonGenerator dungeonGenerator; // 반복 생성할 던전 생성기
++        [Tooltip("일반 몬스터 개수 확인")] [SerializeField] MonsterSpawnManager monsterSpawnManager; // 일반 몬스터 개수 확인
++        [Tooltip("보물과 미믹 개수 확인")] [SerializeField] TreasureSpawnManager treasureSpawnManager; // 보물과 미믹 개수 확인
++        [Tooltip("함정 개수 확인")] [SerializeField] TrapSpawnManager trapSpawnManager; // 함정 개수 확인
++        [Tooltip("스토커 개수 확인")] [SerializeField] StalkerSpawnManager stalkerSpawnManager; // 스토커 개수 확인
++        [Tooltip("기믹 몬스터 개수 확인")] [SerializeField] GimmickMonsterSpawnManager gimmickSpawnManager; // 기믹 몬스터 개수 확인
+ 
+         [Header("성능 측정")] // Inspector 성능 측정 설정 구분
+-        [SerializeField][Min(0.1f)] float sampleInterval = 0.5f; // FPS와 메모리 갱신 간격
+-        [SerializeField][Min(1f)] float memoryGrowthWarningMB = 16f; // 생성 1회 메모리 증가 경고 기준
+-        [SerializeField] bool showPanel = false; // Scene 시작 시 성능 검사 패널을 숨김
++        [Tooltip("FPS와 메모리 갱신 간격")] [SerializeField][Min(0.1f)] float sampleInterval = 0.5f; // FPS와 메모리 갱신 간격
++        [Tooltip("생성 1회 메모리 증가 경고 기준")] [SerializeField][Min(1f)] float memoryGrowthWarningMB = 16f; // 생성 1회 메모리 증가 경고 기준
++        [Tooltip("Scene 시작 시 성능 검사 패널을 숨김")] [SerializeField] bool showPanel = false; // Scene 시작 시 성능 검사 패널을 숨김
+ 
+         [Header("자동 반복 생성")] // 반복 생성 검사 설정 구분
+-        [SerializeField][Min(1)] int automaticTestIterations = 10; // 자동 생성 반복 횟수
+-        [SerializeField][Min(0.2f)] float automaticTestInterval = 1f; // 반복 생성 사이의 실시간 대기시간
++        [Tooltip("자동 생성 반복 횟수")] [SerializeField][Min(1)] int automaticTestIterations = 10; // 자동 생성 반복 횟수
++        [Tooltip("반복 생성 사이의 실시간 대기시간")] [SerializeField][Min(0.2f)] float automaticTestInterval = 1f; // 반복 생성 사이의 실시간 대기시간
+ 
+         float sampleElapsedTime; // 현재 성능 표본 누적시간
+         int sampleFrameCount; // 현재 성능 표본 프레임 수
+diff --git a/Assets/Scripts/Managers/StalkerSpawnManager.cs b/Assets/Scripts/Managers/StalkerSpawnManager.cs
+index 405b67e..d2dc2b5 100644
+--- a/Assets/Scripts/Managers/StalkerSpawnManager.cs
++++ b/Assets/Scripts/Managers/StalkerSpawnManager.cs
+@@ -6,23 +6,23 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+     public class StalkerSpawnManager : MonoBehaviour // 던전당 확률적으로 한 마리의 스토커를 생성
+     {
+         [Header("필수 참조")] // Inspector 필수 참조 설정 구분
+-        [SerializeField] DungeonGenerator dungeonGenerator; // 생성 완료 이벤트와 방 목록을 제공하는 던전 생성기
+-        [SerializeField] Stalker stalkerPrefab; // 자동 생성할 스토커 프리팹
++        [Tooltip("생성 완료 이벤트와 방 목록을 제공하는 던전 생성기")] [SerializeField] DungeonGenerator dungeonGenerator; // 생성 완료 이벤트와 방 목록을 제공하는 던전 생성기
++        [Tooltip("자동 생성할 스토커 프리팹")] [SerializeField] Stalker stalkerPrefab; // 자동 생성할 스토커 프리팹
+ 
+         [Header("출현 설정")] // Inspector 스토커 출현 설정 구분
+-        [SerializeField][Range(0f, 1f)] float spawnChance = 0.2f; // 던전당 스토커가 출현할 확률
+-        [SerializeField] bool skipStartingRoom = true; // 시작 방을 스토커 생성 후보에서 제외할지 결정
++        [Tooltip("던전당 스토커가 출현할 확률")] [SerializeField][Range(0f, 1f)] float spawnChance = 0.2f; // 던전당 스토커가 출현할 확률
++        [Tooltip("시작 방을 스토커 생성 후보에서 제외할지 결정")] [SerializeField] bool skipStartingRoom = true; // 시작 방을 스토커 생성 후보에서 제외할지 결정
+ 
+         [Header("스폰 위치")] // Inspector 스토커 위치 설정 구분
+-        [SerializeField] float wallMargin = 1.5f; // 벽으로부터 떨어질 최소 거리
+-        [SerializeField] float positionSearchHeight = 1.1f; // 장애물 검사를 실행할 바닥 위 높이
+-        [SerializeField] float groundOffset = 0f; // 스토커 루트를 바닥에서 띄울 높이
+-        [SerializeField] float collisionCheckRadius = 0.45f; // 스토커 생성 위치의 충돌 검사 반경
+-        [SerializeField] int positionSearchAttempts = 30; // 각 방에서 안전한 위치를 검색할 최대 횟수
+-        [SerializeField] float playerSafeDistance = 8f; // 플레이어 주변 스토커 생성 금지 거리
++        [Tooltip("벽으로부터 떨어질 최소 거리")] [SerializeField] float wallMargin = 1.5f; // 벽으로부터 떨어질 최소 거리
++        [Tooltip("장애물 검사를 실행할 바닥 위 높이")] [SerializeField] float positionSearchHeight = 1.1f; // 장애물 검사를 실행할 바닥 위 높이
++        [Tooltip("스토커 루트를 바닥에서 띄울 높이")] [SerializeField] float groundOffset = 0f; // 스토커 루트를 바닥에서 띄울 높이
++        [Tooltip("스토커 생성 위치의 충돌 검사 반경")] [SerializeField] float collisionCheckRadius = 0.45f; // 스토커 생성 위치의 충돌 검사 반경
++        [Tooltip("각 방에서 안전한 위치를 검색할 최대 횟수")] [SerializeField] int positionSearchAttempts = 30; // 각 방에서 안전한 위치를 검색할 최대 횟수
++        [Tooltip("플레이어 주변 스토커 생성 금지 거리")] [SerializeField] float playerSafeDistance = 8f; // 플레이어 주변 스토커 생성 금지 거리
+ 
+         [Header("디버그")] // Inspector 디버그 설정 구분
+-        [SerializeField] bool showDebug = true; // 스토커 생성 상태를 화면에 표시할지 결정
++        [Tooltip("스토커 생성 상태를 화면에 표시할지 결정")] [SerializeField] bool showDebug = true; // 스토커 생성 상태를 화면에 표시할지 결정
+ 
+         readonly List<Stalker> spawnedStalkers = new List<Stalker>(); // 이 매니저가 생성한 스토커 목록
+         PlayerController player; // 스토커의 목표로 지정할 플레이어
+diff --git a/Assets/Scripts/Managers/TrapSpawnManager.cs b/Assets/Scripts/Managers/TrapSpawnManager.cs
+index 4534378..ed87941 100644
+--- a/Assets/Scripts/Managers/TrapSpawnManager.cs
++++ b/Assets/Scripts/Managers/TrapSpawnManager.cs
+@@ -6,25 +6,25 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+     public class TrapSpawnManager : MonoBehaviour // 던전의 함정 자동 생성을 담당
+     {
+         [Header("필수 참조")] // Inspector 필수 참조 설정 구분
+-        [SerializeField] DungeonGenerator dungeonGenerator; // 생성 완료 이벤트와 방 목록을 제공하는 던전 생성기
+-        [SerializeField] Trap[] trapPrefabs; // 자동 생성할 함정 프리팹 목록
++        [Tooltip("생성 완료 이벤트와 방 목록을 제공하는 던전 생성기")] [SerializeField] DungeonGenerator dungeonGenerator; // 생성 완료 이벤트와 방 목록을 제공하는 던전 생성기
++        [Tooltip("자동 생성할 함정 프리팹 목록")] [SerializeField] Trap[] trapPrefabs; // 자동 생성할 함정 프리팹 목록
+ 
+         [Header("방별 함정 수")] // 방별 함정 수 설정 구분
+-        [SerializeField] int minTrapsPerRoom = 0; // 방 하나의 최소 기본 함정 수
+-        [SerializeField] int maxTrapsPerRoom = 1; // 방 하나의 최대 기본 함정 수
+-        [SerializeField] bool skipStartingRoom = true; // 시작 방에서 함정을 생성하지 않을지 결정
+-        [SerializeField] bool useBrightnessMultiplier = true; // 어두운 방에서 함정 수를 증가시킬지 결정
++        [Tooltip("방 하나의 최소 기본 함정 수")] [SerializeField] int minTrapsPerRoom = 0; // 방 하나의 최소 기본 함정 수
++        [Tooltip("방 하나의 최대 기본 함정 수")] [SerializeField] int maxTrapsPerRoom = 1; // 방 하나의 최대 기본 함정 수
++        [Tooltip("시작 방에서 함정을 생성하지 않을지 결정")] [SerializeField] bool skipStartingRoom = true; // 시작 방에서 함정을 생성하지 않을지 결정
++        [Tooltip("어두운 방에서 함정 수를 증가시킬지 결정")] [SerializeField] bool useBrightnessMultiplier = true; // 어두운 방에서 함정 수를 증가시킬지 결정
+ 
+         [Header("스폰 위치")] // 함정 위치 설정 구분
+-        [SerializeField] float wallMargin = 1.5f; // 벽으로부터 떨어질 최소 거리
+-        [SerializeField] float positionSearchHeight = 0.4f; // 장애물 검사를 실행할 바닥 위 높이
+-        [SerializeField] float groundOffset = 0f; // 함정 루트를 바닥에서 띄울 높이
+-        [SerializeField] float collisionCheckRadius = 0.3f; // 함정 위치의 장애물 검사 반경
+-        [SerializeField] int positionSearchAttempts = 30; // 방 안에서 위치를 검색할 최대 횟수
+-        [SerializeField] float playerSafeDistance = 3f; // 플레이어 주변 함정 생성 금지 거리
++        [Tooltip("벽으로부터 떨어질 최소 거리")] [SerializeField] float wallMargin = 1.5f; // 벽으로부터 떨어질 최소 거리
++        [Tooltip("장애물 검사를 실행할 바닥 위 높이")] [SerializeField] float positionSearchHeight = 0.4f; // 장애물 검사를 실행할 바닥 위 높이
++        [Tooltip("함정 루트를 바닥에서 띄울 높이")] [SerializeField] float groundOffset = 0f; // 함정 루트를 바닥에서 띄울 높이
++        [Tooltip("함정 위치의 장애물 검사 반경")] [SerializeField] float collisionCheckRadius = 0.3f; // 함정 위치의 장애물 검사 반경
++        [Tooltip("방 안에서 위치를 검색할 최대 횟수")] [SerializeField] int positionSearchAttempts = 30; // 방 안에서 위치를 검색할 최대 횟수
++        [Tooltip("플레이어 주변 함정 생성 금지 거리")] [SerializeField] float playerSafeDistance = 3f; // 플레이어 주변 함정 생성 금지 거리
+ 
+         [Header("디버그")] // 디버그 설정 구분
+-        [SerializeField] bool showDebug = true; // 현재 함정 수를 화면에 표시할지 결정
++        [Tooltip("현재 함정 수를 화면에 표시할지 결정")] [SerializeField] bool showDebug = true; // 현재 함정 수를 화면에 표시할지 결정
+ 
+         readonly List<Trap> spawnedTraps = new List<Trap>(); // 이 매니저가 생성한 함정 목록
+         Transform player; // 플레이어 위치를 확인하기 위한 Transform 참조
+diff --git a/Assets/Scripts/Managers/TreasureSpawnManager.cs b/Assets/Scripts/Managers/TreasureSpawnManager.cs
+index e670031..daaa9c1 100644
+--- a/Assets/Scripts/Managers/TreasureSpawnManager.cs
++++ b/Assets/Scripts/Managers/TreasureSpawnManager.cs
+@@ -6,31 +6,31 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+     public class TreasureSpawnManager : MonoBehaviour // 던전의 보물 자동 생성을 담당
+     {
+         [Header("필수 참조")] // Inspector 필수 참조 설정 구분
+-        [SerializeField] DungeonGenerator dungeonGenerator; // 생성 완료 이벤트와 방 목록을 제공하는 던전 생성기
+-        [SerializeField] Treasure[] treasurePrefabs; // 자동 생성할 보물 프리팹 목록
++        [Tooltip("생성 완료 이벤트와 방 목록을 제공하는 던전 생성기")] [SerializeField] DungeonGenerator dungeonGenerator; // 생성 완료 이벤트와 방 목록을 제공하는 던전 생성기
++        [Tooltip("자동 생성할 보물 프리팹 목록")] [SerializeField] Treasure[] treasurePrefabs; // 자동 생성할 보물 프리팹 목록
+ 
+         [Header("미믹 스폰")] // Inspector 미믹 스폰 설정 구분
+-        [SerializeField] Mimic mimicPrefab; // 일반 보물 대신 생성할 미믹 프리팹
+-        [SerializeField][Range(0f, 1f)] float mimicChance = 0.15f; // 보물 생성 기회가 미믹으로 교체될 확률
+-        [SerializeField] float mimicGroundOffset = 0f; // 미믹 루트를 바닥에서 띄울 높이
++        [Tooltip("일반 보물 대신 생성할 미믹 프리팹")] [SerializeField] Mimic mimicPrefab; // 일반 보물 대신 생성할 미믹 프리팹
++        [Tooltip("보물 생성 기회가 미믹으로 교체될 확률")] [SerializeField][Range(0f, 1f)] float mimicChance = 0.15f; // 보물 생성 기회가 미믹으로 교체될 확률
++        [Tooltip("미믹 루트를 바닥에서 띄울 높이")] [SerializeField] float mimicGroundOffset = 0f; // 미믹 루트를 바닥에서 띄울 높이
+ 
+         [Header("방별 보물 수")] // 방별 보물 수 설정 구분
+-        [SerializeField] int minTreasuresPerRoom = 0; // 방 하나의 최소 기본 보물 수
+-        [SerializeField] int maxTreasuresPerRoom = 1; // 방 하나의 최대 기본 보물 수
+-        [SerializeField] bool skipStartingRoom = true; // 시작 방에서 보물을 생성하지 않을지 결정
++        [Tooltip("방 하나의 최소 기본 보물 수")] [SerializeField] int minTreasuresPerRoom = 0; // 방 하나의 최소 기본 보물 수
++        [Tooltip("방 하나의 최대 기본 보물 수")] [SerializeField] int maxTreasuresPerRoom = 1; // 방 하나의 최대 기본 보물 수
++        [Tooltip("시작 방에서 보물을 생성하지 않을지 결정")] [SerializeField] bool skipStartingRoom = true; // 시작 방에서 보물을 생성하지 않을지 결정
+ 
+         [Header("스폰 위치")] // 보물 위치 설정 구분
+-        [SerializeField] float wallMargin = 1.5f; // 벽으로부터 떨어질 최소 거리
+-        [SerializeField] float spawnHeight = 0.5f; // 바닥에서 보물을 생성할 높이
+-        [SerializeField] float collisionCheckRadius = 0.35f; // 보물 생성 위치의 충돌 검사 반경
+-        [SerializeField] int positionSearchAttempts = 30; // 방 안에서 위치를 검색할 최대 횟수
+-        [SerializeField] float playerSafeDistance = 2f; // 플레이어 주변 보물 생성 금지 거리
++        [Tooltip("벽으로부터 떨어질 최소 거리")] [SerializeField] float wallMargin = 1.5f; // 벽으로부터 떨어질 최소 거리
++        [Tooltip("바닥에서 보물을 생성할 높이")] [SerializeField] float spawnHeight = 0.5f; // 바닥에서 보물을 생성할 높이
++        [Tooltip("보물 생성 위치의 충돌 검사 반경")] [SerializeField] float collisionCheckRadius = 0.35f; // 보물 생성 위치의 충돌 검사 반경
++        [Tooltip("방 안에서 위치를 검색할 최대 횟수")] [SerializeField] int positionSearchAttempts = 30; // 방 안에서 위치를 검색할 최대 횟수
++        [Tooltip("플레이어 주변 보물 생성 금지 거리")] [SerializeField] float playerSafeDistance = 2f; // 플레이어 주변 보물 생성 금지 거리
+ 
+         [Header("가치 설정")] // 보물 가치 설정 구분
+-        [SerializeField][Min(0f)] float riskMultiplier = 1f; // 이후 리스크 시스템에서 적용할 보상 배율
++        [Tooltip("이후 리스크 시스템에서 적용할 보상 배율")] [SerializeField][Min(0f)] float riskMultiplier = 1f; // 이후 리스크 시스템에서 적용할 보상 배율
+ 
+         [Header("디버그")] // 디버그 설정 구분
+-        [SerializeField] bool showDebug = true; // 현재 보물 수를 화면에 표시할지 결정
++        [Tooltip("현재 보물 수를 화면에 표시할지 결정")] [SerializeField] bool showDebug = true; // 현재 보물 수를 화면에 표시할지 결정
+ 
+         readonly List<Treasure> spawnedTreasures = new List<Treasure>(); // 이 매니저가 생성한 보물 목록
+         readonly List<Mimic> spawnedMimics = new List<Mimic>(); // TreasureSpawnManager가 생성한 미믹 목록
+diff --git a/Assets/Scripts/Managers/VerticalSliceValidator.cs b/Assets/Scripts/Managers/VerticalSliceValidator.cs
+index 26a7fb6..c198f0c 100644
+--- a/Assets/Scripts/Managers/VerticalSliceValidator.cs
++++ b/Assets/Scripts/Managers/VerticalSliceValidator.cs
+@@ -8,33 +8,33 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+     public class VerticalSliceValidator : MonoBehaviour // 싱글 수직 슬라이스 필수 설정 검증
+     {
+         [Header("핵심 진행")] // Inspector 핵심 진행 참조 구분
+-        [SerializeField] DungeonGenerator dungeonGenerator; // 절차적 던전 생성기
+-        [SerializeField] DungeonTimeSystem dungeonTimeSystem; // 던전 제한시간 시스템
+-        [SerializeField] Wagon wagon; // 보물 적재와 탈출용 마차
+-        [SerializeField] WagonCargo wagonCargo; // 마차 적재 상호작용 지점
+-        [SerializeField] WagonLever wagonLever; // 마차 탈출 상호작용 지점
++        [Tooltip("절차적 던전 생성기")] [SerializeField] DungeonGenerator dungeonGenerator; // 절차적 던전 생성기
++        [Tooltip("던전 제한시간 시스템")] [SerializeField] DungeonTimeSystem dungeonTimeSystem; // 던전 제한시간 시스템
++        [Tooltip("보물 적재와 탈출용 마차")] [SerializeField] Wagon wagon; // 보물 적재와 탈출용 마차
++        [Tooltip("마차 적재 상호작용 지점")] [SerializeField] WagonCargo wagonCargo; // 마차 적재 상호작용 지점
++        [Tooltip("마차 탈출 상호작용 지점")] [SerializeField] WagonLever wagonLever; // 마차 탈출 상호작용 지점
+ 
+         [Header("플레이어")] // Inspector 플레이어 참조 구분
+-        [SerializeField] PlayerController playerController; // 플레이어 이동과 생존 상태
+-        [SerializeField] InventorySystem inventorySystem; // 플레이어 인벤토리
+-        [SerializeField] LightSystem lightSystem; // 플레이어 밝기 시스템
+-        [SerializeField] PlayerStatusEffectSystem statusEffectSystem; // 출혈과 둔화 상태 시스템
+-        [SerializeField] PlayerDamageFeedback damageFeedback; // 플레이어 피격 피드백
++        [Tooltip("플레이어 이동과 생존 상태")] [SerializeField] PlayerController playerController; // 플레이어 이동과 생존 상태
++        [Tooltip("플레이어 인벤토리")] [SerializeField] InventorySystem inventorySystem; // 플레이어 인벤토리
++        [Tooltip("플레이어 밝기 시스템")] [SerializeField] LightSystem lightSystem; // 플레이어 밝기 시스템
++        [Tooltip("출혈과 둔화 상태 시스템")] [SerializeField] PlayerStatusEffectSystem statusEffectSystem; // 출혈과 둔화 상태 시스템
++        [Tooltip("플레이어 피격 피드백")] [SerializeField] PlayerDamageFeedback damageFeedback; // 플레이어 피격 피드백
+ 
+         [Header("자동 생성")] // Inspector 자동 생성 매니저 참조 구분
+-        [SerializeField] MonsterSpawnManager monsterSpawnManager; // 일반 몬스터 스폰 매니저
+-        [SerializeField] TreasureSpawnManager treasureSpawnManager; // 보물과 미믹 스폰 매니저
+-        [SerializeField] TrapSpawnManager trapSpawnManager; // 함정 스폰 매니저
+-        [SerializeField] StalkerSpawnManager stalkerSpawnManager; // 스토커 스폰 매니저
+-        [SerializeField] GimmickMonsterSpawnManager gimmickSpawnManager; // 고스트와 웃는 석상 스폰 매니저
++        [Tooltip("일반 몬스터 스폰 매니저")] [SerializeField] MonsterSpawnManager monsterSpawnManager; // 일반 몬스터 스폰 매니저
++        [Tooltip("보물과 미믹 스폰 매니저")] [SerializeField] TreasureSpawnManager treasureSpawnManager; // 보물과 미믹 스폰 매니저
++        [Tooltip("함정 스폰 매니저")] [SerializeField] TrapSpawnManager trapSpawnManager; // 함정 스폰 매니저
++        [Tooltip("스토커 스폰 매니저")] [SerializeField] StalkerSpawnManager stalkerSpawnManager; // 스토커 스폰 매니저
++        [Tooltip("고스트와 웃는 석상 스폰 매니저")] [SerializeField] GimmickMonsterSpawnManager gimmickSpawnManager; // 고스트와 웃는 석상 스폰 매니저
+ 
+         [Header("기타 시스템")] // Inspector 기타 필수 시스템 참조 구분
+-        [SerializeField] AudioManager audioManager; // 3D 효과음 시스템
++        [Tooltip("3D 효과음 시스템")] [SerializeField] AudioManager audioManager; // 3D 효과음 시스템
+ 
+         [Header("검증 설정")] // Inspector 검증 기준 설정 구분
+-        [SerializeField] int minimumRoomCount = 8; // 정상 던전으로 인정할 최소 방 수
+-        [SerializeField] float validationDelay = 0.5f; // 자동 생성 완료 후 검증 대기시간
+-        [SerializeField] bool showValidationPanel = false; // Scene 시작 시 검증 패널을 숨김
++        [Tooltip("정상 던전으로 인정할 최소 방 수")] [SerializeField] int minimumRoomCount = 8; // 정상 던전으로 인정할 최소 방 수
++        [Tooltip("자동 생성 완료 후 검증 대기시간")] [SerializeField] float validationDelay = 0.5f; // 자동 생성 완료 후 검증 대기시간
++        [Tooltip("Scene 시작 시 검증 패널을 숨김")] [SerializeField] bool showValidationPanel = false; // Scene 시작 시 검증 패널을 숨김
+ 
+         readonly List<string> errors = new List<string>(); // 진행 불가 오류 목록
+         readonly List<string> warnings = new List<string>(); // 확인이 필요한 경고 목록
+diff --git a/Assets/Scripts/Managers/VillageShopManager.cs b/Assets/Scripts/Managers/VillageShopManager.cs
+index 73d85ed..8577871 100644
+--- a/Assets/Scripts/Managers/VillageShopManager.cs
++++ b/Assets/Scripts/Managers/VillageShopManager.cs
+@@ -8,9 +8,9 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+     [System.Serializable] // Inspector에서 상점 재고 항목을 설정할 수 있도록 지정
+     public class VillageShopStockEntry // 상점 아이템 하나의 프리팹과 재고 설정
+     {
+-        [SerializeField] PickupItem itemPrefab; // 구매 후 Dungeon에 전달할 아이템 프리팹
+-        [SerializeField][Min(1)] int stockPerVisit = 1; // 마을 방문마다 제공할 재고
+-        [SerializeField][Min(0)] int fallbackPrice = 50; // ItemData 가격 누락 시 사용할 가격
++        [Tooltip("구매 후 Dungeon에 전달할 아이템 프리팹")] [SerializeField] PickupItem itemPrefab; // 구매 후 Dungeon에 전달할 아이템 프리팹
++        [Tooltip("마을 방문마다 제공할 재고")] [SerializeField][Min(1)] int stockPerVisit = 1; // 마을 방문마다 제공할 재고
++        [Tooltip("ItemData 가격 누락 시 사용할 가격")] [SerializeField][Min(0)] int fallbackPrice = 50; // ItemData 가격 누락 시 사용할 가격
+ 
+         int remainingStock; // 현재 마을 방문에서 남은 재고
+ 
+@@ -59,11 +59,11 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+         public static VillageShopManager Instance { get; private set; } // 현재 활성 상점 관리자 접근점
+ 
+         [Header("Scene 설정")] // Inspector Scene 이름 설정 구분
+-        [SerializeField] string villageSceneName = "Village"; // 상점 재고를 갱신할 마을 Scene 이름
+-        [SerializeField] string dungeonSceneName = "Dungeon"; // 구매품을 전달할 던전 Scene 이름
++        [Tooltip("상점 재고를 갱신할 마을 Scene 이름")] [SerializeField] string villageSceneName = "Village"; // 상점 재고를 갱신할 마을 Scene 이름
++        [Tooltip("구매품을 전달할 던전 Scene 이름")] [SerializeField] string dungeonSceneName = "Dungeon"; // 구매품을 전달할 던전 Scene 이름
+ 
+         [Header("상점 재고")] // Inspector 판매 아이템 설정 구분
+-        [SerializeField] VillageShopStockEntry[] stockEntries; // 마을 상점 판매 목록
++        [Tooltip("마을 상점 판매 목록")] [SerializeField] VillageShopStockEntry[] stockEntries; // 마을 상점 판매 목록
+ 
+         readonly List<PickupItem> pendingItemPrefabs = new List<PickupItem>(); // 다음 Dungeon에 전달할 구매품 프리팹 목록
+ 
+diff --git a/Assets/Scripts/Monster/Ghost.cs b/Assets/Scripts/Monster/Ghost.cs
+index 2da3264..9fa7c8e 100644
+--- a/Assets/Scripts/Monster/Ghost.cs
++++ b/Assets/Scripts/Monster/Ghost.cs
+@@ -7,23 +7,23 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+     public class Ghost : MonoBehaviour // 플레이어 뒤로 순간이동하는 고스트 기믹
+     {
+         [Header("외형")] // Inspector 외형 설정 구분
+-        [SerializeField] GameObject ghostVisual; // 순간이동 후 표시할 고스트 외형
++        [Tooltip("순간이동 후 표시할 고스트 외형")] [SerializeField] GameObject ghostVisual; // 순간이동 후 표시할 고스트 외형
+ 
+         [Header("순간이동")] // Inspector 순간이동 설정 구분
+-        [SerializeField] float activationDelay = 2.5f; // 생성 후 순간이동 대기시간
+-        [SerializeField] float warningLeadTime = 0.7f; // 순간이동 전 경고를 재생할 시간
+-        [SerializeField] float teleportDistance = 3f; // 플레이어 뒤쪽 순간이동 거리
+-        [SerializeField] float groundSearchHeight = 4f; // 바닥 검색 시작 높이
+-        [SerializeField] float groundSearchDistance = 8f; // 바닥 검색 최대 거리
++        [Tooltip("생성 후 순간이동 대기시간")] [SerializeField] float activationDelay = 2.5f; // 생성 후 순간이동 대기시간
++        [Tooltip("순간이동 전 경고를 재생할 시간")] [SerializeField] float warningLeadTime = 0.7f; // 순간이동 전 경고를 재생할 시간
++        [Tooltip("플레이어 뒤쪽 순간이동 거리")] [SerializeField] float teleportDistance = 3f; // 플레이어 뒤쪽 순간이동 거리
++        [Tooltip("바닥 검색 시작 높이")] [SerializeField] float groundSearchHeight = 4f; // 바닥 검색 시작 높이
++        [Tooltip("바닥 검색 최대 거리")] [SerializeField] float groundSearchDistance = 8f; // 바닥 검색 최대 거리
+ 
+         [Header("기습 공격")] // Inspector 기습 공격 설정 구분
+-        [SerializeField] float ambushDelay = 0.35f; // 순간이동 후 공격 대기시간
+-        [SerializeField] float ambushDamage = 35f; // 고스트 기습 피해량
+-        [SerializeField] float ambushRange = 4f; // 고스트 기습 공격 거리
+-        [SerializeField] float rotationSpeed = 12f; // 플레이어 방향 회전속도
++        [Tooltip("순간이동 후 공격 대기시간")] [SerializeField] float ambushDelay = 0.35f; // 순간이동 후 공격 대기시간
++        [Tooltip("고스트 기습 피해량")] [SerializeField] float ambushDamage = 35f; // 고스트 기습 피해량
++        [Tooltip("고스트 기습 공격 거리")] [SerializeField] float ambushRange = 4f; // 고스트 기습 공격 거리
++        [Tooltip("플레이어 방향 회전속도")] [SerializeField] float rotationSpeed = 12f; // 플레이어 방향 회전속도
+ 
+         [Header("디버그")] // Inspector 디버그 설정 구분
+-        [SerializeField] bool showDebug = true; // 고스트 상태 로그 표시 여부
++        [Tooltip("고스트 상태 로그 표시 여부")] [SerializeField] bool showDebug = true; // 고스트 상태 로그 표시 여부
+ 
+         static readonly float[] TeleportAngles = // 순간이동 위치 검색 각도 목록
+         {
+diff --git a/Assets/Scripts/Monster/Mimic.cs b/Assets/Scripts/Monster/Mimic.cs
+index 22f908d..eb5a37c 100644
+--- a/Assets/Scripts/Monster/Mimic.cs
++++ b/Assets/Scripts/Monster/Mimic.cs
+@@ -8,21 +8,21 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+     public class Mimic : MonoBehaviour, IInteractable // 보물상자로 위장한 뒤 플레이어를 기습하는 몬스터
+     {
+         [Header("위장 외형")] // Inspector 위장 외형 설정 구분
+-        [SerializeField] GameObject disguiseVisual; // 위장 상태에서 표시할 보물상자 외형
+-        [SerializeField] GameObject monsterVisual; // 위장 해제 후 표시할 몬스터 외형
+-        [SerializeField] string disguiseName = "낡은 보물상자"; // 상호작용 안내에 표시할 가짜 보물 이름
++        [Tooltip("위장 상태에서 표시할 보물상자 외형")] [SerializeField] GameObject disguiseVisual; // 위장 상태에서 표시할 보물상자 외형
++        [Tooltip("위장 해제 후 표시할 몬스터 외형")] [SerializeField] GameObject monsterVisual; // 위장 해제 후 표시할 몬스터 외형
++        [Tooltip("상호작용 안내에 표시할 가짜 보물 이름")] [SerializeField] string disguiseName = "낡은 보물상자"; // 상호작용 안내에 표시할 가짜 보물 이름
+ 
+         [Header("위장 해제")] // Inspector 위장 해제 설정 구분
+-        [SerializeField] bool revealOnProximity = true; // 플레이어가 가까이 접근하면 위장을 해제할지 결정
+-        [SerializeField] float proximityRevealDistance = 1.25f; // 접근으로 위장을 해제하는 거리
+-        [SerializeField] float revealDelay = 0.25f; // 위장 외형 변경 후 공격을 시작할 때까지의 지연시간
++        [Tooltip("플레이어가 가까이 접근하면 위장을 해제할지 결정")] [SerializeField] bool revealOnProximity = true; // 플레이어가 가까이 접근하면 위장을 해제할지 결정
++        [Tooltip("접근으로 위장을 해제하는 거리")] [SerializeField] float proximityRevealDistance = 1.25f; // 접근으로 위장을 해제하는 거리
++        [Tooltip("위장 외형 변경 후 공격을 시작할 때까지의 지연시간")] [SerializeField] float revealDelay = 0.25f; // 위장 외형 변경 후 공격을 시작할 때까지의 지연시간
+ 
+         [Header("기습 공격")] // Inspector 기습 공격 설정 구분
+-        [SerializeField] float ambushDamage = 25f; // 위장 해제 시 플레이어에게 줄 기습 피해
+-        [SerializeField] float ambushRange = 2.2f; // 기습 피해가 적용되는 최대 거리
++        [Tooltip("위장 해제 시 플레이어에게 줄 기습 피해")] [SerializeField] float ambushDamage = 25f; // 위장 해제 시 플레이어에게 줄 기습 피해
++        [Tooltip("기습 피해가 적용되는 최대 거리")] [SerializeField] float ambushRange = 2.2f; // 기습 피해가 적용되는 최대 거리
+ 
+         [Header("디버그")] // Inspector 디버그 설정 구분
+-        [SerializeField] bool showDebug = true; // 미믹 상태 변경 로그를 출력할지 결정
++        [Tooltip("미믹 상태 변경 로그를 출력할지 결정")] [SerializeField] bool showDebug = true; // 미믹 상태 변경 로그를 출력할지 결정
+ 
+         MonsterAI monsterAI; // 위장 해제 후 작동시킬 기존 몬스터 AI
+         PlayerController player; // 접근 거리와 기습 대상을 확인할 플레이어
+diff --git a/Assets/Scripts/Monster/MonsterAI.cs b/Assets/Scripts/Monster/MonsterAI.cs
+index 25ceb5d..9ce33c4 100644
+--- a/Assets/Scripts/Monster/MonsterAI.cs
++++ b/Assets/Scripts/Monster/MonsterAI.cs
+@@ -11,24 +11,24 @@ namespace ProjectI
+     [RequireComponent(typeof(CharacterController))]
+     public class MonsterAI : MonoBehaviour
+     {
+-        [SerializeField] MonsterData data;
++        [Tooltip("체력과 감지 및 공격 능력치를 가져올 MonsterData 에셋")] [SerializeField] MonsterData data;
+ 
+         [Header("Fallback 스탯 (data 없을 때 사용)")]
+-        [SerializeField] string fbName = "몬스터";
+-        [SerializeField] float fbMaxHealth = 80f;
+-        [SerializeField] float fbDefense = 0f;
+-        [SerializeField] float fbMoveSpeed = 3.5f;
+-        [SerializeField] float fbAttackDamage = 20f;
+-        [SerializeField] float fbAttackRange = 1.6f;
+-        [SerializeField] float fbAttackCooldown = 1.5f;
+-        [SerializeField] float fbSightRange = 12f;
+-        [SerializeField] float fbSightAngle = 110f;
+-        [SerializeField] float fbHearingRange = 12f;
+-        [SerializeField] bool fbAggressiveInDark = true;
++        [Tooltip("MonsterData가 없을 때 사용할 몬스터 표시 이름")] [SerializeField] string fbName = "몬스터";
++        [Tooltip("MonsterData가 없을 때 사용할 최대 체력")] [SerializeField] float fbMaxHealth = 80f;
++        [Tooltip("MonsterData가 없을 때 사용할 고정 피해 감소량")] [SerializeField] float fbDefense = 0f;
++        [Tooltip("MonsterData가 없을 때 사용할 이동 속도(m/s)")] [SerializeField] float fbMoveSpeed = 3.5f;
++        [Tooltip("MonsterData가 없을 때 사용할 공격 피해량")] [SerializeField] float fbAttackDamage = 20f;
++        [Tooltip("MonsterData가 없을 때 사용할 공격 사거리(m)")] [SerializeField] float fbAttackRange = 1.6f;
++        [Tooltip("MonsterData가 없을 때 사용할 공격 간격(초)")] [SerializeField] float fbAttackCooldown = 1.5f;
++        [Tooltip("MonsterData가 없을 때 사용할 시야 감지 거리(m)")] [SerializeField] float fbSightRange = 12f;
++        [Tooltip("MonsterData가 없을 때 사용할 시야각(도)")] [SerializeField] float fbSightAngle = 110f;
++        [Tooltip("MonsterData가 없을 때 사용할 청각 감지 거리(m)")] [SerializeField] float fbHearingRange = 12f;
++        [Tooltip("MonsterData가 없을 때 어두운 환경에서 공격성을 높일지 여부")] [SerializeField] bool fbAggressiveInDark = true;
+ 
+         [Header("기타")]
+-        [SerializeField] float gravity = -20f;
+-        [SerializeField] float noiseToRadius = 1.5f; // 플레이어 속도 → 소음 반경
++        [Tooltip("CharacterController 기반 몬스터에 적용할 중력 가속도")] [SerializeField] float gravity = -20f;
++        [Tooltip("플레이어 속도 → 소음 반경")] [SerializeField] float noiseToRadius = 1.5f; // 플레이어 속도 → 소음 반경
+ 
+         enum State { Patrol, Chase, Attack }
+         State state = State.Patrol;
+diff --git a/Assets/Scripts/Monster/MonsterData.cs b/Assets/Scripts/Monster/MonsterData.cs
+index f18da3e..da151fa 100644
+--- a/Assets/Scripts/Monster/MonsterData.cs
++++ b/Assets/Scripts/Monster/MonsterData.cs
+@@ -10,16 +10,16 @@ namespace ProjectI
+     [CreateAssetMenu(fileName = "MonsterData", menuName = "ProjectI/Monster Data")]
+     public class MonsterData : ScriptableObject
+     {
+-        public string displayName = "몬스터";
+-        public float maxHealth = 80f;
+-        public float defense = 0f;      // 받는 피해 감소 (데미지 공식)
+-        public float moveSpeed = 3.5f;
+-        public float attackDamage = 20f;
+-        public float attackRange = 1.6f;
+-        public float attackCooldown = 1.5f;
+-        public float sightRange = 12f;
+-        [Range(0, 180)] public float sightAngle = 110f;
+-        public float hearingRange = 12f;
+-        public bool aggressiveInDark = true;   // 어두우면 감지력↑(공격성↑)
++        [Tooltip("게임 화면과 디버그 정보에 표시할 몬스터 이름")] public string displayName = "몬스터";
++        [Tooltip("몬스터가 처치되기 전까지 가질 수 있는 최대 체력")] public float maxHealth = 80f;
++        [Tooltip("피격 시 들어오는 피해에서 고정으로 감소시킬 방어력")] public float defense = 0f;      // 받는 피해 감소 (데미지 공식)
++        [Tooltip("플레이어를 추적할 때 적용할 이동 속도(m/s)")] public float moveSpeed = 3.5f;
++        [Tooltip("공격이 플레이어에게 명중했을 때 적용할 피해량")] public float attackDamage = 20f;
++        [Tooltip("플레이어에게 공격을 시작할 최대 거리(m)")] public float attackRange = 1.6f;
++        [Tooltip("공격 후 다음 공격까지 기다릴 시간(초)")] public float attackCooldown = 1.5f;
++        [Tooltip("몬스터가 시각으로 플레이어를 감지할 최대 거리(m)")] public float sightRange = 12f;
++        [Tooltip("몬스터 정면을 기준으로 플레이어를 감지할 시야각(도)")] [Range(0, 180)] public float sightAngle = 110f;
++        [Tooltip("플레이어가 낸 소리를 감지할 최대 거리(m)")] public float hearingRange = 12f;
++        [Tooltip("어두운 환경에서 몬스터의 감지 범위를 강화할지 여부")] public bool aggressiveInDark = true;   // 어두우면 감지력↑(공격성↑)
+     }
+ }
+diff --git a/Assets/Scripts/Monster/SmilingStatue.cs b/Assets/Scripts/Monster/SmilingStatue.cs
+index b5186cb..9a33130 100644
+--- a/Assets/Scripts/Monster/SmilingStatue.cs
++++ b/Assets/Scripts/Monster/SmilingStatue.cs
+@@ -7,21 +7,21 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+     public class SmilingStatue : MonoBehaviour // 시선을 돌리면 움직이는 웃는 석상
+     {
+         [Header("활성화")] // Inspector 활성화 설정 구분
+-        [SerializeField] float activationDelay = 1.5f; // 생성 후 행동 시작 대기시간
++        [Tooltip("생성 후 행동 시작 대기시간")] [SerializeField] float activationDelay = 1.5f; // 생성 후 행동 시작 대기시간
+ 
+ 
+         [Header("이동")] // Inspector 이동 설정 구분
+-        [SerializeField] float moveSpeed = 2.6f; // 시선이 벗어났을 때 이동속도
+-        [SerializeField] float rotationSpeed = 8f; // 플레이어 방향 회전속도
+-        [SerializeField] float gravity = -20f; // 석상 중력 가속도
++        [Tooltip("시선이 벗어났을 때 이동속도")] [SerializeField] float moveSpeed = 2.6f; // 시선이 벗어났을 때 이동속도
++        [Tooltip("플레이어 방향 회전속도")] [SerializeField] float rotationSpeed = 8f; // 플레이어 방향 회전속도
++        [Tooltip("석상 중력 가속도")] [SerializeField] float gravity = -20f; // 석상 중력 가속도
+ 
+         [Header("공격")] // Inspector 공격 설정 구분
+-        [SerializeField] float attackDamage = 45f; // 석상 공격 피해량
+-        [SerializeField] float attackRange = 1.45f; // 석상 공격 사거리
+-        [SerializeField] float attackCooldown = 1.2f; // 석상 공격 대기시간
++        [Tooltip("석상 공격 피해량")] [SerializeField] float attackDamage = 45f; // 석상 공격 피해량
++        [Tooltip("석상 공격 사거리")] [SerializeField] float attackRange = 1.45f; // 석상 공격 사거리
++        [Tooltip("석상 공격 대기시간")] [SerializeField] float attackCooldown = 1.2f; // 석상 공격 대기시간
+ 
+         [Header("디버그")] // Inspector 디버그 설정 구분
+-        [SerializeField] bool showDebug = true; // 상태 변경 로그 표시 여부
++        [Tooltip("상태 변경 로그 표시 여부")] [SerializeField] bool showDebug = true; // 상태 변경 로그 표시 여부
+ 
+         CharacterController controller; // 석상 CharacterController
+         MonsterAI monsterAI; // 석상 체력과 방어력 처리용 AI
+diff --git a/Assets/Scripts/Monster/Stalker.cs b/Assets/Scripts/Monster/Stalker.cs
+index fdfcbd2..7ab8edc 100644
+--- a/Assets/Scripts/Monster/Stalker.cs
++++ b/Assets/Scripts/Monster/Stalker.cs
+@@ -7,19 +7,19 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+     public class Stalker : MonoBehaviour // 목표 플레이어를 지속적으로 추적해 즉사시키는 특수 몬스터
+     {
+         [Header("추적 설정")] // Inspector 추적 설정 구분
+-        [SerializeField] float moveSpeed = 5.2f; // 플레이어를 추적하는 이동속도
+-        [SerializeField] float rotationSpeed = 10f; // 플레이어 방향으로 회전하는 속도
+-        [SerializeField] float activationDelay = 3f; // 생성 후 추적을 시작하기 전 유예시간
++        [Tooltip("플레이어를 추적하는 이동속도")] [SerializeField] float moveSpeed = 5.2f; // 플레이어를 추적하는 이동속도
++        [Tooltip("플레이어 방향으로 회전하는 속도")] [SerializeField] float rotationSpeed = 10f; // 플레이어 방향으로 회전하는 속도
++        [Tooltip("생성 후 추적을 시작하기 전 유예시간")] [SerializeField] float activationDelay = 3f; // 생성 후 추적을 시작하기 전 유예시간
+ 
+         [Header("즉사 공격")] // Inspector 즉사 공격 설정 구분
+-        [SerializeField] float killRange = 1.3f; // 플레이어에게 즉사 공격을 적용할 거리
+-        [SerializeField] float disappearDelay = 0.5f; // 즉사 공격 후 스토커가 제거되기까지의 시간
++        [Tooltip("플레이어에게 즉사 공격을 적용할 거리")] [SerializeField] float killRange = 1.3f; // 플레이어에게 즉사 공격을 적용할 거리
++        [Tooltip("즉사 공격 후 스토커가 제거되기까지의 시간")] [SerializeField] float disappearDelay = 0.5f; // 즉사 공격 후 스토커가 제거되기까지의 시간
+ 
+         [Header("이동 물리")] // Inspector 이동 물리 설정 구분
+-        [SerializeField] float gravity = -20f; // 스토커에 적용할 중력 가속도
++        [Tooltip("스토커에 적용할 중력 가속도")] [SerializeField] float gravity = -20f; // 스토커에 적용할 중력 가속도
+ 
+         [Header("디버그")] // Inspector 디버그 설정 구분
+-        [SerializeField] bool showDebug = true; // 스토커 상태 로그를 출력할지 결정
++        [Tooltip("스토커 상태 로그를 출력할지 결정")] [SerializeField] bool showDebug = true; // 스토커 상태 로그를 출력할지 결정
+ 
+         CharacterController controller; // 스토커 이동을 처리할 CharacterController
+         MonsterAI monsterAI; // 체력과 방어력 및 피격 처리를 담당할 기존 MonsterAI
+diff --git a/Assets/Scripts/Player/PlayerCombat.cs b/Assets/Scripts/Player/PlayerCombat.cs
+index 0f0203e..c172924 100644
+--- a/Assets/Scripts/Player/PlayerCombat.cs
++++ b/Assets/Scripts/Player/PlayerCombat.cs
+@@ -11,13 +11,13 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+     public class PlayerCombat : MonoBehaviour // 플레이어 전투 컴포넌트
+     {
+         [Header("맨손 기본 공격")] // 맨손 공격 설정 구분
+-        [SerializeField] float unarmedDamage = 12f; // 맨손 기본 공격력
+-        [SerializeField] float unarmedCooldown = 0.6f; // 맨손 공격 대기시간
+-        [SerializeField] float unarmedRange = 2f; // 맨손 공격 사거리
++        [Tooltip("맨손 기본 공격력")] [SerializeField] float unarmedDamage = 12f; // 맨손 기본 공격력
++        [Tooltip("맨손 공격 대기시간")] [SerializeField] float unarmedCooldown = 0.6f; // 맨손 공격 대기시간
++        [Tooltip("맨손 공격 사거리")] [SerializeField] float unarmedRange = 2f; // 맨손 공격 사거리
+ 
+         [Header("공통")] // 공통 전투 설정 구분
+-        [SerializeField] float hitRadius = 0.4f; // 근접 공격 판정 반경
+-        [SerializeField] float bowFallbackRange = 20f; // 활 기본 대체 사거리
++        [Tooltip("근접 공격 판정 반경")] [SerializeField] float hitRadius = 0.4f; // 근접 공격 판정 반경
++        [Tooltip("활 기본 대체 사거리")] [SerializeField] float bowFallbackRange = 20f; // 활 기본 대체 사거리
+ 
+         Transform cam; // 공격 방향용 카메라 Transform
+         InventorySystem inventory; // 화살 소모용 인벤토리
+diff --git a/Assets/Scripts/Player/PlayerController.cs b/Assets/Scripts/Player/PlayerController.cs
+index a2f7015..42aec7b 100644
+--- a/Assets/Scripts/Player/PlayerController.cs
++++ b/Assets/Scripts/Player/PlayerController.cs
+@@ -12,41 +12,41 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+     public class PlayerController : MonoBehaviour // 1인칭 플레이어 제어 컴포넌트
+     {
+         [Header("이동")] // 이동 설정 구분
+-        [SerializeField] float walkSpeed = 4f; // 기본 걷기 속도
+-        [SerializeField] float runSpeed = 7f; // 달리기 속도
+-        [SerializeField] float crouchSpeed = 2f; // 앉은 이동 속도
+-        [SerializeField] float jumpHeight = 1.1f; // 점프 높이
+-        [SerializeField] float gravity = -20f; // 중력 가속도
++        [Tooltip("기본 걷기 속도")] [SerializeField] float walkSpeed = 4f; // 기본 걷기 속도
++        [Tooltip("달리기 속도")] [SerializeField] float runSpeed = 7f; // 달리기 속도
++        [Tooltip("앉은 이동 속도")] [SerializeField] float crouchSpeed = 2f; // 앉은 이동 속도
++        [Tooltip("점프 높이")] [SerializeField] float jumpHeight = 1.1f; // 점프 높이
++        [Tooltip("중력 가속도")] [SerializeField] float gravity = -20f; // 중력 가속도
+ 
+         [Header("시점")] // 시점 설정 구분
+-        [SerializeField] float mouseSensitivity = 0.08f; // 마우스 감도
+-        [SerializeField] float minPitch = -85f; // 최소 상하 시야각
+-        [SerializeField] float maxPitch = 85f; // 최대 상하 시야각
++        [Tooltip("마우스 감도")] [SerializeField] float mouseSensitivity = 0.08f; // 마우스 감도
++        [Tooltip("최소 상하 시야각")] [SerializeField] float minPitch = -85f; // 최소 상하 시야각
++        [Tooltip("최대 상하 시야각")] [SerializeField] float maxPitch = 85f; // 최대 상하 시야각
+ 
+         [Header("앉기")] // 앉기 설정 구분
+-        [SerializeField] float standHeight = 1.8f; // 서 있을 때 충돌체 높이
+-        [SerializeField] float crouchHeight = 1f; // 앉았을 때 충돌체 높이
+-        [SerializeField] float standEyeLocalY = 0.7f; // 서 있을 때 카메라 높이
+-        [SerializeField] float crouchEyeLocalY = 0.1f; // 앉았을 때 카메라 높이
++        [Tooltip("서 있을 때 충돌체 높이")] [SerializeField] float standHeight = 1.8f; // 서 있을 때 충돌체 높이
++        [Tooltip("앉았을 때 충돌체 높이")] [SerializeField] float crouchHeight = 1f; // 앉았을 때 충돌체 높이
++        [Tooltip("서 있을 때 카메라 높이")] [SerializeField] float standEyeLocalY = 0.7f; // 서 있을 때 카메라 높이
++        [Tooltip("앉았을 때 카메라 높이")] [SerializeField] float crouchEyeLocalY = 0.1f; // 앉았을 때 카메라 높이
+ 
+         [Header("스탯 (기획서 PART 4.1)")] // 플레이어 스탯 설정 구분
+-        [SerializeField] float maxHealth = 100f; // 최대 체력
+-        [SerializeField] float maxStamina = 100f; // 최대 스태미너
+-        [SerializeField] float sprintStaminaPerSec = 15f; // 초당 달리기 스태미너 소모량
+-        [SerializeField] float jumpStaminaCost = 10f; // 점프 스태미너 소모량
+-        [SerializeField] float staminaRegenPerSec = 12f; // 초당 스태미너 회복량
+-        [SerializeField] float staminaRegenDelay = 1f; // 스태미너 회복 대기시간
++        [Tooltip("최대 체력")] [SerializeField] float maxHealth = 100f; // 최대 체력
++        [Tooltip("최대 스태미너")] [SerializeField] float maxStamina = 100f; // 최대 스태미너
++        [Tooltip("초당 달리기 스태미너 소모량")] [SerializeField] float sprintStaminaPerSec = 15f; // 초당 달리기 스태미너 소모량
++        [Tooltip("점프 스태미너 소모량")] [SerializeField] float jumpStaminaCost = 10f; // 점프 스태미너 소모량
++        [Tooltip("초당 스태미너 회복량")] [SerializeField] float staminaRegenPerSec = 12f; // 초당 스태미너 회복량
++        [Tooltip("스태미너 회복 대기시간")] [SerializeField] float staminaRegenDelay = 1f; // 스태미너 회복 대기시간
+ 
+         [Header("낙하 피해")] // 낙하 피해 설정 구분
+-        [SerializeField] float fallDamageThreshold = 10f; // 피해 발생 최소 낙하속도
+-        [SerializeField] float fallDamagePerSpeed = 4f; // 초과 낙하속도당 피해량
++        [Tooltip("피해 발생 최소 낙하속도")] [SerializeField] float fallDamageThreshold = 10f; // 피해 발생 최소 낙하속도
++        [Tooltip("초과 낙하속도당 피해량")] [SerializeField] float fallDamagePerSpeed = 4f; // 초과 낙하속도당 피해량
+ 
+         [Header("디버그")] // 디버그 설정 구분
+-        [SerializeField] bool showDebug = true; // 임시 디버그 UI 표시 여부
++        [Tooltip("임시 디버그 UI 표시 여부")] [SerializeField] bool showDebug = true; // 임시 디버그 UI 표시 여부
+ 
+         [Header("사망 및 부활")] // 사망 설정 구분
+-        [SerializeField] string reviveItemName = "부활의 돌"; // 자동 소모 부활 아이템 이름
+-        [SerializeField][Range(0.05f, 1f)] float reviveHealthRatio = 0.3f; // 부활 후 최대 체력 비율
++        [Tooltip("자동 소모 부활 아이템 이름")] [SerializeField] string reviveItemName = "부활의 돌"; // 자동 소모 부활 아이템 이름
++        [Tooltip("부활 후 최대 체력 비율")] [SerializeField][Range(0.05f, 1f)] float reviveHealthRatio = 0.3f; // 부활 후 최대 체력 비율
+ 
+         CharacterController controller; // 플레이어 이동용 컨트롤러
+         InventorySystem inventory; // 무게와 부활석 확인용 인벤토리
+diff --git a/Assets/Scripts/Player/PlayerHand.cs b/Assets/Scripts/Player/PlayerHand.cs
+index 47f9c87..7a168ca 100644
+--- a/Assets/Scripts/Player/PlayerHand.cs
++++ b/Assets/Scripts/Player/PlayerHand.cs
+@@ -8,7 +8,7 @@ namespace ProjectI
+     /// </summary>
+     public class PlayerHand : MonoBehaviour
+     {
+-        [SerializeField] Transform handAnchor;   // 없으면 카메라 밑에 자동 생성
++        [Tooltip("없으면 카메라 밑에 자동 생성")] [SerializeField] Transform handAnchor;   // 없으면 카메라 밑에 자동 생성
+         public Transform Anchor => handAnchor;
+ 
+         void Awake()
+diff --git a/Assets/Scripts/Player/PlayerInteractor.cs b/Assets/Scripts/Player/PlayerInteractor.cs
+index 8880f63..0ee1b92 100644
+--- a/Assets/Scripts/Player/PlayerInteractor.cs
++++ b/Assets/Scripts/Player/PlayerInteractor.cs
+@@ -8,11 +8,11 @@ namespace ProjectI
+     /// </summary>
+     public class PlayerInteractor : MonoBehaviour
+     {
+-        [SerializeField] float interactDistance = 3f;
+-        [SerializeField] Transform rayOrigin;   // 카메라 (없으면 자동)
++        [Tooltip("플레이어가 조준하여 상호작용할 수 있는 최대 거리(m)")] [SerializeField] float interactDistance = 3f;
++        [Tooltip("카메라 (없으면 자동)")] [SerializeField] Transform rayOrigin;   // 카메라 (없으면 자동)
+ 
+         [Header("디버그")] // 임시 OnGUI 설정 구분
+-        [SerializeField] bool showDebug = true; // 기존 OnGUI 표시 여부
++        [Tooltip("기존 OnGUI 표시 여부")] [SerializeField] bool showDebug = true; // 기존 OnGUI 표시 여부
+ 
+         public InventorySystem Inventory { get; private set; } // 현재 플레이어 인벤토리 반환
+         public string CurrentPrompt // HUD에 현재 상호작용 문구 전달
+diff --git a/Assets/Scripts/Player/PlayerStatusEffectSystem.cs b/Assets/Scripts/Player/PlayerStatusEffectSystem.cs
+index 2fea576..3401247 100644
+--- a/Assets/Scripts/Player/PlayerStatusEffectSystem.cs
++++ b/Assets/Scripts/Player/PlayerStatusEffectSystem.cs
+@@ -6,7 +6,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+     public class PlayerStatusEffectSystem : MonoBehaviour // 플레이어 출혈과 둔화 상태 관리
+     {
+         [Header("디버그")] // Inspector 디버그 설정 구분
+-        [SerializeField] bool showDebug = true; // 상태 이상 OnGUI 표시 여부
++        [Tooltip("상태 이상 OnGUI 표시 여부")] [SerializeField] bool showDebug = true; // 상태 이상 OnGUI 표시 여부
+ 
+         PlayerController playerController; // 상태 이상 대상 플레이어
+ 
+diff --git a/Assets/Scripts/Run/RunResultData.cs b/Assets/Scripts/Run/RunResultData.cs
+index 0d8c51b..13dab5c 100644
+--- a/Assets/Scripts/Run/RunResultData.cs
++++ b/Assets/Scripts/Run/RunResultData.cs
+@@ -15,14 +15,14 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+     [System.Serializable] // Unity가 결과 필드를 직렬화할 수 있도록 지정
+     public class RunResultData // 한 번의 던전 탐험 결과 데이터
+     {
+-        [SerializeField] bool hasResult; // 결과 확정 여부
+-        [SerializeField] bool escaped; // 플레이어 탈출 성공 여부
+-        [SerializeField] RunEndReason endReason; // 던전 종료 원인
+-        [SerializeField] int securedItemCount; // 마차에 확보한 전체 아이템 수
+-        [SerializeField] int securedTreasureCount; // 마차에 확보한 보물 수
+-        [SerializeField] int securedValue; // 확보한 보물 총 가치
+-        [SerializeField] float elapsedSeconds; // 던전 진행시간
+-        [SerializeField] int dungeonSeed; // 던전 생성에 사용한 시드
++        [Tooltip("결과 확정 여부")] [SerializeField] bool hasResult; // 결과 확정 여부
++        [Tooltip("플레이어 탈출 성공 여부")] [SerializeField] bool escaped; // 플레이어 탈출 성공 여부
++        [Tooltip("던전 종료 원인")] [SerializeField] RunEndReason endReason; // 던전 종료 원인
++        [Tooltip("마차에 확보한 전체 아이템 수")] [SerializeField] int securedItemCount; // 마차에 확보한 전체 아이템 수
++        [Tooltip("마차에 확보한 보물 수")] [SerializeField] int securedTreasureCount; // 마차에 확보한 보물 수
++        [Tooltip("확보한 보물 총 가치")] [SerializeField] int securedValue; // 확보한 보물 총 가치
++        [Tooltip("던전 진행시간")] [SerializeField] float elapsedSeconds; // 던전 진행시간
++        [Tooltip("던전 생성에 사용한 시드")] [SerializeField] int dungeonSeed; // 던전 생성에 사용한 시드
+ 
+         public bool HasResult => hasResult; // 결과 확정 여부 반환
+         public bool Escaped => escaped; // 탈출 성공 여부 반환
+diff --git a/Assets/Scripts/Save/CampaignSaveManager.cs b/Assets/Scripts/Save/CampaignSaveManager.cs
+index 32f2dd0..9e1d2c3 100644
+--- a/Assets/Scripts/Save/CampaignSaveManager.cs
++++ b/Assets/Scripts/Save/CampaignSaveManager.cs
+@@ -12,9 +12,9 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+         const int CurrentSaveVersion = 1; // 현재 지원하는 저장 파일 버전
+ 
+         [Header("저장 설정")] // Inspector 저장 설정 구분
+-        [SerializeField] string villageSceneName = "Village"; // 저장을 허용할 마을 Scene 이름
+-        [SerializeField] string saveFolderName = "ProjectI"; // 저장 파일을 보관할 하위 폴더 이름
+-        [SerializeField] string saveFileName = "campaign_save.json"; // 캠페인 저장 파일 이름
++        [Tooltip("저장을 허용할 마을 Scene 이름")] [SerializeField] string villageSceneName = "Village"; // 저장을 허용할 마을 Scene 이름
++        [Tooltip("저장 파일을 보관할 하위 폴더 이름")] [SerializeField] string saveFolderName = "ProjectI"; // 저장 파일을 보관할 하위 폴더 이름
++        [Tooltip("캠페인 저장 파일 이름")] [SerializeField] string saveFileName = "campaign_save.json"; // 캠페인 저장 파일 이름
+ 
+         string lastMessage = "저장 기록을 확인하지 않았습니다."; // 최근 저장 처리 결과 안내
+ 
+diff --git a/Assets/Scripts/UI/CampaignEndingUI.cs b/Assets/Scripts/UI/CampaignEndingUI.cs
+index 40873ed..f2ca6b2 100644
+--- a/Assets/Scripts/UI/CampaignEndingUI.cs
++++ b/Assets/Scripts/UI/CampaignEndingUI.cs
+@@ -6,14 +6,14 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+     public class CampaignEndingUI : MonoBehaviour // 캠페인 성공과 실패 결과 화면 관리
+     {
+         [Header("Scene 설정")] // Inspector Scene 이름 설정 구분
+-        [SerializeField] string mainMenuSceneName = "MainMenu"; // 결과 화면에서 돌아갈 메인 메뉴 Scene 이름
+-        [SerializeField] string villageSceneName = "Village"; // 새 캠페인을 시작할 마을 Scene 이름
++        [Tooltip("결과 화면에서 돌아갈 메인 메뉴 Scene 이름")] [SerializeField] string mainMenuSceneName = "MainMenu"; // 결과 화면에서 돌아갈 메인 메뉴 Scene 이름
++        [Tooltip("새 캠페인을 시작할 마을 Scene 이름")] [SerializeField] string villageSceneName = "Village"; // 새 캠페인을 시작할 마을 Scene 이름
+ 
+         [Header("화면 문구")] // Inspector 결과 화면 문구 설정 구분
+-        [SerializeField] string victoryTitle = "빚을 모두 갚았습니다"; // 캠페인 성공 제목
+-        [SerializeField] string defeatTitle = "상환 기한이 끝났습니다"; // 캠페인 실패 제목
+-        [SerializeField] string victoryMessage = "도굴단은 빚에서 벗어나 새로운 삶을 얻었습니다."; // 캠페인 성공 설명
+-        [SerializeField] string defeatMessage = "도굴단은 기한 안에 빚을 갚지 못했습니다."; // 캠페인 실패 설명
++        [Tooltip("캠페인 성공 제목")] [SerializeField] string victoryTitle = "빚을 모두 갚았습니다"; // 캠페인 성공 제목
++        [Tooltip("캠페인 실패 제목")] [SerializeField] string defeatTitle = "상환 기한이 끝났습니다"; // 캠페인 실패 제목
++        [Tooltip("캠페인 성공 설명")] [SerializeField] string victoryMessage = "도굴단은 빚에서 벗어나 새로운 삶을 얻었습니다."; // 캠페인 성공 설명
++        [Tooltip("캠페인 실패 설명")] [SerializeField] string defeatMessage = "도굴단은 기한 안에 빚을 갚지 못했습니다."; // 캠페인 실패 설명
+ 
+         CampaignManager campaignManager; // 현재 캠페인 상태를 확인할 관리자
+         PlayerController lockedController; // 결과 화면에서 정지시킨 플레이어 이동 컴포넌트
+diff --git a/Assets/Scripts/UI/DebugUIToggleController.cs b/Assets/Scripts/UI/DebugUIToggleController.cs
+index d2bb743..940ed6e 100644
+--- a/Assets/Scripts/UI/DebugUIToggleController.cs
++++ b/Assets/Scripts/UI/DebugUIToggleController.cs
+@@ -6,10 +6,10 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+     public class DebugUIToggleController : MonoBehaviour // 기존 OnGUI 디버그 화면의 표시 상태 관리
+     {
+         [Header("시작 표시 상태")] // Scene 시작 시 디버그 UI 표시 여부 구분
+-        [SerializeField] bool playerInfoVisibleAtStart = false; // 플레이어 관련 디버그 UI 시작 표시 여부
+-        [SerializeField] bool inventoryInfoVisibleAtStart = false; // 인벤토리 관련 디버그 UI 시작 표시 여부
+-        [SerializeField] bool spawnInfoVisibleAtStart = false; // 자동 스폰 관련 디버그 UI 시작 표시 여부
+-        [SerializeField] bool campaignInfoVisibleAtStart = false; // 캠페인 관련 디버그 UI 시작 표시 여부
++        [Tooltip("플레이어 관련 디버그 UI 시작 표시 여부")] [SerializeField] bool playerInfoVisibleAtStart = false; // 플레이어 관련 디버그 UI 시작 표시 여부
++        [Tooltip("인벤토리 관련 디버그 UI 시작 표시 여부")] [SerializeField] bool inventoryInfoVisibleAtStart = false; // 인벤토리 관련 디버그 UI 시작 표시 여부
++        [Tooltip("자동 스폰 관련 디버그 UI 시작 표시 여부")] [SerializeField] bool spawnInfoVisibleAtStart = false; // 자동 스폰 관련 디버그 UI 시작 표시 여부
++        [Tooltip("캠페인 관련 디버그 UI 시작 표시 여부")] [SerializeField] bool campaignInfoVisibleAtStart = false; // 캠페인 관련 디버그 UI 시작 표시 여부
+ 
+         public static bool PlayerInfoVisible { get; private set; } // 플레이어 관련 디버그 UI 표시 상태
+         public static bool InventoryInfoVisible { get; private set; } // 인벤토리 관련 디버그 UI 표시 상태
+diff --git a/Assets/Scripts/UI/GameSettingsUI.cs b/Assets/Scripts/UI/GameSettingsUI.cs
+index faf0bd9..9ef943a 100644
+--- a/Assets/Scripts/UI/GameSettingsUI.cs
++++ b/Assets/Scripts/UI/GameSettingsUI.cs
+@@ -5,7 +5,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+     public class GameSettingsUI : MonoBehaviour // 메인 메뉴 게임 설정 화면 관리
+     {
+         [Header("설정 연결")] // Inspector 설정 관리자 연결 구분
+-        [SerializeField] GameSettingsManager settingsManager; // 설정값을 저장하고 적용할 관리자
++        [Tooltip("설정값을 저장하고 적용할 관리자")] [SerializeField] GameSettingsManager settingsManager; // 설정값을 저장하고 적용할 관리자
+ 
+         bool windowOpen; // 현재 설정 화면 표시 여부
+         float draftSensitivity = 1f; // 화면에서 편집 중인 마우스 감도
+diff --git a/Assets/Scripts/UI/InventoryHUD.cs b/Assets/Scripts/UI/InventoryHUD.cs
+index 66e4103..1334f2f 100644
+--- a/Assets/Scripts/UI/InventoryHUD.cs
++++ b/Assets/Scripts/UI/InventoryHUD.cs
+@@ -8,23 +8,23 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+     public class InventoryHUD : MonoBehaviour // Canvas 인벤토리와 핫바 관리 컴포넌트
+     {
+         [Header("게임 참조")] // 인벤토리 시스템 참조 구분
+-        [SerializeField] InventorySystem inventorySystem; // 현재 플레이어 인벤토리
++        [Tooltip("현재 플레이어 인벤토리")] [SerializeField] InventorySystem inventorySystem; // 현재 플레이어 인벤토리
+ 
+         [Header("슬롯 생성")] // 동적 슬롯 생성 설정 구분
+-        [SerializeField] InventorySlotUI slotPrefab; // 생성할 슬롯 UI 프리팹
+-        [SerializeField] Transform slotContainer; // 생성한 슬롯을 배치할 부모 Transform
++        [Tooltip("생성할 슬롯 UI 프리팹")] [SerializeField] InventorySlotUI slotPrefab; // 생성할 슬롯 UI 프리팹
++        [Tooltip("생성한 슬롯을 배치할 부모 Transform")] [SerializeField] Transform slotContainer; // 생성한 슬롯을 배치할 부모 Transform
+ 
+         [Header("인벤토리 정보")] // 인벤토리 정보 UI 참조 구분
+-        [SerializeField] TMP_Text inventorySummaryText; // 사용 슬롯과 전체 슬롯 정보 글자
+-        [SerializeField] TMP_Text weightText; // 현재 무게와 제한 무게 글자
+-        [SerializeField] Image weightFillImage; // 현재 무게 비율 게이지
+-        [SerializeField] TMP_Text selectedItemText; // 현재 선택 아이템 상세 정보
+-        [SerializeField] TMP_Text twoHandText; // 두손 운반 상태 안내 글자
++        [Tooltip("사용 슬롯과 전체 슬롯 정보 글자")] [SerializeField] TMP_Text inventorySummaryText; // 사용 슬롯과 전체 슬롯 정보 글자
++        [Tooltip("현재 무게와 제한 무게 글자")] [SerializeField] TMP_Text weightText; // 현재 무게와 제한 무게 글자
++        [Tooltip("현재 무게 비율 게이지")] [SerializeField] Image weightFillImage; // 현재 무게 비율 게이지
++        [Tooltip("현재 선택 아이템 상세 정보")] [SerializeField] TMP_Text selectedItemText; // 현재 선택 아이템 상세 정보
++        [Tooltip("두손 운반 상태 안내 글자")] [SerializeField] TMP_Text twoHandText; // 두손 운반 상태 안내 글자
+ 
+         [Header("무게 색상")] // 무게 상태별 게이지 색상 구분
+-        [SerializeField] Color normalWeightColor = new Color(0.18f, 0.68f, 0.47f, 1f); // 가벼운 무게 게이지 색상
+-        [SerializeField] Color warningWeightColor = new Color(0.92f, 0.65f, 0.12f, 1f); // 무거운 상태 경고 색상
+-        [SerializeField] Color overweightColor = new Color(0.9f, 0.13f, 0.08f, 1f); // 무게 제한 초과 색상
++        [Tooltip("가벼운 무게 게이지 색상")] [SerializeField] Color normalWeightColor = new Color(0.18f, 0.68f, 0.47f, 1f); // 가벼운 무게 게이지 색상
++        [Tooltip("무거운 상태 경고 색상")] [SerializeField] Color warningWeightColor = new Color(0.92f, 0.65f, 0.12f, 1f); // 무거운 상태 경고 색상
++        [Tooltip("무게 제한 초과 색상")] [SerializeField] Color overweightColor = new Color(0.9f, 0.13f, 0.08f, 1f); // 무게 제한 초과 색상
+ 
+         readonly List<InventorySlotUI> slotViews = new List<InventorySlotUI>(); // 현재 생성된 모든 슬롯 UI 목록
+ 
+diff --git a/Assets/Scripts/UI/InventorySlotUI.cs b/Assets/Scripts/UI/InventorySlotUI.cs
+index 5b9006b..0c1b3e9 100644
+--- a/Assets/Scripts/UI/InventorySlotUI.cs
++++ b/Assets/Scripts/UI/InventorySlotUI.cs
+@@ -7,19 +7,19 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+     public class InventorySlotUI : MonoBehaviour // Canvas 인벤토리의 개별 슬롯 표시 컴포넌트
+     {
+         [Header("UI 참조")] // 슬롯 UI 참조 구분
+-        [SerializeField] Image backgroundImage; // 슬롯 배경 이미지
+-        [SerializeField] Outline selectionOutline; // 현재 선택 슬롯 외곽선
+-        [SerializeField] TMP_Text slotNumberText; // 실제 슬롯 번호 글자
+-        [SerializeField] TMP_Text itemNameText; // 아이템 이름 또는 연결 슬롯 표시 글자
++        [Tooltip("슬롯 배경 이미지")] [SerializeField] Image backgroundImage; // 슬롯 배경 이미지
++        [Tooltip("현재 선택 슬롯 외곽선")] [SerializeField] Outline selectionOutline; // 현재 선택 슬롯 외곽선
++        [Tooltip("실제 슬롯 번호 글자")] [SerializeField] TMP_Text slotNumberText; // 실제 슬롯 번호 글자
++        [Tooltip("아이템 이름 또는 연결 슬롯 표시 글자")] [SerializeField] TMP_Text itemNameText; // 아이템 이름 또는 연결 슬롯 표시 글자
+ 
+         [Header("색상")] // 슬롯 색상 설정 구분
+-        [SerializeField] Color emptyColor = new Color(0.09f, 0.09f, 0.1f, 0.82f); // 빈 슬롯 배경 색상
+-        [SerializeField] Color occupiedColor = new Color(0.19f, 0.17f, 0.14f, 0.94f); // 아이템이 들어 있는 슬롯 색상
+-        [SerializeField] Color selectedColor = new Color(0.32f, 0.26f, 0.12f, 1f); // 현재 선택 슬롯 배경 색상
++        [Tooltip("빈 슬롯 배경 색상")] [SerializeField] Color emptyColor = new Color(0.09f, 0.09f, 0.1f, 0.82f); // 빈 슬롯 배경 색상
++        [Tooltip("아이템이 들어 있는 슬롯 색상")] [SerializeField] Color occupiedColor = new Color(0.19f, 0.17f, 0.14f, 0.94f); // 아이템이 들어 있는 슬롯 색상
++        [Tooltip("현재 선택 슬롯 배경 색상")] [SerializeField] Color selectedColor = new Color(0.32f, 0.26f, 0.12f, 1f); // 현재 선택 슬롯 배경 색상
+ 
+         [Header("글자 크기")] // 슬롯 글자 크기 설정 구분
+-        [SerializeField] float itemNameFontSize = 16f; // 일반 아이템 이름 글자 크기
+-        [SerializeField] float continuationFontSize = 26f; // 다중 슬롯 연결 기호 글자 크기
++        [Tooltip("일반 아이템 이름 글자 크기")] [SerializeField] float itemNameFontSize = 16f; // 일반 아이템 이름 글자 크기
++        [Tooltip("다중 슬롯 연결 기호 글자 크기")] [SerializeField] float continuationFontSize = 26f; // 다중 슬롯 연결 기호 글자 크기
+ 
+         public void SetSlot(int slotNumber, string itemLabel, bool occupied, bool selected, bool continuation) // 전달받은 상태로 슬롯 화면 갱신
+         {
+diff --git a/Assets/Scripts/UI/MainMenuUI.cs b/Assets/Scripts/UI/MainMenuUI.cs
+index 5a86e45..7766549 100644
+--- a/Assets/Scripts/UI/MainMenuUI.cs
++++ b/Assets/Scripts/UI/MainMenuUI.cs
+@@ -6,15 +6,15 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+     public class MainMenuUI : MonoBehaviour // 새 게임과 이어하기를 제공하는 임시 메인 메뉴
+     {
+         [Header("Scene 설정")] // Inspector Scene 설정 구분
+-        [SerializeField] string villageSceneName = "Village"; // 게임 시작 후 이동할 마을 Scene 이름
++        [Tooltip("게임 시작 후 이동할 마을 Scene 이름")] [SerializeField] string villageSceneName = "Village"; // 게임 시작 후 이동할 마을 Scene 이름
+ 
+         [Header("저장 연결")] // Inspector 저장 관리자 연결 구분
+-        [SerializeField] CampaignSaveManager saveManager; // 저장 파일 존재 여부를 확인할 관리자
+-        [SerializeField] GameSettingsUI settingsUI; // 메인 메뉴에서 열 게임 설정 화면
++        [Tooltip("저장 파일 존재 여부를 확인할 관리자")] [SerializeField] CampaignSaveManager saveManager; // 저장 파일 존재 여부를 확인할 관리자
++        [Tooltip("메인 메뉴에서 열 게임 설정 화면")] [SerializeField] GameSettingsUI settingsUI; // 메인 메뉴에서 열 게임 설정 화면
+ 
+         [Header("화면 설정")] // Inspector 메인 메뉴 문구 설정 구분
+-        [SerializeField] string gameTitle = "PROJECT I"; // 메인 메뉴 게임 제목
+-        [SerializeField] string gameSubtitle = "도굴단 원정 기록"; // 메인 메뉴 보조 제목
++        [Tooltip("메인 메뉴 게임 제목")] [SerializeField] string gameTitle = "PROJECT I"; // 메인 메뉴 게임 제목
++        [Tooltip("메인 메뉴 보조 제목")] [SerializeField] string gameSubtitle = "도굴단 원정 기록"; // 메인 메뉴 보조 제목
+ 
+         bool newGameConfirmation; // 기존 저장 기록 덮어쓰기 확인 여부
+         string statusMessage = string.Empty; // 메인 메뉴 안내 문구
+diff --git a/Assets/Scripts/UI/PauseMenuUI.cs b/Assets/Scripts/UI/PauseMenuUI.cs
+index 6611ce2..9035b91 100644
+--- a/Assets/Scripts/UI/PauseMenuUI.cs
++++ b/Assets/Scripts/UI/PauseMenuUI.cs
+@@ -16,12 +16,12 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+         }
+ 
+         [Header("Scene 설정")] // Inspector Scene 이름 설정 구분
+-        [SerializeField] string dungeonSceneName = "Dungeon"; // 탐험 포기 버튼을 표시할 던전 Scene 이름
+-        [SerializeField] string villageSceneName = "Village"; // 메인 메뉴 버튼을 표시할 마을 Scene 이름
+-        [SerializeField] string mainMenuSceneName = "MainMenu"; // 마을에서 돌아갈 메인 메뉴 Scene 이름
++        [Tooltip("탐험 포기 버튼을 표시할 던전 Scene 이름")] [SerializeField] string dungeonSceneName = "Dungeon"; // 탐험 포기 버튼을 표시할 던전 Scene 이름
++        [Tooltip("메인 메뉴 버튼을 표시할 마을 Scene 이름")] [SerializeField] string villageSceneName = "Village"; // 메인 메뉴 버튼을 표시할 마을 Scene 이름
++        [Tooltip("마을에서 돌아갈 메인 메뉴 Scene 이름")] [SerializeField] string mainMenuSceneName = "MainMenu"; // 마을에서 돌아갈 메인 메뉴 Scene 이름
+ 
+         [Header("설정 화면 연결")] // Inspector 설정 UI 연결 구분
+-        [SerializeField] GameSettingsUI settingsUI; // 일시정지 메뉴에서 사용할 게임 설정 화면
++        [Tooltip("일시정지 메뉴에서 사용할 게임 설정 화면")] [SerializeField] GameSettingsUI settingsUI; // 일시정지 메뉴에서 사용할 게임 설정 화면
+ 
+         bool isPaused; // 현재 게임 일시정지 여부
+         bool leavingScene; // 현재 다른 Scene으로 이동 중인지 여부
+diff --git a/Assets/Scripts/UI/PlayerHUD.cs b/Assets/Scripts/UI/PlayerHUD.cs
+index c7d2a16..77b740e 100644
+--- a/Assets/Scripts/UI/PlayerHUD.cs
++++ b/Assets/Scripts/UI/PlayerHUD.cs
+@@ -7,37 +7,37 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+     public class PlayerHUD : MonoBehaviour // 던전 플레이어 HUD 관리 컴포넌트
+     {
+         [Header("게임 참조")] // 게임 시스템 참조 구분
+-        [SerializeField] PlayerController playerController; // 체력과 스태미너를 가져올 플레이어
+-        [SerializeField] PlayerInteractor playerInteractor; // 상호작용 문구를 가져올 플레이어 상호작용 컴포넌트
+-        [SerializeField] DungeonTimeSystem dungeonTimeSystem; // 던전 시간 정보를 가져올 시스템
+-        [SerializeField] LightSystem lightSystem; // 현재 밝기 정보를 가져올 시스템
++        [Tooltip("체력과 스태미너를 가져올 플레이어")] [SerializeField] PlayerController playerController; // 체력과 스태미너를 가져올 플레이어
++        [Tooltip("상호작용 문구를 가져올 플레이어 상호작용 컴포넌트")] [SerializeField] PlayerInteractor playerInteractor; // 상호작용 문구를 가져올 플레이어 상호작용 컴포넌트
++        [Tooltip("던전 시간 정보를 가져올 시스템")] [SerializeField] DungeonTimeSystem dungeonTimeSystem; // 던전 시간 정보를 가져올 시스템
++        [Tooltip("현재 밝기 정보를 가져올 시스템")] [SerializeField] LightSystem lightSystem; // 현재 밝기 정보를 가져올 시스템
+ 
+         [Header("체력 UI")] // 체력 UI 참조 구분
+-        [SerializeField] Image healthFill; // 체력 게이지 채움 이미지
+-        [SerializeField] TMP_Text healthValueText; // 현재 체력 수치 글자
++        [Tooltip("체력 게이지 채움 이미지")] [SerializeField] Image healthFill; // 체력 게이지 채움 이미지
++        [Tooltip("현재 체력 수치 글자")] [SerializeField] TMP_Text healthValueText; // 현재 체력 수치 글자
+ 
+         [Header("스태미너 UI")] // 스태미너 UI 참조 구분
+-        [SerializeField] Image staminaFill; // 스태미너 게이지 채움 이미지
+-        [SerializeField] TMP_Text staminaValueText; // 현재 스태미너 수치 글자
++        [Tooltip("스태미너 게이지 채움 이미지")] [SerializeField] Image staminaFill; // 스태미너 게이지 채움 이미지
++        [Tooltip("현재 스태미너 수치 글자")] [SerializeField] TMP_Text staminaValueText; // 현재 스태미너 수치 글자
+ 
+         [Header("던전 정보 UI")] // 던전 정보 UI 참조 구분
+-        [SerializeField] GameObject dungeonInfoPanel; // Dungeon Scene에서만 표시할 던전 정보 패널
+-        [SerializeField] TMP_Text timeText; // 던전 시간과 남은 시간 글자
+-        [SerializeField] TMP_Text brightnessText; // 현재 밝기와 밝기 단계 글자
++        [Tooltip("Dungeon Scene에서만 표시할 던전 정보 패널")] [SerializeField] GameObject dungeonInfoPanel; // Dungeon Scene에서만 표시할 던전 정보 패널
++        [Tooltip("던전 시간과 남은 시간 글자")] [SerializeField] TMP_Text timeText; // 던전 시간과 남은 시간 글자
++        [Tooltip("현재 밝기와 밝기 단계 글자")] [SerializeField] TMP_Text brightnessText; // 현재 밝기와 밝기 단계 글자
+ 
+         [Header("안내 UI")] // 안내 UI 참조 구분
+-        [SerializeField] TMP_Text interactionText; // 현재 상호작용 문구
+-        [SerializeField] TMP_Text controlGuideText; // 기본 조작 안내 문구
++        [Tooltip("현재 상호작용 문구")] [SerializeField] TMP_Text interactionText; // 현재 상호작용 문구
++        [Tooltip("기본 조작 안내 문구")] [SerializeField] TMP_Text controlGuideText; // 기본 조작 안내 문구
+ 
+         [Header("색상")] // HUD 색상 설정 구분
+-        [SerializeField] Color healthColor = new Color(0.72f, 0.15f, 0.12f, 1f); // 정상 체력 색상
+-        [SerializeField] Color healthDangerColor = new Color(1f, 0.05f, 0.03f, 1f); // 낮은 체력 경고 색상
+-        [SerializeField] Color staminaColor = new Color(0.16f, 0.68f, 0.52f, 1f); // 정상 스태미너 색상
+-        [SerializeField] Color staminaDangerColor = new Color(0.72f, 0.58f, 0.08f, 1f); // 낮은 스태미너 경고 색상
+-        [SerializeField] Color normalTextColor = new Color(0.92f, 0.9f, 0.82f, 1f); // 일반 정보 글자 색상
+-        [SerializeField] Color timeWarningColor = new Color(1f, 0.2f, 0.12f, 1f); // 제한시간 경고 글자 색상
+-        [SerializeField] Color darkBrightnessColor = new Color(0.45f, 0.48f, 0.55f, 1f); // 어두운 방 밝기 글자 색상
+-        [SerializeField] Color brightBrightnessColor = new Color(1f, 0.82f, 0.34f, 1f); // 밝은 방 밝기 글자 색상
++        [Tooltip("정상 체력 색상")] [SerializeField] Color healthColor = new Color(0.72f, 0.15f, 0.12f, 1f); // 정상 체력 색상
++        [Tooltip("낮은 체력 경고 색상")] [SerializeField] Color healthDangerColor = new Color(1f, 0.05f, 0.03f, 1f); // 낮은 체력 경고 색상
++        [Tooltip("정상 스태미너 색상")] [SerializeField] Color staminaColor = new Color(0.16f, 0.68f, 0.52f, 1f); // 정상 스태미너 색상
++        [Tooltip("낮은 스태미너 경고 색상")] [SerializeField] Color staminaDangerColor = new Color(0.72f, 0.58f, 0.08f, 1f); // 낮은 스태미너 경고 색상
++        [Tooltip("일반 정보 글자 색상")] [SerializeField] Color normalTextColor = new Color(0.92f, 0.9f, 0.82f, 1f); // 일반 정보 글자 색상
++        [Tooltip("제한시간 경고 글자 색상")] [SerializeField] Color timeWarningColor = new Color(1f, 0.2f, 0.12f, 1f); // 제한시간 경고 글자 색상
++        [Tooltip("어두운 방 밝기 글자 색상")] [SerializeField] Color darkBrightnessColor = new Color(0.45f, 0.48f, 0.55f, 1f); // 어두운 방 밝기 글자 색상
++        [Tooltip("밝은 방 밝기 글자 색상")] [SerializeField] Color brightBrightnessColor = new Color(1f, 0.82f, 0.34f, 1f); // 밝은 방 밝기 글자 색상
+ 
+         float nextReferenceSearchTime; // 다음 Scene 참조 검색 시각
+ 
+diff --git a/Assets/Scripts/UI/VillageCampaignFlowUI.cs b/Assets/Scripts/UI/VillageCampaignFlowUI.cs
+index c3f6376..9367b24 100644
+--- a/Assets/Scripts/UI/VillageCampaignFlowUI.cs
++++ b/Assets/Scripts/UI/VillageCampaignFlowUI.cs
+@@ -7,10 +7,10 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+     public class VillageCampaignFlowUI : MonoBehaviour // 마을 날짜 안내와 다음 던전 출발 및 캠페인 결과 담당
+     {
+         [Header("Scene 설정")] // Inspector Scene 설정 구분
+-        [SerializeField] string dungeonSceneName = "Dungeon"; // 다음 탐험에 사용할 Dungeon Scene 이름
++        [Tooltip("다음 탐험에 사용할 Dungeon Scene 이름")] [SerializeField] string dungeonSceneName = "Dungeon"; // 다음 탐험에 사용할 Dungeon Scene 이름
+ 
+         [Header("임시 화면")] // Inspector OnGUI 설정 구분
+-        [SerializeField] bool showFlowPanel = true; // 날짜와 출발 안내 패널 표시 여부
++        [Tooltip("날짜와 출발 안내 패널 표시 여부")] [SerializeField] bool showFlowPanel = true; // 날짜와 출발 안내 패널 표시 여부
+         bool selectionUnlocked; // 마차 도착 후 던전 선택 허용 여부
+ 
+         CampaignManager campaignManager; // 캠페인 날짜와 빚 상태 관리 매니저
+diff --git a/Assets/Scripts/UI/VillageDungeonSelectionUI.cs b/Assets/Scripts/UI/VillageDungeonSelectionUI.cs
+index f2fc882..0ad3ace 100644
+--- a/Assets/Scripts/UI/VillageDungeonSelectionUI.cs
++++ b/Assets/Scripts/UI/VillageDungeonSelectionUI.cs
+@@ -6,7 +6,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+     public class VillageDungeonSelectionUI : MonoBehaviour // 마을 마차의 던전 경로 선택과 출발 인터페이스
+     {
+         [Header("임시 선택 화면")] // Inspector 선택 화면 설정 구분
+-        [SerializeField] bool showSelectionPanel = true; // 던전 선택 패널 표시 여부
++        [Tooltip("던전 선택 패널 표시 여부")] [SerializeField] bool showSelectionPanel = true; // 던전 선택 패널 표시 여부
+ 
+         DungeonSelectionManager selectionManager; // 던전 경로 선택과 Scene 이동 매니저
+         CampaignManager campaignManager; // 캠페인 종료와 출발 가능 상태 확인
+diff --git a/Assets/Scripts/UI/VillageSettlementUI.cs b/Assets/Scripts/UI/VillageSettlementUI.cs
+index 745490f..3310803 100644
+--- a/Assets/Scripts/UI/VillageSettlementUI.cs
++++ b/Assets/Scripts/UI/VillageSettlementUI.cs
+@@ -5,9 +5,9 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+     public class VillageSettlementUI : MonoBehaviour // 마을 보상 정산과 직접 빚 납부 인터페이스
+     {
+         [Header("납부 조절 단위")] // Inspector 납부 금액 조절 설정 구분
+-        [SerializeField][Min(1)] int smallStep = 10; // 소액 조절 단위
+-        [SerializeField][Min(1)] int mediumStep = 100; // 중간 조절 단위
+-        [SerializeField][Min(1)] int largeStep = 1000; // 큰 조절 단위
++        [Tooltip("소액 조절 단위")] [SerializeField][Min(1)] int smallStep = 10; // 소액 조절 단위
++        [Tooltip("중간 조절 단위")] [SerializeField][Min(1)] int mediumStep = 100; // 중간 조절 단위
++        [Tooltip("큰 조절 단위")] [SerializeField][Min(1)] int largeStep = 1000; // 큰 조절 단위
+ 
+         CampaignManager campaignManager; // 골드와 빚을 관리하는 캠페인 매니저
+ 
+diff --git a/Assets/Scripts/Village/VillageDepartureLever.cs b/Assets/Scripts/Village/VillageDepartureLever.cs
+index e1240b6..32a0409 100644
+--- a/Assets/Scripts/Village/VillageDepartureLever.cs
++++ b/Assets/Scripts/Village/VillageDepartureLever.cs
+@@ -5,10 +5,10 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+     public class VillageDepartureLever : MonoBehaviour, IInteractable // 마차 출발을 요청하는 상호작용 레버
+     {
+         [Header("마차 연결")] // Inspector 마차 참조 구분
+-        [SerializeField] VillageWagonTravelController wagonTravel; // 출발시킬 마차 이동 컴포넌트
++        [Tooltip("출발시킬 마차 이동 컴포넌트")] [SerializeField] VillageWagonTravelController wagonTravel; // 출발시킬 마차 이동 컴포넌트
+ 
+         [Header("레버 연출")] // Inspector 임시 레버 연출 설정 구분
+-        [SerializeField] Vector3 pulledLocalEulerAngles = new Vector3(0f, 0f, 45f); // 작동 후 레버 로컬 회전값
++        [Tooltip("작동 후 레버 로컬 회전값")] [SerializeField] Vector3 pulledLocalEulerAngles = new Vector3(0f, 0f, 45f); // 작동 후 레버 로컬 회전값
+ 
+         bool pulled; // 레버 사용 완료 여부
+ 
+diff --git a/Assets/Scripts/Village/VillageGameStartLoader.cs b/Assets/Scripts/Village/VillageGameStartLoader.cs
+index f0cfdcc..9b6b44f 100644
+--- a/Assets/Scripts/Village/VillageGameStartLoader.cs
++++ b/Assets/Scripts/Village/VillageGameStartLoader.cs
+@@ -6,7 +6,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+     public class VillageGameStartLoader : MonoBehaviour // 메인 메뉴 시작 요청을 Village에서 처리
+     {
+         [Header("초기화 설정")] // Inspector 초기화 설정 구분
+-        [SerializeField][Min(1)] int managerWaitFrames = 120; // 필수 관리자를 기다릴 최대 프레임 수
++        [Tooltip("필수 관리자를 기다릴 최대 프레임 수")] [SerializeField][Min(1)] int managerWaitFrames = 120; // 필수 관리자를 기다릴 최대 프레임 수
+ 
+         IEnumerator Start() // Village 관리자 생성을 기다린 뒤 시작 요청 처리
+         {
+diff --git a/Assets/Scripts/Village/VillagePlayerSpawner.cs b/Assets/Scripts/Village/VillagePlayerSpawner.cs
+index 8c9ac2c..112d320 100644
+--- a/Assets/Scripts/Village/VillagePlayerSpawner.cs
++++ b/Assets/Scripts/Village/VillagePlayerSpawner.cs
+@@ -6,12 +6,12 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+     public class VillagePlayerSpawner : MonoBehaviour // 마을 도착 시 플레이어를 마차 위에 배치
+     {
+         [Header("플레이어 설정")] // Inspector 플레이어 설정 구분
+-        [SerializeField] PlayerController playerPrefab; // 마을에 생성할 플레이어 프리팹
+-        [SerializeField] Transform spawnPoint; // 플레이어가 배치될 마차 위 지점
+-        [SerializeField] bool reuseScenePlayer = true; // Scene에 있는 기존 플레이어 재사용 여부
++        [Tooltip("마을에 생성할 플레이어 프리팹")] [SerializeField] PlayerController playerPrefab; // 마을에 생성할 플레이어 프리팹
++        [Tooltip("플레이어가 배치될 마차 위 지점")] [SerializeField] Transform spawnPoint; // 플레이어가 배치될 마차 위 지점
++        [Tooltip("Scene에 있는 기존 플레이어 재사용 여부")] [SerializeField] bool reuseScenePlayer = true; // Scene에 있는 기존 플레이어 재사용 여부
+ 
+         [Header("마을 UI")] // Inspector 마을 UI 설정 구분
+-        [SerializeField] VillageSettlementUI settlementUI; // 정산 창 상태 확인용 UI
++        [Tooltip("정산 창 상태 확인용 UI")] [SerializeField] VillageSettlementUI settlementUI; // 정산 창 상태 확인용 UI
+ 
+         PlayerController currentPlayer; // 현재 마을에 배치된 플레이어
+         PlayerInteractor currentInteractor; // 플레이어 상호작용 컴포넌트
+diff --git a/Assets/Scripts/Village/VillageSaveLedger.cs b/Assets/Scripts/Village/VillageSaveLedger.cs
+index 9d3d9c5..ce2ed15 100644
+--- a/Assets/Scripts/Village/VillageSaveLedger.cs
++++ b/Assets/Scripts/Village/VillageSaveLedger.cs
+@@ -6,10 +6,10 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+     public class VillageSaveLedger : MonoBehaviour, IInteractable // 마을 저장 창을 여는 장부
+     {
+         [Header("저장 연결")] // Inspector 저장 연결 구분
+-        [SerializeField] CampaignSaveManager saveManager; // 저장과 불러오기를 처리할 관리자
++        [Tooltip("저장과 불러오기를 처리할 관리자")] [SerializeField] CampaignSaveManager saveManager; // 저장과 불러오기를 처리할 관리자
+ 
+         [Header("화면 설정")] // Inspector 임시 화면 설정 구분
+-        [SerializeField] string ledgerTitle = "도굴단 원정 장부"; // 저장 창 제목
++        [Tooltip("저장 창 제목")] [SerializeField] string ledgerTitle = "도굴단 원정 장부"; // 저장 창 제목
+ 
+         bool windowOpen; // 현재 저장 창 표시 여부
+         bool deleteConfirmation; // 저장 파일 삭제 재확인 여부
+diff --git a/Assets/Scripts/Village/VillageShop.cs b/Assets/Scripts/Village/VillageShop.cs
+index 972e9ed..207efc9 100644
+--- a/Assets/Scripts/Village/VillageShop.cs
++++ b/Assets/Scripts/Village/VillageShop.cs
+@@ -6,9 +6,9 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+     public class VillageShop : MonoBehaviour, IInteractable // 플레이어 상호작용형 마을 상점
+     {
+         [Header("상점 설정")] // Inspector 상점 설정 구분
+-        [SerializeField] string shopName = "도굴단 물자 상점"; // 화면과 상호작용에 표시할 상점 이름
+-        [SerializeField] VillageShopManager shopManager; // 재고와 구매품 전달을 관리할 매니저
+-        [SerializeField] VillageSettlementUI settlementUI; // 정산 창 상태 확인용 UI
++        [Tooltip("화면과 상호작용에 표시할 상점 이름")] [SerializeField] string shopName = "도굴단 물자 상점"; // 화면과 상호작용에 표시할 상점 이름
++        [Tooltip("재고와 구매품 전달을 관리할 매니저")] [SerializeField] VillageShopManager shopManager; // 재고와 구매품 전달을 관리할 매니저
++        [Tooltip("정산 창 상태 확인용 UI")] [SerializeField] VillageSettlementUI settlementUI; // 정산 창 상태 확인용 UI
+ 
+         PlayerInteractor customerInteractor; // 현재 상점을 이용하는 플레이어 상호작용 컴포넌트
+         PlayerController customerController; // 현재 상점을 이용하는 플레이어 이동 컴포넌트
+diff --git a/Assets/Scripts/Village/VillageWagonTravelController.cs b/Assets/Scripts/Village/VillageWagonTravelController.cs
+index 50587e3..1e0f20a 100644
+--- a/Assets/Scripts/Village/VillageWagonTravelController.cs
++++ b/Assets/Scripts/Village/VillageWagonTravelController.cs
+@@ -6,14 +6,14 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
+     public class VillageWagonTravelController : MonoBehaviour // 출발 레버 이후 마차 이동 담당
+     {
+         [Header("이동 설정")] // Inspector 마차 이동 설정 구분
+-        [SerializeField][Min(0.1f)] float moveSpeed = 4f; // 마차 초당 이동 거리
+-        [SerializeField][Min(1f)] float travelDistance = 25f; // 던전 선택 창이 열리는 이동 거리
+-        [SerializeField] Vector3 localTravelDirection = Vector3.back; // 마차 모델 기준 앞쪽 이동 방향
+-        [SerializeField] Transform passengerAnchor; // 이동 중 플레이어를 붙잡아 둘 부모 지점
++        [Tooltip("마차 초당 이동 거리")] [SerializeField][Min(0.1f)] float moveSpeed = 4f; // 마차 초당 이동 거리
++        [Tooltip("던전 선택 창이 열리는 이동 거리")] [SerializeField][Min(1f)] float travelDistance = 25f; // 던전 선택 창이 열리는 이동 거리
++        [Tooltip("마차 모델 기준 앞쪽 이동 방향")] [SerializeField] Vector3 localTravelDirection = Vector3.back; // 마차 모델 기준 앞쪽 이동 방향
++        [Tooltip("이동 중 플레이어를 붙잡아 둘 부모 지점")] [SerializeField] Transform passengerAnchor; // 이동 중 플레이어를 붙잡아 둘 부모 지점
+ 
+         [Header("마을 UI")] // Inspector 마을 UI 설정 구분
+-        [SerializeField] VillageSettlementUI settlementUI; // 정산 창 상태 확인용 UI
+-        [SerializeField] VillageDungeonSelectionUI dungeonSelectionUI; // 도착 후 활성화할 던전 선택 UI
++        [Tooltip("정산 창 상태 확인용 UI")] [SerializeField] VillageSettlementUI settlementUI; // 정산 창 상태 확인용 UI
++        [Tooltip("도착 후 활성화할 던전 선택 UI")] [SerializeField] VillageDungeonSelectionUI dungeonSelectionUI; // 도착 후 활성화할 던전 선택 UI
+ 
+         Rigidbody wagonBody; // 마차 이동에 사용할 Rigidbody
+         CampaignManager campaignManager; // 다음 탐험 출발 가능 여부 확인용 매니저

@@ -6,24 +6,24 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
     public class PlayerDamageFeedback : MonoBehaviour // 플레이어 피격 화면과 카메라 피드백 처리
     {
         [Header("필수 참조")] // Inspector 필수 참조 설정 구분
-        [SerializeField] Transform cameraShakePivot; // 카메라 흔들림 전용 부모 Transform
+        [Tooltip("카메라 흔들림 전용 부모 Transform")] [SerializeField] Transform cameraShakePivot; // 카메라 흔들림 전용 부모 Transform
 
         [Header("화면 점멸")] // Inspector 화면 점멸 설정 구분
-        [SerializeField] Color flashColor = new Color(0.65f, 0f, 0f, 1f); // 피격 화면 색상
-        [SerializeField][Range(0f, 1f)] float maximumFlashAlpha = 0.35f; // 화면 점멸 최대 투명도
-        [SerializeField] float flashDuration = 0.35f; // 화면 점멸 지속시간
-        [SerializeField] float damageForMaximumIntensity = 60f; // 최대 강도에 도달할 피해량
+        [Tooltip("피격 화면 색상")] [SerializeField] Color flashColor = new Color(0.65f, 0f, 0f, 1f); // 피격 화면 색상
+        [Tooltip("화면 점멸 최대 투명도")] [SerializeField][Range(0f, 1f)] float maximumFlashAlpha = 0.35f; // 화면 점멸 최대 투명도
+        [Tooltip("화면 점멸 지속시간")] [SerializeField] float flashDuration = 0.35f; // 화면 점멸 지속시간
+        [Tooltip("최대 강도에 도달할 피해량")] [SerializeField] float damageForMaximumIntensity = 60f; // 최대 강도에 도달할 피해량
 
         [Header("카메라 흔들림")] // Inspector 카메라 흔들림 설정 구분
-        [SerializeField] float shakeDuration = 0.22f; // 일반 피격 흔들림 지속시간
-        [SerializeField] float shakeStrength = 0.08f; // 일반 피격 흔들림 세기
-        [SerializeField] float fatalShakeMultiplier = 1.8f; // 즉사 피해 흔들림 배율
+        [Tooltip("일반 피격 흔들림 지속시간")] [SerializeField] float shakeDuration = 0.22f; // 일반 피격 흔들림 지속시간
+        [Tooltip("일반 피격 흔들림 세기")] [SerializeField] float shakeStrength = 0.08f; // 일반 피격 흔들림 세기
+        [Tooltip("즉사 피해 흔들림 배율")] [SerializeField] float fatalShakeMultiplier = 1.8f; // 즉사 피해 흔들림 배율
 
         [Header("피격 효과음")] // Inspector 피격 효과음 설정 구분
-        [SerializeField] AudioClip damageClip; // 일반 피해 효과음
-        [SerializeField] AudioClip fatalDamageClip; // 즉사 피해 효과음
-        [SerializeField][Range(0f, 1f)] float audioVolume = 0.7f; // 피격 효과음 음량
-        [SerializeField] bool useFallbackTone = true; // 효과음 누락 시 임시 전자음 사용 여부
+        [Tooltip("일반 피해 효과음")] [SerializeField] AudioClip damageClip; // 일반 피해 효과음
+        [Tooltip("즉사 피해 효과음")] [SerializeField] AudioClip fatalDamageClip; // 즉사 피해 효과음
+        [Tooltip("피격 효과음 음량")] [SerializeField][Range(0f, 1f)] float audioVolume = 0.7f; // 피격 효과음 음량
+        [Tooltip("효과음 누락 시 임시 전자음 사용 여부")] [SerializeField] bool useFallbackTone = true; // 효과음 누락 시 임시 전자음 사용 여부
 
         PlayerController playerController; // 피해 이벤트를 제공하는 플레이어
         Vector3 pivotBaseLocalPosition; // 카메라 흔들림 Pivot 기본 위치
@@ -85,10 +85,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
 
         void LateUpdate() // 플레이어 이동 처리 후 카메라 흔들림 적용
         {
-            if (cameraShakePivot == null) // 카메라 흔들림 Pivot 존재 여부 확인
-            {
-                return; // 흔들림 처리 중단
-            }
+            if (cameraShakePivot == null) { return; }// 카메라 흔들림 Pivot 존재 여부 확인 // 흔들림 처리 중단
 
             if (shakeTimer <= 0f) // 카메라 흔들림 종료 여부 확인
             {

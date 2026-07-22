@@ -5,9 +5,9 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
     public class VillageSettlementUI : MonoBehaviour // 마을 보상 정산과 직접 빚 납부 인터페이스
     {
         [Header("납부 조절 단위")] // Inspector 납부 금액 조절 설정 구분
-        [SerializeField][Min(1)] int smallStep = 10; // 소액 조절 단위
-        [SerializeField][Min(1)] int mediumStep = 100; // 중간 조절 단위
-        [SerializeField][Min(1)] int largeStep = 1000; // 큰 조절 단위
+        [Tooltip("소액 조절 단위")] [SerializeField][Min(1)] int smallStep = 10; // 소액 조절 단위
+        [Tooltip("중간 조절 단위")] [SerializeField][Min(1)] int mediumStep = 100; // 중간 조절 단위
+        [Tooltip("큰 조절 단위")] [SerializeField][Min(1)] int largeStep = 1000; // 큰 조절 단위
 
         CampaignManager campaignManager; // 골드와 빚을 관리하는 캠페인 매니저
 

@@ -8,8 +8,8 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         public static DungeonSelectionManager Instance { get; private set; } // 현재 활성 던전 선택 매니저 접근점
 
         [Header("선택 가능한 경로")] // Inspector 던전 경로 목록 구분
-        [SerializeField] DungeonRouteData[] routes; // 마차에서 선택할 던전 경로 목록
-        [SerializeField] int defaultRouteIndex; // 새 캠페인의 기본 던전 경로 번호
+        [Tooltip("마차에서 선택할 던전 경로 목록")] [SerializeField] DungeonRouteData[] routes; // 마차에서 선택할 던전 경로 목록
+        [Tooltip("새 캠페인의 기본 던전 경로 번호")] [SerializeField] int defaultRouteIndex; // 새 캠페인의 기본 던전 경로 번호
 
         int selectedRouteIndex; // 현재 선택한 던전 경로 번호
 

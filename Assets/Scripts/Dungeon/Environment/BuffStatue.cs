@@ -5,9 +5,9 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
     public class BuffStatue : MonoBehaviour, IInteractable // 플레이어에게 일시적인 이동속도 버프를 주는 조각상
     {
         [Header("버프 설정")] // Inspector 버프 설정 구분
-        [SerializeField] float speedMultiplier = 1.25f; // 적용할 이동속도 배율
-        [SerializeField] float duration = 30f; // 이동속도 버프 지속시간
-        [SerializeField] bool oneUse = true; // 조각상을 한 번만 사용할 수 있는지 결정
+        [Tooltip("적용할 이동속도 배율")] [SerializeField] float speedMultiplier = 1.25f; // 적용할 이동속도 배율
+        [Tooltip("이동속도 버프 지속시간")] [SerializeField] float duration = 30f; // 이동속도 버프 지속시간
+        [Tooltip("조각상을 한 번만 사용할 수 있는지 결정")] [SerializeField] bool oneUse = true; // 조각상을 한 번만 사용할 수 있는지 결정
 
         bool hasBeenUsed; // 일회용 조각상 사용 여부 저장
 
@@ -23,11 +23,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
 
         public void Interact(PlayerInteractor interactor) // 플레이어가 조각상과 상호작용
         {
-            if (oneUse && hasBeenUsed) // 이미 사용한 조각상인지 확인
-            {
-                return; // 중복 버프 적용 방지
-            }
-
+            if (oneUse && hasBeenUsed) { return; } // 이미 사용한 조각상인지 확인 -> 중복 버프 적용 방지
             if (interactor == null) // 상호작용한 플레이어 정보가 없는지 확인
             {
                 return; // 버프 적용 중단

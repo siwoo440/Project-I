@@ -11,13 +11,13 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
     public class PlayerCombat : MonoBehaviour // 플레이어 전투 컴포넌트
     {
         [Header("맨손 기본 공격")] // 맨손 공격 설정 구분
-        [SerializeField] float unarmedDamage = 12f; // 맨손 기본 공격력
-        [SerializeField] float unarmedCooldown = 0.6f; // 맨손 공격 대기시간
-        [SerializeField] float unarmedRange = 2f; // 맨손 공격 사거리
+        [Tooltip("맨손 기본 공격력")] [SerializeField] float unarmedDamage = 12f; // 맨손 기본 공격력
+        [Tooltip("맨손 공격 대기시간")] [SerializeField] float unarmedCooldown = 0.6f; // 맨손 공격 대기시간
+        [Tooltip("맨손 공격 사거리")] [SerializeField] float unarmedRange = 2f; // 맨손 공격 사거리
 
         [Header("공통")] // 공통 전투 설정 구분
-        [SerializeField] float hitRadius = 0.4f; // 근접 공격 판정 반경
-        [SerializeField] float bowFallbackRange = 20f; // 활 기본 대체 사거리
+        [Tooltip("근접 공격 판정 반경")] [SerializeField] float hitRadius = 0.4f; // 근접 공격 판정 반경
+        [Tooltip("활 기본 대체 사거리")] [SerializeField] float bowFallbackRange = 20f; // 활 기본 대체 사거리
 
         Transform cam; // 공격 방향용 카메라 Transform
         InventorySystem inventory; // 화살 소모용 인벤토리

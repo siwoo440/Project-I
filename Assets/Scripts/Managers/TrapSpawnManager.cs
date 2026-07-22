@@ -6,25 +6,25 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
     public class TrapSpawnManager : MonoBehaviour // 던전의 함정 자동 생성을 담당
     {
         [Header("필수 참조")] // Inspector 필수 참조 설정 구분
-        [SerializeField] DungeonGenerator dungeonGenerator; // 생성 완료 이벤트와 방 목록을 제공하는 던전 생성기
-        [SerializeField] Trap[] trapPrefabs; // 자동 생성할 함정 프리팹 목록
+        [Tooltip("생성 완료 이벤트와 방 목록을 제공하는 던전 생성기")] [SerializeField] DungeonGenerator dungeonGenerator; // 생성 완료 이벤트와 방 목록을 제공하는 던전 생성기
+        [Tooltip("자동 생성할 함정 프리팹 목록")] [SerializeField] Trap[] trapPrefabs; // 자동 생성할 함정 프리팹 목록
 
         [Header("방별 함정 수")] // 방별 함정 수 설정 구분
-        [SerializeField] int minTrapsPerRoom = 0; // 방 하나의 최소 기본 함정 수
-        [SerializeField] int maxTrapsPerRoom = 1; // 방 하나의 최대 기본 함정 수
-        [SerializeField] bool skipStartingRoom = true; // 시작 방에서 함정을 생성하지 않을지 결정
-        [SerializeField] bool useBrightnessMultiplier = true; // 어두운 방에서 함정 수를 증가시킬지 결정
+        [Tooltip("방 하나의 최소 기본 함정 수")] [SerializeField] int minTrapsPerRoom = 0; // 방 하나의 최소 기본 함정 수
+        [Tooltip("방 하나의 최대 기본 함정 수")] [SerializeField] int maxTrapsPerRoom = 1; // 방 하나의 최대 기본 함정 수
+        [Tooltip("시작 방에서 함정을 생성하지 않을지 결정")] [SerializeField] bool skipStartingRoom = true; // 시작 방에서 함정을 생성하지 않을지 결정
+        [Tooltip("어두운 방에서 함정 수를 증가시킬지 결정")] [SerializeField] bool useBrightnessMultiplier = true; // 어두운 방에서 함정 수를 증가시킬지 결정
 
         [Header("스폰 위치")] // 함정 위치 설정 구분
-        [SerializeField] float wallMargin = 1.5f; // 벽으로부터 떨어질 최소 거리
-        [SerializeField] float positionSearchHeight = 0.4f; // 장애물 검사를 실행할 바닥 위 높이
-        [SerializeField] float groundOffset = 0f; // 함정 루트를 바닥에서 띄울 높이
-        [SerializeField] float collisionCheckRadius = 0.3f; // 함정 위치의 장애물 검사 반경
-        [SerializeField] int positionSearchAttempts = 30; // 방 안에서 위치를 검색할 최대 횟수
-        [SerializeField] float playerSafeDistance = 3f; // 플레이어 주변 함정 생성 금지 거리
+        [Tooltip("벽으로부터 떨어질 최소 거리")] [SerializeField] float wallMargin = 1.5f; // 벽으로부터 떨어질 최소 거리
+        [Tooltip("장애물 검사를 실행할 바닥 위 높이")] [SerializeField] float positionSearchHeight = 0.4f; // 장애물 검사를 실행할 바닥 위 높이
+        [Tooltip("함정 루트를 바닥에서 띄울 높이")] [SerializeField] float groundOffset = 0f; // 함정 루트를 바닥에서 띄울 높이
+        [Tooltip("함정 위치의 장애물 검사 반경")] [SerializeField] float collisionCheckRadius = 0.3f; // 함정 위치의 장애물 검사 반경
+        [Tooltip("방 안에서 위치를 검색할 최대 횟수")] [SerializeField] int positionSearchAttempts = 30; // 방 안에서 위치를 검색할 최대 횟수
+        [Tooltip("플레이어 주변 함정 생성 금지 거리")] [SerializeField] float playerSafeDistance = 3f; // 플레이어 주변 함정 생성 금지 거리
 
         [Header("디버그")] // 디버그 설정 구분
-        [SerializeField] bool showDebug = true; // 현재 함정 수를 화면에 표시할지 결정
+        [Tooltip("현재 함정 수를 화면에 표시할지 결정")] [SerializeField] bool showDebug = true; // 현재 함정 수를 화면에 표시할지 결정
 
         readonly List<Trap> spawnedTraps = new List<Trap>(); // 이 매니저가 생성한 함정 목록
         Transform player; // 플레이어 위치를 확인하기 위한 Transform 참조

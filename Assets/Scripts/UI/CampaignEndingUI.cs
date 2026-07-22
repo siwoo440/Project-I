@@ -6,14 +6,14 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
     public class CampaignEndingUI : MonoBehaviour // 캠페인 성공과 실패 결과 화면 관리
     {
         [Header("Scene 설정")] // Inspector Scene 이름 설정 구분
-        [SerializeField] string mainMenuSceneName = "MainMenu"; // 결과 화면에서 돌아갈 메인 메뉴 Scene 이름
-        [SerializeField] string villageSceneName = "Village"; // 새 캠페인을 시작할 마을 Scene 이름
+        [Tooltip("결과 화면에서 돌아갈 메인 메뉴 Scene 이름")] [SerializeField] string mainMenuSceneName = "MainMenu"; // 결과 화면에서 돌아갈 메인 메뉴 Scene 이름
+        [Tooltip("새 캠페인을 시작할 마을 Scene 이름")] [SerializeField] string villageSceneName = "Village"; // 새 캠페인을 시작할 마을 Scene 이름
 
         [Header("화면 문구")] // Inspector 결과 화면 문구 설정 구분
-        [SerializeField] string victoryTitle = "빚을 모두 갚았습니다"; // 캠페인 성공 제목
-        [SerializeField] string defeatTitle = "상환 기한이 끝났습니다"; // 캠페인 실패 제목
-        [SerializeField] string victoryMessage = "도굴단은 빚에서 벗어나 새로운 삶을 얻었습니다."; // 캠페인 성공 설명
-        [SerializeField] string defeatMessage = "도굴단은 기한 안에 빚을 갚지 못했습니다."; // 캠페인 실패 설명
+        [Tooltip("캠페인 성공 제목")] [SerializeField] string victoryTitle = "빚을 모두 갚았습니다"; // 캠페인 성공 제목
+        [Tooltip("캠페인 실패 제목")] [SerializeField] string defeatTitle = "상환 기한이 끝났습니다"; // 캠페인 실패 제목
+        [Tooltip("캠페인 성공 설명")] [SerializeField] string victoryMessage = "도굴단은 빚에서 벗어나 새로운 삶을 얻었습니다."; // 캠페인 성공 설명
+        [Tooltip("캠페인 실패 설명")] [SerializeField] string defeatMessage = "도굴단은 기한 안에 빚을 갚지 못했습니다."; // 캠페인 실패 설명
 
         CampaignManager campaignManager; // 현재 캠페인 상태를 확인할 관리자
         PlayerController lockedController; // 결과 화면에서 정지시킨 플레이어 이동 컴포넌트

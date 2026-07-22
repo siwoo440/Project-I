@@ -5,13 +5,13 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
     public class SceneAudioController : MonoBehaviour // Scene 시작 시 배경음과 환경음 및 테스트 효과음 재생
     {
         [Header("Scene 오디오")] // Inspector Scene 오디오 설정 구분
-        [SerializeField] AudioClip bgmClip; // 현재 Scene에서 재생할 배경음
-        [SerializeField] AudioClip ambientClip; // 현재 Scene에서 재생할 전체 환경음
-        [SerializeField] AudioClip startupSfxClip; // Scene 시작 시 한 번 재생할 테스트 효과음
+        [Tooltip("현재 Scene에서 재생할 배경음")] [SerializeField] AudioClip bgmClip; // 현재 Scene에서 재생할 배경음
+        [Tooltip("현재 Scene에서 재생할 전체 환경음")] [SerializeField] AudioClip ambientClip; // 현재 Scene에서 재생할 전체 환경음
+        [Tooltip("Scene 시작 시 한 번 재생할 테스트 효과음")] [SerializeField] AudioClip startupSfxClip; // Scene 시작 시 한 번 재생할 테스트 효과음
 
         [Header("Scene 종료 설정")] // Inspector Scene 종료 설정 구분
-        [SerializeField] bool stopBgmOnSceneExit = true; // 현재 Scene 종료 시 배경음 정지 여부
-        [SerializeField] bool stopAmbientOnSceneExit = true; // 현재 Scene 종료 시 환경음 정지 여부
+        [Tooltip("현재 Scene 종료 시 배경음 정지 여부")] [SerializeField] bool stopBgmOnSceneExit = true; // 현재 Scene 종료 시 배경음 정지 여부
+        [Tooltip("현재 Scene 종료 시 환경음 정지 여부")] [SerializeField] bool stopAmbientOnSceneExit = true; // 현재 Scene 종료 시 환경음 정지 여부
 
         void Start() // Scene 시작 시 연결된 AudioClip 재생
         {

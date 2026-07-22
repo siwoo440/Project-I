@@ -6,7 +6,7 @@ namespace ProjectI
     /// <summary>
     /// 밝기 시스템 ★핵심. (기획서 PART 5)
     /// 최종 밝기 = 현재 방 고정 밝기(화톳불) + 손에 든 광원 기여.
-    /// 5단계 산출 + 상단 UI. F키로 손에 든 광원 On/Off.
+    /// 5단계 산출 + 상단 UI. T키로 손에 든 광원 On/Off.
     /// ※ 플레이어에 부착(현재 싱글 기준). 멀티 확장 시 구역 밝기 동기화는 이후.
     /// </summary>
     public class LightSystem : MonoBehaviour
@@ -15,7 +15,7 @@ namespace ProjectI
         Transform searchRoot;   // 손에 든 광원 탐색 기준(카메라)
 
         [Header("디버그")] // 임시 밝기 UI 설정 구분
-        [SerializeField] bool showDebug = true; // 기존 OnGUI 밝기 표시 여부
+        [Tooltip("기존 OnGUI 밝기 표시 여부")] [SerializeField] bool showDebug = true; // 기존 OnGUI 밝기 표시 여부
 
         public float CurrentBrightness { get; private set; }
         public string Stage { get; private set; } = "완전한 어둠";
@@ -31,9 +31,9 @@ namespace ProjectI
 
         void Update()
         {
-            // F: '손에 든' 광원만 토글 (카메라 하위 = 현재 든 아이템)
+            // T: '손에 든' 광원만 토글 (카메라 하위 = 현재 든 아이템)
             var kb = Keyboard.current;
-            if (kb != null && kb.fKey.wasPressedThisFrame)
+            if (kb != null && kb.tKey.wasPressedThisFrame)
             {
                 var held = searchRoot != null ? searchRoot.GetComponentInChildren<LightSource>(false) : null;
                 if (held != null) held.Toggle();

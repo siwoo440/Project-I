@@ -15,7 +15,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         public static ParticleEffectPool Instance { get; private set; } // 현재 활성 파티클 풀 접근점
 
         [Header("풀 설정")] // Inspector 풀 설정 구분
-        [SerializeField][Min(1)] int maxInstancesPerPrefab = 12; // 프리팹 종류별 최대 생성 개수
+        [Tooltip("프리팹 종류별 최대 생성 개수")] [SerializeField][Min(1)] int maxInstancesPerPrefab = 12; // 프리팹 종류별 최대 생성 개수
 
         readonly Dictionary<int, Queue<ParticleSystem>> availableEffects = new Dictionary<int, Queue<ParticleSystem>>(); // 프리팹별 대기 파티클 목록
         readonly Dictionary<int, int> createdCounts = new Dictionary<int, int>(); // 프리팹별 생성된 전체 개수

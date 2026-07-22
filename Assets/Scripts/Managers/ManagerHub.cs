@@ -5,27 +5,27 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
     public class ManagerHub : MonoBehaviour // Scene의 주요 매니저 참조를 한곳에서 관리
     {
         [Header("던전 시스템")] // 던전 관련 참조 구분
-        [SerializeField] DungeonGenerator dungeonGenerator; // 절차적 던전 생성기
-        [SerializeField] DungeonTimeSystem dungeonTimeSystem; // 던전 제한시간 시스템
-        [SerializeField] LightSystem lightSystem; // 현재 방 밝기 관리 시스템
+        [Tooltip("절차적 던전 생성기")] [SerializeField] DungeonGenerator dungeonGenerator; // 절차적 던전 생성기
+        [Tooltip("던전 제한시간 시스템")] [SerializeField] DungeonTimeSystem dungeonTimeSystem; // 던전 제한시간 시스템
+        [Tooltip("현재 방 밝기 관리 시스템")] [SerializeField] LightSystem lightSystem; // 현재 방 밝기 관리 시스템
 
         [Header("스폰 시스템")] // 자동 생성 매니저 참조 구분
-        [SerializeField] MonsterSpawnManager monsterSpawnManager; // 일반 몬스터 스폰 매니저
-        [SerializeField] TreasureSpawnManager treasureSpawnManager; // 보물과 미믹 스폰 매니저
-        [SerializeField] TrapSpawnManager trapSpawnManager; // 함정 스폰 매니저
-        [SerializeField] StalkerSpawnManager stalkerSpawnManager; // 스토커 스폰 매니저
-        [SerializeField] GimmickMonsterSpawnManager gimmickSpawnManager; // 고스트와 웃는 석상 스폰 매니저
+        [Tooltip("일반 몬스터 스폰 매니저")] [SerializeField] MonsterSpawnManager monsterSpawnManager; // 일반 몬스터 스폰 매니저
+        [Tooltip("보물과 미믹 스폰 매니저")] [SerializeField] TreasureSpawnManager treasureSpawnManager; // 보물과 미믹 스폰 매니저
+        [Tooltip("함정 스폰 매니저")] [SerializeField] TrapSpawnManager trapSpawnManager; // 함정 스폰 매니저
+        [Tooltip("스토커 스폰 매니저")] [SerializeField] StalkerSpawnManager stalkerSpawnManager; // 스토커 스폰 매니저
+        [Tooltip("고스트와 웃는 석상 스폰 매니저")] [SerializeField] GimmickMonsterSpawnManager gimmickSpawnManager; // 고스트와 웃는 석상 스폰 매니저
 
         [Header("영구 시스템")] // Scene 전환 후 유지되는 매니저 참조 구분
-        [SerializeField] AudioManager audioManager; // 효과음과 AudioSource 풀 관리
-        [SerializeField] ParticleEffectPool particleEffectPool; // 파티클 풀 관리
-        [SerializeField] RunResultManager runResultManager; // Scene 간 던전 결과 보관 매니저
-        [SerializeField] CampaignManager campaignManager; // 골드와 빚 및 날짜 관리 매니저
-        [SerializeField] DungeonSelectionManager dungeonSelectionManager; // 선택한 던전 경로를 Scene 간 유지하는 매니저
+        [Tooltip("효과음과 AudioSource 풀 관리")] [SerializeField] AudioManager audioManager; // 효과음과 AudioSource 풀 관리
+        [Tooltip("파티클 풀 관리")] [SerializeField] ParticleEffectPool particleEffectPool; // 파티클 풀 관리
+        [Tooltip("Scene 간 던전 결과 보관 매니저")] [SerializeField] RunResultManager runResultManager; // Scene 간 던전 결과 보관 매니저
+        [Tooltip("골드와 빚 및 날짜 관리 매니저")] [SerializeField] CampaignManager campaignManager; // 골드와 빚 및 날짜 관리 매니저
+        [Tooltip("선택한 던전 경로를 Scene 간 유지하는 매니저")] [SerializeField] DungeonSelectionManager dungeonSelectionManager; // 선택한 던전 경로를 Scene 간 유지하는 매니저
 
         [Header("검증 시스템")] // 개발용 검사 시스템 참조 구분
-        [SerializeField] VerticalSliceValidator verticalSliceValidator; // 수직 슬라이스 구성 검사
-        [SerializeField] RuntimePerformanceMonitor performanceMonitor; // 성능과 반복 생성 검사
+        [Tooltip("수직 슬라이스 구성 검사")] [SerializeField] VerticalSliceValidator verticalSliceValidator; // 수직 슬라이스 구성 검사
+        [Tooltip("성능과 반복 생성 검사")] [SerializeField] RuntimePerformanceMonitor performanceMonitor; // 성능과 반복 생성 검사
        
 
         public DungeonGenerator DungeonGenerator => dungeonGenerator; // 던전 생성기 공개 접근점

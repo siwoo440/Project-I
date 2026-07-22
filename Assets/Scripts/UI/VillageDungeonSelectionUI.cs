@@ -6,7 +6,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
     public class VillageDungeonSelectionUI : MonoBehaviour // 마을 마차의 던전 경로 선택과 출발 인터페이스
     {
         [Header("임시 선택 화면")] // Inspector 선택 화면 설정 구분
-        [SerializeField] bool showSelectionPanel = true; // 던전 선택 패널 표시 여부
+        [Tooltip("던전 선택 패널 표시 여부")] [SerializeField] bool showSelectionPanel = true; // 던전 선택 패널 표시 여부
 
         DungeonSelectionManager selectionManager; // 던전 경로 선택과 Scene 이동 매니저
         CampaignManager campaignManager; // 캠페인 종료와 출발 가능 상태 확인

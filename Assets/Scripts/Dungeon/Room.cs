@@ -15,23 +15,55 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         }
 
         [Header("수평 벽")] // 수평 연결을 막는 벽 오브젝트 구분
-        [SerializeField] GameObject wallN; // 북쪽 벽
-        [SerializeField] GameObject wallE; // 동쪽 벽
-        [SerializeField] GameObject wallS; // 남쪽 벽
-        [SerializeField] GameObject wallW; // 서쪽 벽
+        [Tooltip("북쪽 벽")] [SerializeField] GameObject wallN; // 북쪽 벽
+        [Tooltip("동쪽 벽")] [SerializeField] GameObject wallE; // 동쪽 벽
+        [Tooltip("남쪽 벽")] [SerializeField] GameObject wallS; // 남쪽 벽
+        [Tooltip("서쪽 벽")] [SerializeField] GameObject wallW; // 서쪽 벽
 
         [Header("수직 연결 차단물")] // 층간 연결을 막는 오브젝트 구분
-        [SerializeField] GameObject ceilingBlock; // 위층 연결부를 막는 천장 또는 해치
-        [SerializeField] GameObject floorBlock; // 아래층 연결부를 막는 바닥 또는 해치
+        [Tooltip("위층 연결부를 막는 천장 또는 해치")] [SerializeField] GameObject ceilingBlock; // 위층 연결부를 막는 천장 또는 해치
+        [Tooltip("아래층 연결부를 막는 바닥 또는 해치")] [SerializeField] GameObject floorBlock; // 아래층 연결부를 막는 바닥 또는 해치
 
         [Header("수직 연결 외형")] // 연결될 때 표시할 계단과 난간 구분
-        [SerializeField] GameObject stairsUpVisual; // 위층으로 올라가는 계단 외형
-        [SerializeField] GameObject stairsDownVisual; // 아래층으로 내려가는 입구 외형
+        [Tooltip("위층으로 올라가는 계단 외형")] [SerializeField] GameObject stairsUpVisual; // 위층으로 올라가는 계단 외형
+        [Tooltip("아래층으로 내려가는 입구 외형")] [SerializeField] GameObject stairsDownVisual; // 아래층으로 내려가는 입구 외형
 
         [Header("자동 스폰")] // 방 내부 자동 생성 허용 설정
-        [SerializeField] bool allowAutomaticSpawning = true; // 몬스터와 보물 및 함정 생성 허용 여부
+        [Tooltip("몬스터와 보물 및 함정 생성 허용 여부")] [SerializeField] bool allowAutomaticSpawning = true; // 몬스터와 보물 및 함정 생성 허용 여부
 
         public bool AllowAutomaticSpawning => allowAutomaticSpawning; // 외부 스폰 매니저에 생성 허용 상태 반환
+
+        public void ResetConnections() // 재생성 전 모든 연결 차단물 초기화
+        {
+            SetBlockerActive(wallN, true); // 북쪽 벽 복구
+            SetBlockerActive(wallE, true); // 동쪽 벽 복구
+            SetBlockerActive(wallS, true); // 남쪽 벽 복구
+            SetBlockerActive(wallW, true); // 서쪽 벽 복구
+            SetBlockerActive(ceilingBlock, true); // 천장 차단물 복구
+            SetBlockerActive(floorBlock, true); // 바닥 차단물 복구
+            SetBlockerActive(stairsUpVisual, false); // 위층 계단 외형 숨김
+            SetBlockerActive(stairsDownVisual, false); // 아래층 계단 외형 숨김
+        }
+
+        public bool TryGetClosedWall(Dir direction, out Transform wallTransform) // 닫힌 수평 벽 Transform 검색
+        {
+            wallTransform = null; // 실패 대비 결과 초기화
+
+            if (direction == Dir.Up || direction == Dir.Down) // 수직 방향 여부 확인
+            {
+                return false; // 수직 차단물 제외
+            }
+
+            GameObject wallObject = GetBlocker(direction); // 방향에 연결된 벽 오브젝트 검색
+
+            if (wallObject == null || !wallObject.activeInHierarchy) // 벽 존재와 활성 상태 확인
+            {
+                return false; // 열렸거나 누락된 벽 제외
+            }
+
+            wallTransform = wallObject.transform; // 안전한 닫힌 벽 Transform 저장
+            return true; // 닫힌 벽 검색 성공
+        }
 
         public void OpenSide(Dir direction) // 지정된 수평 벽 또는 수직 해치를 열고 연결 외형 활성화
         {
@@ -47,6 +79,14 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             if (verticalVisual != null) // 계단 또는 난간 외형이 연결되어 있는지 확인
             {
                 verticalVisual.SetActive(true); // 연결된 수직 이동 외형 활성화
+            }
+        }
+
+        void SetBlockerActive(GameObject target, bool active) // 선택 오브젝트 활성 상태 설정
+        {
+            if (target != null) // 대상 존재 여부 확인
+            {
+                target.SetActive(active); // 지정 활성 상태 적용
             }
         }
 

@@ -6,7 +6,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
     public class PlayerStatusEffectSystem : MonoBehaviour // 플레이어 출혈과 둔화 상태 관리
     {
         [Header("디버그")] // Inspector 디버그 설정 구분
-        [SerializeField] bool showDebug = true; // 상태 이상 OnGUI 표시 여부
+        [Tooltip("상태 이상 OnGUI 표시 여부")] [SerializeField] bool showDebug = true; // 상태 이상 OnGUI 표시 여부
 
         PlayerController playerController; // 상태 이상 대상 플레이어
 

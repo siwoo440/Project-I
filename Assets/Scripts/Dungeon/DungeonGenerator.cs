@@ -5,36 +5,44 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
 {
     public class DungeonGenerator : MonoBehaviour // 다층 절차적 던전 생성기
     {
+        [Header("고정 시작 방")] // 고정 내부 구조 설정 구분
+        [Tooltip("Scene에 배치된 고정 Room_Start")] [SerializeField] private Room fixedStartRoom; // Scene에 배치된 고정 Room_Start
+        [Tooltip("첫 생성 방의 방향 기준점")] [SerializeField] private Transform generationAnchor; // 첫 생성 방의 방향 기준점
+        [Tooltip("생성 방 전용 부모")] [SerializeField] private Transform generatedRoomsRoot; // 생성 방 전용 부모
+
         [Header("일반 방 프리팹")] // 일반 방 설정 구분
-        [SerializeField] private Room startingRoomPrefab; // 시작 방 전용 Room_Open 프리팹
-        [SerializeField] private Room[] roomPrefabs; // 일반 방 프리팹 목록
+        [Tooltip("일반 방 프리팹 목록")] [SerializeField] private Room[] roomPrefabs; // 일반 방 프리팹 목록
 
         [Header("수직 연결 방 프리팹")] // 계단 방 설정 구분
-        [SerializeField] private Room[] stairUpRoomPrefabs; // 위층 계단 방 목록
-        [SerializeField] private Room[] stairDownRoomPrefabs; // 아래층 계단 방 목록
-        [SerializeField] private Room[] stairBothRoomPrefabs; // 양방향 계단 방 목록
+        [Tooltip("위층 계단 방 목록")] [SerializeField] private Room[] stairUpRoomPrefabs; // 위층 계단 방 목록
+        [Tooltip("아래층 계단 방 목록")] [SerializeField] private Room[] stairDownRoomPrefabs; // 아래층 계단 방 목록
+        [Tooltip("양방향 계단 방 목록")] [SerializeField] private Room[] stairBothRoomPrefabs; // 양방향 계단 방 목록
 
         [Header("생성 크기")] // 던전 크기 설정 구분
-        [SerializeField] private int roomCount = 12; // 기본 목표 방 개수
-        [SerializeField] private float cellSize = 12f; // 방의 수평 격자 크기
-        [SerializeField] private float floorHeight = 4f; // 층 사이 높이
-        [SerializeField] private Transform player; // 이동 대상 플레이어
+        [Tooltip("기본 목표 방 개수")] [SerializeField] private int roomCount = 12; // 기본 목표 방 개수
+        [Tooltip("방의 수평 격자 크기")] [SerializeField] private float cellSize = 12f; // 방의 수평 격자 크기
+        [Tooltip("층 사이 높이")] [SerializeField] private float floorHeight = 4f; // 층 사이 높이
 
         [Header("층 설정")] // 층 생성 설정 구분
-        [SerializeField] private int minimumFloor = -1; // 가장 낮은 층
-        [SerializeField] private int maximumFloor = 1; // 가장 높은 층
-        [SerializeField][Range(0f, 0.5f)] private float verticalConnectionChance = 0.18f; // 수직 이동 확률
-        [SerializeField] private bool guaranteeBasement = true; // 지하층 생성 보장
-        [SerializeField] private bool guaranteeUpperFloor = true; // 위층 생성 보장
-        [SerializeField] private int minimumRoomsPerExtraFloor = 2; // 추가 층 최소 방 개수
+        [Tooltip("가장 낮은 층")] [SerializeField] private int minimumFloor = -1; // 가장 낮은 층
+        [Tooltip("가장 높은 층")] [SerializeField] private int maximumFloor = 1; // 가장 높은 층
+        [Tooltip("수직 이동 확률")] [SerializeField][Range(0f, 0.5f)] private float verticalConnectionChance = 0.18f; // 수직 이동 확률
+        [Tooltip("지하층 생성 보장")] [SerializeField] private bool guaranteeBasement = true; // 지하층 생성 보장
+        [Tooltip("위층 생성 보장")] [SerializeField] private bool guaranteeUpperFloor = true; // 위층 생성 보장
+        [Tooltip("추가 층 최소 방 개수")] [SerializeField] private int minimumRoomsPerExtraFloor = 2; // 추가 층 최소 방 개수
 
         [Header("시드")] // 시드 설정 구분
-        [SerializeField] private bool randomSeed = true; // 무작위 시드 사용 여부
-        [SerializeField] private int seed; // 현재 생성 시드
+        [Tooltip("무작위 시드 사용 여부")] [SerializeField] private bool randomSeed = true; // 무작위 시드 사용 여부
+        [Tooltip("현재 생성 시드")] [SerializeField] private int seed; // 현재 생성 시드
+
+        [Header("내부 서브 입구")] // 런타임 서브 입구 설정 구분
+        [Tooltip("선택 벽면에 표시할 임시 Cube 프리팹")] [SerializeField] private GameObject subEntranceMarkerPrefab; // 선택 벽면에 표시할 임시 Cube 프리팹
+        [Tooltip("벽에서 방 안쪽으로 떨어질 거리")] [SerializeField] private float subEntranceInset = 1.5f; // 벽에서 방 안쪽으로 떨어질 거리
 
         private readonly Dictionary<Vector3Int, Room> placed = new Dictionary<Vector3Int, Room>(); // 좌표별 생성 방
         private readonly List<Vector3Int> layoutCells = new List<Vector3Int>(); // 생성 예정 좌표
         private readonly List<Connection> connections = new List<Connection>(); // 방 연결 정보
+        private GameObject runtimeSubEntranceMarker; // 현재 생성된 내부 서브 입구 표시물
 
         private static readonly Vector3Int[] HorizontalDirections = // 수평 이동 방향 목록
         {
@@ -42,6 +50,14 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             new Vector3Int(1, 0, 0), // 동쪽 방향
             new Vector3Int(0, 0, -1), // 남쪽 방향
             new Vector3Int(-1, 0, 0) // 서쪽 방향
+        };
+
+        private static readonly Room.Dir[] HorizontalRoomDirections = // 수평 벽 방향 목록
+        {
+            Room.Dir.N, // 북쪽 벽
+            Room.Dir.E, // 동쪽 벽
+            Room.Dir.S, // 남쪽 벽
+            Room.Dir.W // 서쪽 벽
         };
 
         private struct Connection // 두 방의 연결 정보
@@ -56,31 +72,36 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             }
         }
 
-        public IEnumerable<Room> PlacedRooms => placed.Values; // 생성된 모든 방 반환
-
-        public Room StartRoom // 시작 방 반환
+        private struct SubEntranceCandidate // 내부 서브 입구 후보 정보
         {
-            get
+            public Room Room; // 후보 방
+            public Room.Dir Direction; // 후보 벽 방향
+            public Transform Wall; // 후보 벽 Transform
+
+            public SubEntranceCandidate(Room room, Room.Dir direction, Transform wall) // 후보 정보 생성
             {
-                placed.TryGetValue(Vector3Int.zero, out Room startRoom); // 원점의 방 검색
-                return startRoom; // 검색된 시작 방 반환
+                Room = room; // 후보 방 저장
+                Direction = direction; // 벽 방향 저장
+                Wall = wall; // 벽 Transform 저장
             }
         }
+
+        public IEnumerable<Room> PlacedRooms => placed.Values; // 생성된 모든 방 반환
+
+        public Room StartRoom => fixedStartRoom; // Scene 고정 시작 방 반환
+        public Transform SubEntranceSpawnPoint { get; private set; } // 런타임 서브 입구 도착 지점
 
         public event System.Action GenerationStarted; // 생성 시작 이벤트
         public event System.Action GenerationCompleted; // 생성 완료 이벤트
 
         public bool IsGenerating { get; private set; } // 생성 진행 상태
+        public bool IsGenerated => GenerationCount > 0 && placed.Count > 1; // 현재 던전 생성 완료 여부
         public int GenerationCount { get; private set; } // 생성 완료 횟수
+        public int PlacedRoomCount => placed.Count; // 고정 시작 방을 포함한 현재 방 개수
         public int CurrentSeed => seed; // 현재 시드 반환
 
         private int SafeMinimumFloor => Mathf.Min(minimumFloor, maximumFloor); // 정렬된 최소 층
         private int SafeMaximumFloor => Mathf.Max(minimumFloor, maximumFloor); // 정렬된 최대 층
-
-        private void Start() // Scene 시작 처리
-        {
-            Generate(); // 던전 자동 생성
-        }
 
         public void Generate() // 전체 던전 생성
         {
@@ -90,9 +111,29 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
                 return; // 중복 생성 중단
             }
 
-            if (startingRoomPrefab == null) // 시작 방 프리팹 확인
+            if (fixedStartRoom == null) // 고정 시작 방 확인
             {
-                Debug.LogError("[Dungeon] Starting Room Prefab에 Room_Open이 연결되지 않았습니다."); // 시작 방 누락 오류
+                Debug.LogError("[Dungeon] Fixed Start Room에 Scene의 Room_Start가 연결되지 않았습니다."); // 시작 방 누락 오류
+                return; // 생성 중단
+            }
+
+            if (generationAnchor == null) // 생성 기준점 확인
+            {
+                Debug.LogError("[Dungeon] Generation Anchor가 연결되지 않았습니다."); // 생성 기준점 누락 오류
+                return; // 생성 중단
+            }
+
+            if (generatedRoomsRoot == null) // 생성 방 부모 확인
+            {
+                Debug.LogError("[Dungeon] Generated Rooms Root가 연결되지 않았습니다."); // 생성 부모 누락 오류
+                return; // 생성 중단
+            }
+
+            Vector3 anchorOffset = fixedStartRoom.transform.InverseTransformPoint(generationAnchor.position); // 시작 방 기준 Anchor 위치 계산
+
+            if (Mathf.Abs(anchorOffset.x) < cellSize * 0.5f && Mathf.Abs(anchorOffset.z) < cellSize * 0.5f) // Anchor가 시작 방 중앙에 가까운지 확인
+            {
+                Debug.LogError("[Dungeon] GenerationAnchor를 Room_Start 바깥의 첫 생성 셀 중심에 배치해야 합니다."); // Anchor 위치 오류
                 return; // 생성 중단
             }
 
@@ -110,8 +151,10 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             IsGenerating = true; // 생성 상태 활성화
             GenerationStarted?.Invoke(); // 생성 시작 이벤트 호출
             ClearPreviousRooms(); // 기존 방 제거
+            fixedStartRoom.ResetConnections(); // 고정 시작 방의 이전 연결 상태 복구
             layoutCells.Clear(); // 기존 좌표 초기화
             connections.Clear(); // 기존 연결 초기화
+            placed[Vector3Int.zero] = fixedStartRoom; // 고정 시작 방을 원점 셀로 등록
 
             DungeonRouteData selectedRoute = DungeonSelectionManager.Instance != null // 선택 관리자 확인
                 ? DungeonSelectionManager.Instance.SelectedRoute // 선택한 경로 가져오기
@@ -151,7 +194,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             }
 
             OpenAllConnections(); // 방 연결부 개방
-            MovePlayerToStartRoom(); // 플레이어 시작 위치 배치
+            CreateRuntimeSubEntrance(); // 랜덤 안전 벽면에 내부 서브 입구 생성
 
             GenerationCount++; // 생성 완료 횟수 증가
             IsGenerating = false; // 생성 상태 해제
@@ -169,6 +212,27 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
                 $"[Dungeon] {routeName} 다층 생성 완료 — " + // 경로 이름 출력
                 $"지하 {basementCount}개 / 지상 {groundCount}개 / 2층 {upperCount}개 " + // 층별 개수 출력
                 $"(전체 {placed.Count}개, seed {seed}, 생성 {GenerationCount}회)"); // 전체 결과 출력
+        }
+
+        public bool EnsureGenerated() // 필요할 때 한 번만 던전 생성
+        {
+            if (IsGenerated) // 기존 생성 완료 여부 확인
+            {
+                return true; // 기존 던전 재사용
+            }
+
+            Generate(); // 최초 던전 생성 실행
+            return IsGenerated; // 최종 생성 결과 반환
+        }
+
+        public Transform GetMainEntranceSpawnPoint() // 메인 입구 도착 지점 반환
+        {
+            if (fixedStartRoom == null) // 고정 시작 방 존재 여부 확인
+            {
+                return null; // 시작 방 누락 결과 반환
+            }
+
+            return FindPlayerSpawnPoint(fixedStartRoom); // 고정 시작 방 SpawnPoint 검색
         }
 
         private bool ValidateVerticalPrefabs() // 계단 방 프리팹 검사
@@ -202,9 +266,9 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         {
             foreach (Room room in placed.Values) // 기존 생성 방 순회
             {
-                if (room == null) // 제거된 방 확인
+                if (room == null || room == fixedStartRoom) // 제거된 방 또는 고정 시작 방 확인
                 {
-                    continue; // 다음 방 처리
+                    continue; // 삭제 대상 제외
                 }
 
                 room.gameObject.SetActive(false); // Collider 즉시 비활성화
@@ -212,12 +276,23 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             }
 
             placed.Clear(); // 생성 방 정보 초기화
+
+            if (runtimeSubEntranceMarker != null) // 이전 서브 입구 표시물 존재 여부 확인
+            {
+                Destroy(runtimeSubEntranceMarker); // 이전 표시물 제거 예약
+                runtimeSubEntranceMarker = null; // 표시물 참조 초기화
+            }
+
+            SubEntranceSpawnPoint = null; // 이전 서브 입구 도착 지점 초기화
         }
 
         private void BuildRandomLayout(int targetRoomCount) // 무작위 던전 좌표 생성
         {
-            Vector3Int currentCell = Vector3Int.zero; // 시작 좌표 설정
-            layoutCells.Add(currentCell); // 시작 좌표 등록
+            Vector3Int startCell = Vector3Int.zero; // 고정 시작 방 셀 설정
+            Vector3Int currentCell = GetGenerationStartCell(); // GenerationAnchor 방향의 첫 생성 셀 계산
+            layoutCells.Add(startCell); // 고정 시작 방 셀 등록
+            layoutCells.Add(currentCell); // 첫 생성 방 셀 등록
+            AddConnection(startCell, currentCell); // 시작 방과 첫 생성 방 연결
 
             int guard = 0; // 반복 방지 횟수
             int safeTargetCount = Mathf.Max(1, targetRoomCount); // 안전한 목표 개수
@@ -237,6 +312,11 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
                 }
 
                 Vector3Int nextCell = currentCell + direction; // 다음 좌표 계산
+
+                if (IsStartCell(nextCell)) // 고정 시작 방 재진입 여부 확인
+                {
+                    continue; // 시작 방 추가 연결 방지
+                }
 
                 if (nextCell.y < SafeMinimumFloor || nextCell.y > SafeMaximumFloor) // 층 범위 확인
                 {
@@ -268,6 +348,24 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
                 AddConnection(currentCell, nextCell); // 두 방 연결 등록
                 currentCell = nextCell; // 현재 좌표 갱신
             }
+        }
+
+        private Vector3Int GetGenerationStartCell() // GenerationAnchor 기준 첫 생성 셀 계산
+        {
+            Vector3 localOffset = fixedStartRoom.transform.InverseTransformPoint(generationAnchor.position); // 시작 방 기준 로컬 위치 계산
+            float absoluteX = Mathf.Abs(localOffset.x); // X축 거리 절댓값
+            float absoluteZ = Mathf.Abs(localOffset.z); // Z축 거리 절댓값
+
+            if (absoluteX >= absoluteZ) // X축 방향 우선 여부 확인
+            {
+                return localOffset.x >= 0f // 동쪽 또는 서쪽 방향 판정
+                    ? Vector3Int.right // 동쪽 첫 셀 반환
+                    : Vector3Int.left; // 서쪽 첫 셀 반환
+            }
+
+            return localOffset.z >= 0f // 북쪽 또는 남쪽 방향 판정
+                ? new Vector3Int(0, 0, 1) // 북쪽 첫 셀 반환
+                : new Vector3Int(0, 0, -1); // 남쪽 첫 셀 반환
         }
 
         private bool TryPickVerticalDirection(Vector3Int currentCell, out Vector3Int direction) // 수직 방향 선택
@@ -508,18 +606,14 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         {
             foreach (Vector3Int cell in layoutCells) // 전체 생성 좌표 순회
             {
-                Room selectedPrefab; // 배치할 방 프리팹
-
                 if (IsStartCell(cell)) // 시작 좌표 확인
                 {
-                    selectedPrefab = startingRoomPrefab; // Room_Open 강제 선택
+                    continue; // Scene 고정 Room_Start는 새로 생성하지 않음
                 }
-                else
-                {
-                    bool connectsUp = HasConnectionDirection(cell, Room.Dir.Up); // 위층 연결 확인
-                    bool connectsDown = HasConnectionDirection(cell, Room.Dir.Down); // 아래층 연결 확인
-                    selectedPrefab = SelectRoomPrefab(connectsUp, connectsDown); // 연결 형태별 방 선택
-                }
+
+                bool connectsUp = HasConnectionDirection(cell, Room.Dir.Up); // 위층 연결 확인
+                bool connectsDown = HasConnectionDirection(cell, Room.Dir.Down); // 아래층 연결 확인
+                Room selectedPrefab = SelectRoomPrefab(connectsUp, connectsDown); // 연결 형태별 방 선택
 
                 if (selectedPrefab == null) // 프리팹 유효성 확인
                 {
@@ -527,16 +621,18 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
                     return false; // 전체 배치 실패
                 }
 
-                Vector3 worldPosition = new Vector3( // 월드 좌표 계산
+                Vector3 localOffset = new Vector3( // 시작 방 기준 로컬 좌표 계산
                     cell.x * cellSize, // X 위치 계산
                     cell.y * floorHeight, // Y 위치 계산
                     cell.z * cellSize); // Z 위치 계산
 
+                Vector3 worldPosition = fixedStartRoom.transform.TransformPoint(localOffset); // InteriorRoot 아래 시작 방 기준 월드 좌표 계산
+
                 Room createdRoom = Instantiate( // 방 프리팹 생성
                     selectedPrefab, // 선택된 프리팹
                     worldPosition, // 계산된 월드 위치
-                    Quaternion.identity, // 기본 회전값
-                    transform); // 생성기 자식 설정
+                    fixedStartRoom.transform.rotation, // 시작 방과 동일한 회전값
+                    generatedRoomsRoot); // GeneratedRooms 자식 설정
 
                 createdRoom.name = $"{selectedPrefab.name}_F{cell.y}_{cell.x}_{cell.z}"; // 생성 방 이름 지정
                 placed[cell] = createdRoom; // 좌표별 생성 방 저장
@@ -609,6 +705,72 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             }
         }
 
+        private void CreateRuntimeSubEntrance() // 랜덤 방의 안전한 벽면에 서브 입구 생성
+        {
+            List<SubEntranceCandidate> candidates = new List<SubEntranceCandidate>(); // 안전 벽면 후보 목록
+
+            foreach (Room room in placed.Values) // 전체 배치 방 순회
+            {
+                if (room == null || room == fixedStartRoom) // 누락 방 또는 시작 방 여부 확인
+                {
+                    continue; // 서브 입구 후보 제외
+                }
+
+                foreach (Room.Dir direction in HorizontalRoomDirections) // 수평 벽 방향 순회
+                {
+                    if (room.TryGetClosedWall(direction, out Transform wallTransform)) // 닫힌 안전 벽 검색
+                    {
+                        candidates.Add(new SubEntranceCandidate(room, direction, wallTransform)); // 후보 목록 추가
+                    }
+                }
+            }
+
+            if (candidates.Count == 0) // 안전 벽면 존재 여부 확인
+            {
+                Debug.LogWarning("[Dungeon] 내부 서브 입구를 생성할 닫힌 벽면이 없습니다."); // 후보 누락 경고
+                return; // 서브 입구 생성 중단
+            }
+
+            SubEntranceCandidate selected = candidates[Random.Range(0, candidates.Count)]; // 후보 무작위 선택
+            Vector3 outward = GetRoomDirectionVector(selected.Room.transform, selected.Direction); // 선택 벽의 바깥 방향 계산
+            Quaternion markerRotation = Quaternion.LookRotation(outward, selected.Room.transform.up); // 벽 방향 회전 계산
+
+            runtimeSubEntranceMarker = subEntranceMarkerPrefab != null // 지정 프리팹 존재 여부 확인
+                ? Instantiate(subEntranceMarkerPrefab) // 지정된 Cube 프리팹 생성
+                : GameObject.CreatePrimitive(PrimitiveType.Cube); // 기본 Cube 표시물 생성
+
+            runtimeSubEntranceMarker.name = "SubEntrance_Interior"; // 내부 서브 입구 이름 지정
+            runtimeSubEntranceMarker.transform.SetParent(selected.Room.transform, true); // 선택 방 자식으로 설정
+            runtimeSubEntranceMarker.transform.SetPositionAndRotation(selected.Wall.position - outward * 0.15f, markerRotation); // 벽 안쪽에 표시물 배치
+            runtimeSubEntranceMarker.transform.localScale = new Vector3(2.5f, 3f, 0.3f); // 임시 문 크기 설정
+
+            GameObject spawnObject = new GameObject("SubEntranceSpawnPoint"); // 서브 입구 도착 지점 생성
+            spawnObject.transform.SetParent(runtimeSubEntranceMarker.transform, true); // 표시물 자식으로 설정
+            spawnObject.transform.SetPositionAndRotation( // 방 내부 안전 위치와 회전 설정
+                selected.Room.transform.position + outward * (cellSize * 0.5f - Mathf.Max(0.5f, subEntranceInset)) + selected.Room.transform.up * 1.1f, // 방 안쪽 도착 위치 계산
+                Quaternion.LookRotation(-outward, selected.Room.transform.up)); // 방 중앙 방향 회전
+
+            SubEntranceSpawnPoint = spawnObject.transform; // 외부 서브 입구가 사용할 도착 지점 저장
+        }
+
+        private Vector3 GetRoomDirectionVector(Transform roomTransform, Room.Dir direction) // 방 로컬 방향을 월드 방향으로 변환
+        {
+            switch (direction) // 벽 방향 확인
+            {
+                case Room.Dir.N: // 북쪽 방향 확인
+                    return roomTransform.forward; // 월드 북쪽 방향 반환
+
+                case Room.Dir.E: // 동쪽 방향 확인
+                    return roomTransform.right; // 월드 동쪽 방향 반환
+
+                case Room.Dir.S: // 남쪽 방향 확인
+                    return -roomTransform.forward; // 월드 남쪽 방향 반환
+
+                default: // 서쪽 방향 처리
+                    return -roomTransform.right; // 월드 서쪽 방향 반환
+            }
+        }
+
         private Room.Dir GetDirection(Vector3Int from, Vector3Int to) // 좌표 차이를 방향으로 변환
         {
             Vector3Int difference = to - from; // 좌표 차이 계산
@@ -644,54 +806,6 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         private bool IsStartCell(Vector3Int cell) // 시작 좌표 여부 확인
         {
             return cell == Vector3Int.zero; // 원점 비교 결과 반환
-        }
-
-        private void MovePlayerToStartRoom() // 플레이어 시작 방 배치
-        {
-            Room startRoom = StartRoom; // 생성된 시작 방 가져오기
-
-            if (player == null) // 플레이어 참조 확인
-            {
-                Debug.LogWarning("[Dungeon] Player가 연결되지 않아 시작 위치로 이동하지 못했습니다."); // 플레이어 누락 경고
-                return; // 이동 중단
-            }
-
-            if (startRoom == null) // 시작 방 존재 여부 확인
-            {
-                Debug.LogWarning("[Dungeon] 생성된 시작 방을 찾지 못했습니다."); // 시작 방 누락 경고
-                return; // 이동 중단
-            }
-
-            Transform spawnPoint = FindPlayerSpawnPoint(startRoom); // 시작 위치 오브젝트 검색
-
-            Vector3 targetPosition = spawnPoint != null // 시작 위치 존재 여부 확인
-                ? spawnPoint.position // 지정된 시작 위치 사용
-                : startRoom.transform.position + Vector3.up * 1.1f; // 방 중앙 위쪽 사용
-
-            Quaternion targetRotation = spawnPoint != null // 시작 회전 존재 여부 확인
-                ? spawnPoint.rotation // 지정된 시작 회전 사용
-                : player.rotation; // 기존 플레이어 회전 유지
-
-            CharacterController characterController = player.GetComponent<CharacterController>(); // CharacterController 검색
-            Rigidbody playerRigidbody = player.GetComponent<Rigidbody>(); // Rigidbody 검색
-
-            if (characterController != null) // CharacterController 존재 여부 확인
-            {
-                characterController.enabled = false; // 순간 이동 중 충돌 비활성화
-            }
-
-            if (playerRigidbody != null && !playerRigidbody.isKinematic) // 물리 Rigidbody 확인
-            {
-                playerRigidbody.linearVelocity = Vector3.zero; // 선형 이동 속도 초기화
-                playerRigidbody.angularVelocity = Vector3.zero; // 회전 속도 초기화
-            }
-
-            player.SetPositionAndRotation(targetPosition, targetRotation); // 시작 위치와 회전 적용
-
-            if (characterController != null) // CharacterController 존재 여부 재확인
-            {
-                characterController.enabled = true; // 충돌 기능 복구
-            }
         }
 
         private Transform FindPlayerSpawnPoint(Room startRoom) // 시작 위치 오브젝트 검색

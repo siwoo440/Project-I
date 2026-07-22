@@ -10,12 +10,12 @@ namespace ProjectI
     public class Treasure : MonoBehaviour, IInteractable, ICarryable
     {
         [Header("데이터 (없으면 아래 fallback)")]
-        [SerializeField] TreasureData data;
-        [SerializeField] int fbMinValue = 100;
-        [SerializeField] int fbMaxValue = 300;
-        [SerializeField] float fbWeight = 2f;
-        [SerializeField] int fbSlots = 1;
-        [SerializeField] bool fbTwoHanded = false;
+        [Tooltip("보물 이름과 가치 및 운반 정보를 가져올 TreasureData 에셋")] [SerializeField] TreasureData data;
+        [Tooltip("TreasureData가 없을 때 사용할 최소 감정 가치")] [SerializeField] int fbMinValue = 100;
+        [Tooltip("TreasureData가 없을 때 사용할 최대 감정 가치")] [SerializeField] int fbMaxValue = 300;
+        [Tooltip("TreasureData가 없을 때 적용할 기본 무게(kg)")] [SerializeField] float fbWeight = 2f;
+        [Tooltip("TreasureData가 없을 때 차지할 기본 인벤토리 슬롯 수")] [SerializeField] int fbSlots = 1;
+        [Tooltip("TreasureData가 없을 때 적용할 양손 운반 여부")] [SerializeField] bool fbTwoHanded = false;
 
         int lockedValue = -1;
         Rigidbody rb;

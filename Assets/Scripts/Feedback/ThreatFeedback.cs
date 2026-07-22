@@ -5,30 +5,30 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
     public class ThreatFeedback : MonoBehaviour // 몬스터와 기믹의 공통 소리 및 파티클 피드백
     {
         [Header("효과음")] // Inspector 효과음 설정 구분
-        [SerializeField] AudioClip warningClip; // 위험 행동 시작 경고음
-        [SerializeField] AudioClip appearClip; // 고스트 출현 효과음
-        [SerializeField] AudioClip attackClip; // 공격 실행 효과음
-        [SerializeField] AudioClip hitClip; // 피격 효과음
+        [Tooltip("위험 행동 시작 경고음")] [SerializeField] AudioClip warningClip; // 위험 행동 시작 경고음
+        [Tooltip("고스트 출현 효과음")] [SerializeField] AudioClip appearClip; // 고스트 출현 효과음
+        [Tooltip("공격 실행 효과음")] [SerializeField] AudioClip attackClip; // 공격 실행 효과음
+        [Tooltip("피격 효과음")] [SerializeField] AudioClip hitClip; // 피격 효과음
 
         [Header("파티클")] // Inspector 파티클 설정 구분
-        [SerializeField] ParticleSystem warningEffectPrefab; // 위험 경고 파티클 프리팹
-        [SerializeField] ParticleSystem appearEffectPrefab; // 출현 파티클 프리팹
-        [SerializeField] ParticleSystem attackEffectPrefab; // 공격 파티클 프리팹
-        [SerializeField] ParticleSystem hitEffectPrefab; // 피격 파티클 프리팹
+        [Tooltip("위험 경고 파티클 프리팹")] [SerializeField] ParticleSystem warningEffectPrefab; // 위험 경고 파티클 프리팹
+        [Tooltip("출현 파티클 프리팹")] [SerializeField] ParticleSystem appearEffectPrefab; // 출현 파티클 프리팹
+        [Tooltip("공격 파티클 프리팹")] [SerializeField] ParticleSystem attackEffectPrefab; // 공격 파티클 프리팹
+        [Tooltip("피격 파티클 프리팹")] [SerializeField] ParticleSystem hitEffectPrefab; // 피격 파티클 프리팹
 
         [Header("3D 사운드")] // Inspector 3D 사운드 설정 구분
-        [SerializeField][Range(0f, 1f)] float volume = 0.7f; // 전체 효과음 음량
-        [SerializeField] float maxDistance = 20f; // 효과음 최대 도달 거리
-        [SerializeField] bool useFallbackTones = true; // 효과음 누락 시 임시 전자음 사용 여부
+        [Tooltip("전체 효과음 음량")] [SerializeField][Range(0f, 1f)] float volume = 0.7f; // 전체 효과음 음량
+        [Tooltip("효과음 최대 도달 거리")] [SerializeField] float maxDistance = 20f; // 효과음 최대 도달 거리
+        [Tooltip("효과음 누락 시 임시 전자음 사용 여부")] [SerializeField] bool useFallbackTones = true; // 효과음 누락 시 임시 전자음 사용 여부
 
         [Header("임시 전자음")] // Inspector 임시 전자음 설정 구분
-        [SerializeField] float warningTone = 180f; // 경고용 낮은 전자음 주파수
-        [SerializeField] float appearTone = 340f; // 출현용 전자음 주파수
-        [SerializeField] float attackTone = 100f; // 공격용 낮은 전자음 주파수
-        [SerializeField] float hitTone = 520f; // 피격용 높은 전자음 주파수
+        [Tooltip("경고용 낮은 전자음 주파수")] [SerializeField] float warningTone = 180f; // 경고용 낮은 전자음 주파수
+        [Tooltip("출현용 전자음 주파수")] [SerializeField] float appearTone = 340f; // 출현용 전자음 주파수
+        [Tooltip("공격용 낮은 전자음 주파수")] [SerializeField] float attackTone = 100f; // 공격용 낮은 전자음 주파수
+        [Tooltip("피격용 높은 전자음 주파수")] [SerializeField] float hitTone = 520f; // 피격용 높은 전자음 주파수
 
         [Header("재생 제한")] // Inspector 반복 재생 제한 설정 구분
-        [SerializeField] float minimumInterval = 0.08f; // 같은 피드백의 최소 재생 간격
+        [Tooltip("같은 피드백의 최소 재생 간격")] [SerializeField] float minimumInterval = 0.08f; // 같은 피드백의 최소 재생 간격
 
         float lastWarningTime = -999f; // 마지막 경고 피드백 재생 시각
         float lastAppearTime = -999f; // 마지막 출현 피드백 재생 시각

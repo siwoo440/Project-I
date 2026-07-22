@@ -11,24 +11,24 @@ namespace ProjectI
     [RequireComponent(typeof(CharacterController))]
     public class MonsterAI : MonoBehaviour
     {
-        [SerializeField] MonsterData data;
+        [Tooltip("체력과 감지 및 공격 능력치를 가져올 MonsterData 에셋")] [SerializeField] MonsterData data;
 
         [Header("Fallback 스탯 (data 없을 때 사용)")]
-        [SerializeField] string fbName = "몬스터";
-        [SerializeField] float fbMaxHealth = 80f;
-        [SerializeField] float fbDefense = 0f;
-        [SerializeField] float fbMoveSpeed = 3.5f;
-        [SerializeField] float fbAttackDamage = 20f;
-        [SerializeField] float fbAttackRange = 1.6f;
-        [SerializeField] float fbAttackCooldown = 1.5f;
-        [SerializeField] float fbSightRange = 12f;
-        [SerializeField] float fbSightAngle = 110f;
-        [SerializeField] float fbHearingRange = 12f;
-        [SerializeField] bool fbAggressiveInDark = true;
+        [Tooltip("MonsterData가 없을 때 사용할 몬스터 표시 이름")] [SerializeField] string fbName = "몬스터";
+        [Tooltip("MonsterData가 없을 때 사용할 최대 체력")] [SerializeField] float fbMaxHealth = 80f;
+        [Tooltip("MonsterData가 없을 때 사용할 고정 피해 감소량")] [SerializeField] float fbDefense = 0f;
+        [Tooltip("MonsterData가 없을 때 사용할 이동 속도(m/s)")] [SerializeField] float fbMoveSpeed = 3.5f;
+        [Tooltip("MonsterData가 없을 때 사용할 공격 피해량")] [SerializeField] float fbAttackDamage = 20f;
+        [Tooltip("MonsterData가 없을 때 사용할 공격 사거리(m)")] [SerializeField] float fbAttackRange = 1.6f;
+        [Tooltip("MonsterData가 없을 때 사용할 공격 간격(초)")] [SerializeField] float fbAttackCooldown = 1.5f;
+        [Tooltip("MonsterData가 없을 때 사용할 시야 감지 거리(m)")] [SerializeField] float fbSightRange = 12f;
+        [Tooltip("MonsterData가 없을 때 사용할 시야각(도)")] [SerializeField] float fbSightAngle = 110f;
+        [Tooltip("MonsterData가 없을 때 사용할 청각 감지 거리(m)")] [SerializeField] float fbHearingRange = 12f;
+        [Tooltip("MonsterData가 없을 때 어두운 환경에서 공격성을 높일지 여부")] [SerializeField] bool fbAggressiveInDark = true;
 
         [Header("기타")]
-        [SerializeField] float gravity = -20f;
-        [SerializeField] float noiseToRadius = 1.5f; // 플레이어 속도 → 소음 반경
+        [Tooltip("CharacterController 기반 몬스터에 적용할 중력 가속도")] [SerializeField] float gravity = -20f;
+        [Tooltip("플레이어 속도 → 소음 반경")] [SerializeField] float noiseToRadius = 1.5f; // 플레이어 속도 → 소음 반경
 
         enum State { Patrol, Chase, Attack }
         State state = State.Patrol;

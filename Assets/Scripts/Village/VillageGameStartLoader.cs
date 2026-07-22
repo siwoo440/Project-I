@@ -6,7 +6,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
     public class VillageGameStartLoader : MonoBehaviour // 메인 메뉴 시작 요청을 Village에서 처리
     {
         [Header("초기화 설정")] // Inspector 초기화 설정 구분
-        [SerializeField][Min(1)] int managerWaitFrames = 120; // 필수 관리자를 기다릴 최대 프레임 수
+        [Tooltip("필수 관리자를 기다릴 최대 프레임 수")] [SerializeField][Min(1)] int managerWaitFrames = 120; // 필수 관리자를 기다릴 최대 프레임 수
 
         IEnumerator Start() // Village 관리자 생성을 기다린 뒤 시작 요청 처리
         {

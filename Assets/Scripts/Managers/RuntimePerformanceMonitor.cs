@@ -7,21 +7,21 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
     public class RuntimePerformanceMonitor : MonoBehaviour // 성능과 반복 던전 생성 안정성을 검사
     {
         [Header("필수 참조")] // Inspector 참조 설정 구분
-        [SerializeField] DungeonGenerator dungeonGenerator; // 반복 생성할 던전 생성기
-        [SerializeField] MonsterSpawnManager monsterSpawnManager; // 일반 몬스터 개수 확인
-        [SerializeField] TreasureSpawnManager treasureSpawnManager; // 보물과 미믹 개수 확인
-        [SerializeField] TrapSpawnManager trapSpawnManager; // 함정 개수 확인
-        [SerializeField] StalkerSpawnManager stalkerSpawnManager; // 스토커 개수 확인
-        [SerializeField] GimmickMonsterSpawnManager gimmickSpawnManager; // 기믹 몬스터 개수 확인
+        [Tooltip("반복 생성할 던전 생성기")] [SerializeField] DungeonGenerator dungeonGenerator; // 반복 생성할 던전 생성기
+        [Tooltip("일반 몬스터 개수 확인")] [SerializeField] MonsterSpawnManager monsterSpawnManager; // 일반 몬스터 개수 확인
+        [Tooltip("보물과 미믹 개수 확인")] [SerializeField] TreasureSpawnManager treasureSpawnManager; // 보물과 미믹 개수 확인
+        [Tooltip("함정 개수 확인")] [SerializeField] TrapSpawnManager trapSpawnManager; // 함정 개수 확인
+        [Tooltip("스토커 개수 확인")] [SerializeField] StalkerSpawnManager stalkerSpawnManager; // 스토커 개수 확인
+        [Tooltip("기믹 몬스터 개수 확인")] [SerializeField] GimmickMonsterSpawnManager gimmickSpawnManager; // 기믹 몬스터 개수 확인
 
         [Header("성능 측정")] // Inspector 성능 측정 설정 구분
-        [SerializeField][Min(0.1f)] float sampleInterval = 0.5f; // FPS와 메모리 갱신 간격
-        [SerializeField][Min(1f)] float memoryGrowthWarningMB = 16f; // 생성 1회 메모리 증가 경고 기준
-        [SerializeField] bool showPanel = false; // Scene 시작 시 성능 검사 패널을 숨김
+        [Tooltip("FPS와 메모리 갱신 간격")] [SerializeField][Min(0.1f)] float sampleInterval = 0.5f; // FPS와 메모리 갱신 간격
+        [Tooltip("생성 1회 메모리 증가 경고 기준")] [SerializeField][Min(1f)] float memoryGrowthWarningMB = 16f; // 생성 1회 메모리 증가 경고 기준
+        [Tooltip("Scene 시작 시 성능 검사 패널을 숨김")] [SerializeField] bool showPanel = false; // Scene 시작 시 성능 검사 패널을 숨김
 
         [Header("자동 반복 생성")] // 반복 생성 검사 설정 구분
-        [SerializeField][Min(1)] int automaticTestIterations = 10; // 자동 생성 반복 횟수
-        [SerializeField][Min(0.2f)] float automaticTestInterval = 1f; // 반복 생성 사이의 실시간 대기시간
+        [Tooltip("자동 생성 반복 횟수")] [SerializeField][Min(1)] int automaticTestIterations = 10; // 자동 생성 반복 횟수
+        [Tooltip("반복 생성 사이의 실시간 대기시간")] [SerializeField][Min(0.2f)] float automaticTestInterval = 1f; // 반복 생성 사이의 실시간 대기시간
 
         float sampleElapsedTime; // 현재 성능 표본 누적시간
         int sampleFrameCount; // 현재 성능 표본 프레임 수
@@ -127,7 +127,7 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
             yield return null; // Destroy 예약이 처리되도록 다음 프레임까지 대기
 
             int validRoomCount = CountValidRooms(); // 생성기 목록의 정상 방 수 계산
-            int roomChildCount = dungeonGenerator != null ? dungeonGenerator.transform.childCount : 0; // 생성기 자식 방 개수 확인
+            int roomChildCount = dungeonGenerator != null ? dungeonGenerator.PlacedRoomCount : 0; // GeneratedRooms를 포함한 실제 배치 방 개수 확인
             lastRoomLeftoverCount = Mathf.Max(0, roomChildCount - validRoomCount); // 목록에 없는 잔류 방 개수 계산
 
             int expectedSpawnCount = CountExpectedSpawns(); // 스폰 매니저가 관리하는 정상 개수 계산

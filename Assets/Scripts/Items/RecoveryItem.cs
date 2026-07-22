@@ -6,9 +6,9 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
     public class RecoveryItem : MonoBehaviour // 체력과 상태 이상을 회복하는 소모품
     {
         [Header("회복 설정")] // Inspector 회복 설정 구분
-        [SerializeField] float healAmount = 15f; // 사용할 때 회복할 체력
-        [SerializeField] bool removeBleeding = true; // 사용할 때 출혈 제거 여부
-        [SerializeField] bool removeSlow; // 사용할 때 둔화 제거 여부
+        [Tooltip("사용할 때 회복할 체력")] [SerializeField] float healAmount = 15f; // 사용할 때 회복할 체력
+        [Tooltip("사용할 때 출혈 제거 여부")] [SerializeField] bool removeBleeding = true; // 사용할 때 출혈 제거 여부
+        [Tooltip("사용할 때 둔화 제거 여부")] [SerializeField] bool removeSlow; // 사용할 때 둔화 제거 여부
 
         public bool TryUse(PlayerController player) // 플레이어에게 회복 효과 적용 시도
         {

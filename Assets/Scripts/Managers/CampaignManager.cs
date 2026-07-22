@@ -7,14 +7,14 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         public static CampaignManager Instance { get; private set; } // 현재 활성 캠페인 매니저 접근점
 
         [Header("시작 설정")] // Inspector 캠페인 시작 설정 구분
-        [SerializeField][Min(0)] int startingGold = 0; // 캠페인 시작 보유 골드
-        [SerializeField][Min(0)] int startingDebt = 10000; // 캠페인 시작 빚
-        [SerializeField][Min(1)] int deadlineDay = 10; // 빚 상환 마지막 날짜
+        [Tooltip("캠페인 시작 보유 골드")] [SerializeField][Min(0)] int startingGold = 0; // 캠페인 시작 보유 골드
+        [Tooltip("캠페인 시작 빚")] [SerializeField][Min(0)] int startingDebt = 10000; // 캠페인 시작 빚
+        [Tooltip("빚 상환 마지막 날짜")] [SerializeField][Min(1)] int deadlineDay = 10; // 빚 상환 마지막 날짜
 
         [Header("임시 HUD")] // Inspector 캠페인 상태 화면 설정 구분
-        [SerializeField] bool showCampaignHud = true; // 보유 골드와 빚 HUD 표시 여부
+        [Tooltip("보유 골드와 빚 HUD 표시 여부")] [SerializeField] bool showCampaignHud = true; // 보유 골드와 빚 HUD 표시 여부
 
-        [SerializeField] CampaignStateData state = new CampaignStateData(); // 현재 캠페인 진행 상태
+        [Tooltip("현재 캠페인 진행 상태")] [SerializeField] CampaignStateData state = new CampaignStateData(); // 현재 캠페인 진행 상태
 
         bool settlementOpen; // 현재 플레이어 납부 선택을 기다리는 상태
         int lastRunReward; // 최근 탐험에서 정산한 보물 가치

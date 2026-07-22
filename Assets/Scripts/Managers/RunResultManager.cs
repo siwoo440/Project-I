@@ -9,9 +9,9 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         public static RunResultManager Instance { get; private set; } // 현재 활성 결과 매니저 접근점
 
         [Header("임시 결과 화면")] // Inspector 결과 화면 설정 구분
-        [SerializeField] bool showResultPanel = true; // OnGUI 결과 화면 표시 여부
-        [SerializeField] string villageSceneName = "Village"; // 정산을 진행할 마을 Scene 이름
-        [SerializeField][Min(0f)] float villageTransitionDelay = 10f; // 결과 확정 후 마을로 이동할 실제 대기시간
+        [Tooltip("OnGUI 결과 화면 표시 여부")] [SerializeField] bool showResultPanel = true; // OnGUI 결과 화면 표시 여부
+        [Tooltip("정산을 진행할 마을 Scene 이름")] [SerializeField] string villageSceneName = "Village"; // 정산을 진행할 마을 Scene 이름
+        [Tooltip("결과 확정 후 마을로 이동할 실제 대기시간")] [SerializeField][Min(0f)] float villageTransitionDelay = 10f; // 결과 확정 후 마을로 이동할 실제 대기시간
 
 
         readonly RunResultData currentResult = new RunResultData(); // 현재 보관 중인 던전 결과

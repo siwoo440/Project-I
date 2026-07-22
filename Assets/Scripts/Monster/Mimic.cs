@@ -8,21 +8,21 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
     public class Mimic : MonoBehaviour, IInteractable // 보물상자로 위장한 뒤 플레이어를 기습하는 몬스터
     {
         [Header("위장 외형")] // Inspector 위장 외형 설정 구분
-        [SerializeField] GameObject disguiseVisual; // 위장 상태에서 표시할 보물상자 외형
-        [SerializeField] GameObject monsterVisual; // 위장 해제 후 표시할 몬스터 외형
-        [SerializeField] string disguiseName = "낡은 보물상자"; // 상호작용 안내에 표시할 가짜 보물 이름
+        [Tooltip("위장 상태에서 표시할 보물상자 외형")] [SerializeField] GameObject disguiseVisual; // 위장 상태에서 표시할 보물상자 외형
+        [Tooltip("위장 해제 후 표시할 몬스터 외형")] [SerializeField] GameObject monsterVisual; // 위장 해제 후 표시할 몬스터 외형
+        [Tooltip("상호작용 안내에 표시할 가짜 보물 이름")] [SerializeField] string disguiseName = "낡은 보물상자"; // 상호작용 안내에 표시할 가짜 보물 이름
 
         [Header("위장 해제")] // Inspector 위장 해제 설정 구분
-        [SerializeField] bool revealOnProximity = true; // 플레이어가 가까이 접근하면 위장을 해제할지 결정
-        [SerializeField] float proximityRevealDistance = 1.25f; // 접근으로 위장을 해제하는 거리
-        [SerializeField] float revealDelay = 0.25f; // 위장 외형 변경 후 공격을 시작할 때까지의 지연시간
+        [Tooltip("플레이어가 가까이 접근하면 위장을 해제할지 결정")] [SerializeField] bool revealOnProximity = true; // 플레이어가 가까이 접근하면 위장을 해제할지 결정
+        [Tooltip("접근으로 위장을 해제하는 거리")] [SerializeField] float proximityRevealDistance = 1.25f; // 접근으로 위장을 해제하는 거리
+        [Tooltip("위장 외형 변경 후 공격을 시작할 때까지의 지연시간")] [SerializeField] float revealDelay = 0.25f; // 위장 외형 변경 후 공격을 시작할 때까지의 지연시간
 
         [Header("기습 공격")] // Inspector 기습 공격 설정 구분
-        [SerializeField] float ambushDamage = 25f; // 위장 해제 시 플레이어에게 줄 기습 피해
-        [SerializeField] float ambushRange = 2.2f; // 기습 피해가 적용되는 최대 거리
+        [Tooltip("위장 해제 시 플레이어에게 줄 기습 피해")] [SerializeField] float ambushDamage = 25f; // 위장 해제 시 플레이어에게 줄 기습 피해
+        [Tooltip("기습 피해가 적용되는 최대 거리")] [SerializeField] float ambushRange = 2.2f; // 기습 피해가 적용되는 최대 거리
 
         [Header("디버그")] // Inspector 디버그 설정 구분
-        [SerializeField] bool showDebug = true; // 미믹 상태 변경 로그를 출력할지 결정
+        [Tooltip("미믹 상태 변경 로그를 출력할지 결정")] [SerializeField] bool showDebug = true; // 미믹 상태 변경 로그를 출력할지 결정
 
         MonsterAI monsterAI; // 위장 해제 후 작동시킬 기존 몬스터 AI
         PlayerController player; // 접근 거리와 기습 대상을 확인할 플레이어

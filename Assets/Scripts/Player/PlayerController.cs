@@ -12,41 +12,41 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
     public class PlayerController : MonoBehaviour // 1인칭 플레이어 제어 컴포넌트
     {
         [Header("이동")] // 이동 설정 구분
-        [SerializeField] float walkSpeed = 4f; // 기본 걷기 속도
-        [SerializeField] float runSpeed = 7f; // 달리기 속도
-        [SerializeField] float crouchSpeed = 2f; // 앉은 이동 속도
-        [SerializeField] float jumpHeight = 1.1f; // 점프 높이
-        [SerializeField] float gravity = -20f; // 중력 가속도
+        [Tooltip("기본 걷기 속도")] [SerializeField] float walkSpeed = 4f; // 기본 걷기 속도
+        [Tooltip("달리기 속도")] [SerializeField] float runSpeed = 7f; // 달리기 속도
+        [Tooltip("앉은 이동 속도")] [SerializeField] float crouchSpeed = 2f; // 앉은 이동 속도
+        [Tooltip("점프 높이")] [SerializeField] float jumpHeight = 1.1f; // 점프 높이
+        [Tooltip("중력 가속도")] [SerializeField] float gravity = -20f; // 중력 가속도
 
         [Header("시점")] // 시점 설정 구분
-        [SerializeField] float mouseSensitivity = 0.08f; // 마우스 감도
-        [SerializeField] float minPitch = -85f; // 최소 상하 시야각
-        [SerializeField] float maxPitch = 85f; // 최대 상하 시야각
+        [Tooltip("마우스 감도")] [SerializeField] float mouseSensitivity = 0.08f; // 마우스 감도
+        [Tooltip("최소 상하 시야각")] [SerializeField] float minPitch = -85f; // 최소 상하 시야각
+        [Tooltip("최대 상하 시야각")] [SerializeField] float maxPitch = 85f; // 최대 상하 시야각
 
         [Header("앉기")] // 앉기 설정 구분
-        [SerializeField] float standHeight = 1.8f; // 서 있을 때 충돌체 높이
-        [SerializeField] float crouchHeight = 1f; // 앉았을 때 충돌체 높이
-        [SerializeField] float standEyeLocalY = 0.7f; // 서 있을 때 카메라 높이
-        [SerializeField] float crouchEyeLocalY = 0.1f; // 앉았을 때 카메라 높이
+        [Tooltip("서 있을 때 충돌체 높이")] [SerializeField] float standHeight = 1.8f; // 서 있을 때 충돌체 높이
+        [Tooltip("앉았을 때 충돌체 높이")] [SerializeField] float crouchHeight = 1f; // 앉았을 때 충돌체 높이
+        [Tooltip("서 있을 때 카메라 높이")] [SerializeField] float standEyeLocalY = 0.7f; // 서 있을 때 카메라 높이
+        [Tooltip("앉았을 때 카메라 높이")] [SerializeField] float crouchEyeLocalY = 0.1f; // 앉았을 때 카메라 높이
 
         [Header("스탯 (기획서 PART 4.1)")] // 플레이어 스탯 설정 구분
-        [SerializeField] float maxHealth = 100f; // 최대 체력
-        [SerializeField] float maxStamina = 100f; // 최대 스태미너
-        [SerializeField] float sprintStaminaPerSec = 15f; // 초당 달리기 스태미너 소모량
-        [SerializeField] float jumpStaminaCost = 10f; // 점프 스태미너 소모량
-        [SerializeField] float staminaRegenPerSec = 12f; // 초당 스태미너 회복량
-        [SerializeField] float staminaRegenDelay = 1f; // 스태미너 회복 대기시간
+        [Tooltip("최대 체력")] [SerializeField] float maxHealth = 100f; // 최대 체력
+        [Tooltip("최대 스태미너")] [SerializeField] float maxStamina = 100f; // 최대 스태미너
+        [Tooltip("초당 달리기 스태미너 소모량")] [SerializeField] float sprintStaminaPerSec = 15f; // 초당 달리기 스태미너 소모량
+        [Tooltip("점프 스태미너 소모량")] [SerializeField] float jumpStaminaCost = 10f; // 점프 스태미너 소모량
+        [Tooltip("초당 스태미너 회복량")] [SerializeField] float staminaRegenPerSec = 12f; // 초당 스태미너 회복량
+        [Tooltip("스태미너 회복 대기시간")] [SerializeField] float staminaRegenDelay = 1f; // 스태미너 회복 대기시간
 
         [Header("낙하 피해")] // 낙하 피해 설정 구분
-        [SerializeField] float fallDamageThreshold = 10f; // 피해 발생 최소 낙하속도
-        [SerializeField] float fallDamagePerSpeed = 4f; // 초과 낙하속도당 피해량
+        [Tooltip("피해 발생 최소 낙하속도")] [SerializeField] float fallDamageThreshold = 10f; // 피해 발생 최소 낙하속도
+        [Tooltip("초과 낙하속도당 피해량")] [SerializeField] float fallDamagePerSpeed = 4f; // 초과 낙하속도당 피해량
 
         [Header("디버그")] // 디버그 설정 구분
-        [SerializeField] bool showDebug = true; // 임시 디버그 UI 표시 여부
+        [Tooltip("임시 디버그 UI 표시 여부")] [SerializeField] bool showDebug = true; // 임시 디버그 UI 표시 여부
 
         [Header("사망 및 부활")] // 사망 설정 구분
-        [SerializeField] string reviveItemName = "부활의 돌"; // 자동 소모 부활 아이템 이름
-        [SerializeField][Range(0.05f, 1f)] float reviveHealthRatio = 0.3f; // 부활 후 최대 체력 비율
+        [Tooltip("자동 소모 부활 아이템 이름")] [SerializeField] string reviveItemName = "부활의 돌"; // 자동 소모 부활 아이템 이름
+        [Tooltip("부활 후 최대 체력 비율")] [SerializeField][Range(0.05f, 1f)] float reviveHealthRatio = 0.3f; // 부활 후 최대 체력 비율
 
         CharacterController controller; // 플레이어 이동용 컨트롤러
         InventorySystem inventory; // 무게와 부활석 확인용 인벤토리

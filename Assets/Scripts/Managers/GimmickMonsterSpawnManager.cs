@@ -6,25 +6,25 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
     public class GimmickMonsterSpawnManager : MonoBehaviour // 고스트와 웃는 석상의 독립 출현 관리
     {
         [Header("필수 참조")] // Inspector 필수 참조 구분
-        [SerializeField] DungeonGenerator dungeonGenerator; // 던전 생성 완료 이벤트 제공자
-        [SerializeField] Ghost ghostPrefab; // 자동 생성할 고스트 프리팹
-        [SerializeField] SmilingStatue smilingStatuePrefab; // 자동 생성할 웃는 석상 프리팹
+        [Tooltip("던전 생성 완료 이벤트 제공자")] [SerializeField] DungeonGenerator dungeonGenerator; // 던전 생성 완료 이벤트 제공자
+        [Tooltip("자동 생성할 고스트 프리팹")] [SerializeField] Ghost ghostPrefab; // 자동 생성할 고스트 프리팹
+        [Tooltip("자동 생성할 웃는 석상 프리팹")] [SerializeField] SmilingStatue smilingStatuePrefab; // 자동 생성할 웃는 석상 프리팹
 
         [Header("독립 출현 확률")] // Inspector 출현 확률 구분
-        [SerializeField][Range(0f, 1f)] float ghostSpawnChance = 0.3f; // 던전당 고스트 출현 확률
-        [SerializeField][Range(0f, 1f)] float statueSpawnChance = 0.4f; // 던전당 웃는 석상 출현 확률
-        [SerializeField] bool skipStartingRoom = true; // 시작 방을 후보에서 제외할지 결정
+        [Tooltip("던전당 고스트 출현 확률")] [SerializeField][Range(0f, 1f)] float ghostSpawnChance = 0.3f; // 던전당 고스트 출현 확률
+        [Tooltip("던전당 웃는 석상 출현 확률")] [SerializeField][Range(0f, 1f)] float statueSpawnChance = 0.4f; // 던전당 웃는 석상 출현 확률
+        [Tooltip("시작 방을 후보에서 제외할지 결정")] [SerializeField] bool skipStartingRoom = true; // 시작 방을 후보에서 제외할지 결정
 
         [Header("스폰 위치")] // Inspector 위치 검색 설정 구분
-        [SerializeField] float wallMargin = 1.5f; // 벽에서 떨어질 최소 거리
-        [SerializeField] float positionSearchHeight = 1.2f; // 장애물 검사 중심 높이
-        [SerializeField] float groundOffset = 0f; // 프리팹 루트 바닥 높이 보정
-        [SerializeField] float collisionCheckRadius = 0.5f; // 생성 위치 충돌 검사 반경
-        [SerializeField] int positionSearchAttempts = 30; // 방마다 위치 검색 횟수
-        [SerializeField] float playerSafeDistance = 6f; // 플레이어 주변 생성 금지 거리
+        [Tooltip("벽에서 떨어질 최소 거리")] [SerializeField] float wallMargin = 1.5f; // 벽에서 떨어질 최소 거리
+        [Tooltip("장애물 검사 중심 높이")] [SerializeField] float positionSearchHeight = 1.2f; // 장애물 검사 중심 높이
+        [Tooltip("프리팹 루트 바닥 높이 보정")] [SerializeField] float groundOffset = 0f; // 프리팹 루트 바닥 높이 보정
+        [Tooltip("생성 위치 충돌 검사 반경")] [SerializeField] float collisionCheckRadius = 0.5f; // 생성 위치 충돌 검사 반경
+        [Tooltip("방마다 위치 검색 횟수")] [SerializeField] int positionSearchAttempts = 30; // 방마다 위치 검색 횟수
+        [Tooltip("플레이어 주변 생성 금지 거리")] [SerializeField] float playerSafeDistance = 6f; // 플레이어 주변 생성 금지 거리
 
         [Header("디버그")] // Inspector 디버그 설정 구분
-        [SerializeField] bool showDebug = true; // 임시 OnGUI 표시 여부
+        [Tooltip("임시 OnGUI 표시 여부")] [SerializeField] bool showDebug = true; // 임시 OnGUI 표시 여부
 
         PlayerController player; // 두 기믹 몬스터의 목표 플레이어
         Ghost spawnedGhost; // 현재 자동 생성된 고스트

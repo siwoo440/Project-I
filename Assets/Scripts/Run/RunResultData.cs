@@ -15,14 +15,14 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
     [System.Serializable] // Unity가 결과 필드를 직렬화할 수 있도록 지정
     public class RunResultData // 한 번의 던전 탐험 결과 데이터
     {
-        [SerializeField] bool hasResult; // 결과 확정 여부
-        [SerializeField] bool escaped; // 플레이어 탈출 성공 여부
-        [SerializeField] RunEndReason endReason; // 던전 종료 원인
-        [SerializeField] int securedItemCount; // 마차에 확보한 전체 아이템 수
-        [SerializeField] int securedTreasureCount; // 마차에 확보한 보물 수
-        [SerializeField] int securedValue; // 확보한 보물 총 가치
-        [SerializeField] float elapsedSeconds; // 던전 진행시간
-        [SerializeField] int dungeonSeed; // 던전 생성에 사용한 시드
+        [Tooltip("결과 확정 여부")] [SerializeField] bool hasResult; // 결과 확정 여부
+        [Tooltip("플레이어 탈출 성공 여부")] [SerializeField] bool escaped; // 플레이어 탈출 성공 여부
+        [Tooltip("던전 종료 원인")] [SerializeField] RunEndReason endReason; // 던전 종료 원인
+        [Tooltip("마차에 확보한 전체 아이템 수")] [SerializeField] int securedItemCount; // 마차에 확보한 전체 아이템 수
+        [Tooltip("마차에 확보한 보물 수")] [SerializeField] int securedTreasureCount; // 마차에 확보한 보물 수
+        [Tooltip("확보한 보물 총 가치")] [SerializeField] int securedValue; // 확보한 보물 총 가치
+        [Tooltip("던전 진행시간")] [SerializeField] float elapsedSeconds; // 던전 진행시간
+        [Tooltip("던전 생성에 사용한 시드")] [SerializeField] int dungeonSeed; // 던전 생성에 사용한 시드
 
         public bool HasResult => hasResult; // 결과 확정 여부 반환
         public bool Escaped => escaped; // 탈출 성공 여부 반환

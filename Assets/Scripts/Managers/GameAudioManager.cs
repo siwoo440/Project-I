@@ -8,21 +8,21 @@ namespace ProjectI // 프로젝트 공통 네임스페이스
         public static GameAudioManager Instance { get; private set; } // 현재 활성 오디오 관리자 접근점
 
         [Header("AudioMixer 연결")] // Inspector AudioMixer 연결 구분
-        [SerializeField] AudioMixer audioMixer; // 전체 오디오 그룹을 관리할 AudioMixer
-        [SerializeField] AudioMixerGroup bgmOutputGroup; // BGM AudioSource 출력 그룹
-        [SerializeField] AudioMixerGroup sfxOutputGroup; // SFX AudioSource 출력 그룹
-        [SerializeField] AudioMixerGroup ambientOutputGroup; // Ambient AudioSource 출력 그룹
+        [Tooltip("전체 오디오 그룹을 관리할 AudioMixer")] [SerializeField] AudioMixer audioMixer; // 전체 오디오 그룹을 관리할 AudioMixer
+        [Tooltip("BGM AudioSource 출력 그룹")] [SerializeField] AudioMixerGroup bgmOutputGroup; // BGM AudioSource 출력 그룹
+        [Tooltip("SFX AudioSource 출력 그룹")] [SerializeField] AudioMixerGroup sfxOutputGroup; // SFX AudioSource 출력 그룹
+        [Tooltip("Ambient AudioSource 출력 그룹")] [SerializeField] AudioMixerGroup ambientOutputGroup; // Ambient AudioSource 출력 그룹
 
         [Header("전역 AudioSource 연결")] // Inspector AudioSource 연결 구분
-        [SerializeField] AudioSource bgmSource; // 배경음 반복 재생 AudioSource
-        [SerializeField] AudioSource ambientSource; // 환경음 반복 재생 AudioSource
-        [SerializeField] AudioSource sfxSource; // 2D 공통 효과음 재생 AudioSource
+        [Tooltip("배경음 반복 재생 AudioSource")] [SerializeField] AudioSource bgmSource; // 배경음 반복 재생 AudioSource
+        [Tooltip("환경음 반복 재생 AudioSource")] [SerializeField] AudioSource ambientSource; // 환경음 반복 재생 AudioSource
+        [Tooltip("2D 공통 효과음 재생 AudioSource")] [SerializeField] AudioSource sfxSource; // 2D 공통 효과음 재생 AudioSource
 
         [Header("노출된 Parameter 이름")] // Inspector AudioMixer Parameter 이름 구분
-        [SerializeField] string masterVolumeParameter = "MasterVolume"; // Master 볼륨 Parameter 이름
-        [SerializeField] string bgmVolumeParameter = "BGMVolume"; // BGM 볼륨 Parameter 이름
-        [SerializeField] string sfxVolumeParameter = "SFXVolume"; // SFX 볼륨 Parameter 이름
-        [SerializeField] string ambientVolumeParameter = "AmbientVolume"; // Ambient 볼륨 Parameter 이름
+        [Tooltip("Master 볼륨 Parameter 이름")] [SerializeField] string masterVolumeParameter = "MasterVolume"; // Master 볼륨 Parameter 이름
+        [Tooltip("BGM 볼륨 Parameter 이름")] [SerializeField] string bgmVolumeParameter = "BGMVolume"; // BGM 볼륨 Parameter 이름
+        [Tooltip("SFX 볼륨 Parameter 이름")] [SerializeField] string sfxVolumeParameter = "SFXVolume"; // SFX 볼륨 Parameter 이름
+        [Tooltip("Ambient 볼륨 Parameter 이름")] [SerializeField] string ambientVolumeParameter = "AmbientVolume"; // Ambient 볼륨 Parameter 이름
 
         void Awake() // 오디오 관리자 싱글톤과 AudioSource 초기 설정
         {
