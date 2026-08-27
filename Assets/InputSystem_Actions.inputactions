@@ -195,6 +195,36 @@
                     "interactions": "",
                     "initialStateCheck": false,
                     "priority": 0
+                },
+                {
+                    "name": "DebugToggle",
+                    "type": "Button",
+                    "id": "53520a5e-4859-48ac-93f9-70557bf9308e",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false,
+                    "priority": 0
+                },
+                {
+                    "name": "DebugPreviousPage",
+                    "type": "Button",
+                    "id": "252f5c22-c7b2-461a-84b3-cc31e0035d28",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false,
+                    "priority": 0
+                },
+                {
+                    "name": "DebugNextPage",
+                    "type": "Button",
+                    "id": "d62299f1-5a13-45b5-90ce-fcc0d256028d",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false,
+                    "priority": 0
                 }
             ],
             "bindings": [
@@ -767,6 +797,39 @@
                     "processors": "",
                     "groups": "Keyboard&Mouse",
                     "action": "Slot6",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "6eccc482-60b6-40af-8825-d5719f8a0e93",
+                    "path": "<Keyboard>/f1",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
+                    "action": "DebugToggle",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "e66245db-cd16-4115-9a15-75093f11b5cc",
+                    "path": "<Keyboard>/leftArrow",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
+                    "action": "DebugPreviousPage",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "764cb18b-b2ce-4bcf-8b69-bb13ca0a3dda",
+                    "path": "<Keyboard>/rightArrow",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
+                    "action": "DebugNextPage",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

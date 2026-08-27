@@ -13,6 +13,9 @@ namespace ProjectI.Player // 플레이어 입력 기능 네임스페이스
         public const string Drop = "Drop"; // 선택 아이템 버리기 액션 이름
         public const string SlotScroll = "SlotScroll"; // 빠른 슬롯 휠 전환 액션 이름
         public const string Pause = "Pause"; // 커서 잠금·일시정지 액션 이름
+        public const string DebugToggle = "DebugToggle"; // 공통 디버그 창 열기·닫기 액션 이름
+        public const string DebugPreviousPage = "DebugPreviousPage"; // 이전 디버그 페이지 이동 액션 이름
+        public const string DebugNextPage = "DebugNextPage"; // 다음 디버그 페이지 이동 액션 이름
 
         public static string QuickSlot(int index) // 빠른 슬롯 직접 선택 액션 이름 생성
         {

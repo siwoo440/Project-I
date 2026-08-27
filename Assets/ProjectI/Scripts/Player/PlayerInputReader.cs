@@ -17,6 +17,9 @@ namespace ProjectI.Player // 플레이어 입력 기능 네임스페이스
         private InputAction dropAction; // 선택 아이템 버리기 액션
         private InputAction slotScrollAction; // 마우스 휠 슬롯 전환 액션
         private InputAction pauseAction; // 커서 잠금·일시정지 액션
+        private InputAction debugToggleAction; // 공통 디버그 창 열기·닫기 액션
+        private InputAction debugPreviousPageAction; // 이전 디버그 페이지 이동 액션
+        private InputAction debugNextPageAction; // 다음 디버그 페이지 이동 액션
         private readonly InputAction[] quickSlotActions = new InputAction[6]; // 빠른 슬롯 1~6 직접 선택 액션
 
         public Vector2 Move => moveAction == null ? Vector2.zero : moveAction.ReadValue<Vector2>(); // 현재 이동 입력 반환
@@ -33,6 +36,9 @@ namespace ProjectI.Player // 플레이어 입력 기능 네임스페이스
         public int DirectSlotPressed => ReadDirectSlotPressed(); // 빠른 슬롯 직접 선택값 반환
         public float SlotScrollDelta => slotScrollAction == null ? 0f : slotScrollAction.ReadValue<float>(); // 슬롯 휠 전환값 반환
         public bool PausePressed => pauseAction != null && pauseAction.WasPressedThisFrame(); // 커서 잠금·일시정지 입력 반환
+        public bool DebugTogglePressed => debugToggleAction != null && debugToggleAction.WasPressedThisFrame(); // 공통 디버그 창 토글 입력 반환
+        public bool DebugPreviousPagePressed => debugPreviousPageAction != null && debugPreviousPageAction.WasPressedThisFrame(); // 이전 디버그 페이지 입력 반환
+        public bool DebugNextPagePressed => debugNextPageAction != null && debugNextPageAction.WasPressedThisFrame(); // 다음 디버그 페이지 입력 반환
         public InputActionAsset InputActions => inputActions; // 설정 화면 재바인딩용 입력 에셋 공개
 
         private void OnEnable() // 컴포넌트 활성화 처리
@@ -86,6 +92,9 @@ namespace ProjectI.Player // 플레이어 입력 기능 네임스페이스
             dropAction = playerActionMap.FindAction(GameplayInputActions.Drop, false); // Drop 액션 조회
             slotScrollAction = playerActionMap.FindAction(GameplayInputActions.SlotScroll, false); // SlotScroll 액션 조회
             pauseAction = playerActionMap.FindAction(GameplayInputActions.Pause, false); // Pause 액션 조회
+            debugToggleAction = playerActionMap.FindAction(GameplayInputActions.DebugToggle, false); // DebugToggle 액션 조회
+            debugPreviousPageAction = playerActionMap.FindAction(GameplayInputActions.DebugPreviousPage, false); // DebugPreviousPage 액션 조회
+            debugNextPageAction = playerActionMap.FindAction(GameplayInputActions.DebugNextPage, false); // DebugNextPage 액션 조회
 
             for (int index = 0; index < quickSlotActions.Length; index++) // 슬롯 1~6 액션 순회
             {
