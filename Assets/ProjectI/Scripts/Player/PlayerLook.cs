@@ -1,5 +1,4 @@
 using UnityEngine; // 유니티 기본 기능 참조
-using UnityEngine.InputSystem; // 키보드 입력 상태 참조
 
 namespace ProjectI.Player // 플레이어 기능 네임스페이스
 {
@@ -34,7 +33,7 @@ namespace ProjectI.Player // 플레이어 기능 네임스페이스
 
         private void Update() // 프레임별 시점 처리
         {
-            if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame) // ESC 입력 확인
+            if (inputReader != null && inputReader.PausePressed) // 재바인딩 가능한 Pause 액션 입력 확인
             {
                 SetCursorLocked(!IsCursorLocked); // 커서 잠금 상태 전환
             }
@@ -44,7 +43,7 @@ namespace ProjectI.Player // 플레이어 기능 네임스페이스
                 return; // 잠금 해제 상태에서는 시점 회전 중지
             }
 
-            Vector2 lookInput = inputReader.Look; // 현재 시점 입력 읽기
+            Vector2 lookInput = inputReader == null ? Vector2.zero : inputReader.Look; // 현재 시점 입력 읽기
             float yawDelta = lookInput.x * horizontalSensitivity; // 좌우 회전량 계산
             float pitchDelta = lookInput.y * verticalSensitivity; // 상하 회전량 계산
             transform.Rotate(Vector3.up, yawDelta, Space.Self); // 플레이어 몸체 좌우 회전
