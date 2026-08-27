@@ -10,15 +10,15 @@ namespace ProjectI.Player // 플레이어 기능 네임스페이스
         private InputAction moveAction; // 이동 액션
         private InputAction lookAction; // 시점 액션
         private InputAction sprintAction; // 달리기 액션
-        private InputAction jumpAction; // 점프 액션 기반
-        private InputAction crouchAction; // 웅크리기 액션 기반
+        private InputAction jumpAction; // 점프 액션
+        private InputAction crouchAction; // 웅크리기 액션
         private InputAction interactAction; // 상호작용 액션 기반
 
         public Vector2 Move => moveAction == null ? Vector2.zero : moveAction.ReadValue<Vector2>(); // 현재 이동 입력 반환
         public Vector2 Look => lookAction == null ? Vector2.zero : lookAction.ReadValue<Vector2>(); // 현재 시점 입력 반환
         public bool SprintHeld => sprintAction != null && sprintAction.IsPressed(); // 달리기 입력 유지 여부 반환
         public bool JumpPressed => jumpAction != null && jumpAction.WasPressedThisFrame(); // 점프 입력 시작 여부 반환
-        public bool CrouchHeld => crouchAction != null && crouchAction.IsPressed(); // 웅크리기 입력 유지 여부 반환
+        public bool CrouchHeld => (crouchAction != null && crouchAction.IsPressed()) || (Keyboard.current != null && Keyboard.current.leftCtrlKey.isPressed); // Crouch 액션 또는 왼쪽 Ctrl 웅크리기 여부 반환
         public bool InteractPressed => interactAction != null && interactAction.WasPressedThisFrame(); // 상호작용 입력 시작 여부 반환
 
         private void OnEnable() // 컴포넌트 활성화 처리
@@ -49,8 +49,8 @@ namespace ProjectI.Player // 플레이어 기능 네임스페이스
             moveAction = playerActionMap.FindAction("Move", true); // Move 액션 조회
             lookAction = playerActionMap.FindAction("Look", true); // Look 액션 조회
             sprintAction = playerActionMap.FindAction("Sprint", true); // Sprint 액션 조회
-            jumpAction = playerActionMap.FindAction("Jump", false); // Jump 액션 기반 조회
-            crouchAction = playerActionMap.FindAction("Crouch", false); // Crouch 액션 기반 조회
+            jumpAction = playerActionMap.FindAction("Jump", false); // Jump 액션 조회
+            crouchAction = playerActionMap.FindAction("Crouch", false); // Crouch 액션 조회
             interactAction = playerActionMap.FindAction("Interact", false); // Interact 액션 기반 조회
         }
     }
