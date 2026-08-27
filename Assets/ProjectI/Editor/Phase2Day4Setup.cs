@@ -194,7 +194,7 @@ namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
             triggerCollider.isTrigger = true; // 충돌 대신 트리거로 설정
             triggerCollider.size = new Vector3(3.8f, 1.2f, 3.8f); // 플랫폼 상단 탑승 감지 크기 설정
             MovingPlatformPassengerTrigger passenger = passengerTrigger.AddComponent<MovingPlatformPassengerTrigger>(); // 탑승자 연결 컴포넌트 추가
-            passenger.Configure(platformRoot.transform); // 실제 플랫폼 루트 연결
+            passenger.Configure(movingPlatform); // 실제 이동 플랫폼 기능 연결
         }
 
         private static void UpgradeStairRamp(Transform parent, Material dangerMaterial, Material wallMaterial) // 기존 계단·경사 구역 보강

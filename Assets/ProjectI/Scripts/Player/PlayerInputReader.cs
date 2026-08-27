@@ -12,14 +12,18 @@ namespace ProjectI.Player // 플레이어 기능 네임스페이스
         private InputAction sprintAction; // 달리기 액션
         private InputAction jumpAction; // 점프 액션
         private InputAction crouchAction; // 웅크리기 액션
-        private InputAction interactAction; // 상호작용 액션 기반
+        private InputAction interactAction; // 상호작용 액션
 
         public Vector2 Move => moveAction == null ? Vector2.zero : moveAction.ReadValue<Vector2>(); // 현재 이동 입력 반환
         public Vector2 Look => lookAction == null ? Vector2.zero : lookAction.ReadValue<Vector2>(); // 현재 시점 입력 반환
         public bool SprintHeld => sprintAction != null && sprintAction.IsPressed(); // 달리기 입력 유지 여부 반환
         public bool JumpPressed => jumpAction != null && jumpAction.WasPressedThisFrame(); // 점프 입력 시작 여부 반환
         public bool CrouchHeld => (crouchAction != null && crouchAction.IsPressed()) || (Keyboard.current != null && Keyboard.current.leftCtrlKey.isPressed); // Crouch 액션 또는 왼쪽 Ctrl 웅크리기 여부 반환
-        public bool InteractPressed => interactAction != null && interactAction.WasPressedThisFrame(); // 상호작용 입력 시작 여부 반환
+        public bool InteractPressed => (interactAction != null && interactAction.WasPressedThisFrame()) || (Keyboard.current != null && Keyboard.current.fKey.wasPressedThisFrame); // F 상호작용 시작 여부 반환
+        public bool InteractHeld => (interactAction != null && interactAction.IsPressed()) || (Keyboard.current != null && Keyboard.current.fKey.isPressed); // F 상호작용 유지 여부 반환
+        public bool InteractReleased => (interactAction != null && interactAction.WasReleasedThisFrame()) || (Keyboard.current != null && Keyboard.current.fKey.wasReleasedThisFrame); // F 상호작용 해제 여부 반환
+        public bool DropPressed => Keyboard.current != null && Keyboard.current.gKey.wasPressedThisFrame; // 5일차 임시 G 내려놓기 입력 반환
+        public bool ThrowPressed => Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame; // 5일차 임시 마우스 왼쪽 투척 입력 반환
 
         private void OnEnable() // 컴포넌트 활성화 처리
         {
@@ -51,7 +55,7 @@ namespace ProjectI.Player // 플레이어 기능 네임스페이스
             sprintAction = playerActionMap.FindAction("Sprint", true); // Sprint 액션 조회
             jumpAction = playerActionMap.FindAction("Jump", false); // Jump 액션 조회
             crouchAction = playerActionMap.FindAction("Crouch", false); // Crouch 액션 조회
-            interactAction = playerActionMap.FindAction("Interact", false); // Interact 액션 기반 조회
+            interactAction = playerActionMap.FindAction("Interact", false); // Interact 액션 조회
         }
     }
 }
