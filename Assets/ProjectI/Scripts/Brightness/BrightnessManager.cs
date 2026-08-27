@@ -102,9 +102,9 @@ namespace ProjectI.Brightness // 밝기 시스템 네임스페이스
                     continue; // 다음 광원 검사
                 }
 
-                if (source.OwnerArea != targetArea) // 외부는 null 소속, 내부는 현재 방 소속만 허용
+                if (source.GetEffectiveArea() != targetArea) // Fixed는 부모 방, Portable은 현재 월드 위치 기준으로 현재 공간과 일치하는지 확인
                 {
-                    continue; // 다른 공간의 광원은 현재 밝기 계산에서 제외
+                    continue; // 다른 공간에 속한 광원은 현재 밝기 계산에서 제외
                 }
 
                 total += source.GetContribution(worldPosition); // 현재 위치에 도달하는 거리 감쇠 밝기 합산

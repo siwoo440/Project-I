@@ -51,7 +51,25 @@ namespace ProjectI.Brightness // 밝기 시스템 네임스페이스
 
         public static IndoorBrightnessArea FindContaining(Vector3 worldPosition) // 지정 위치를 포함하는 현재 방 영역 검색
         {
-            foreach (IndoorBrightnessArea area in ActiveAreas) // 활성 방 영역 순회
+            IndoorBrightnessArea runtimeArea = FindContainingInCollection(ActiveAreas, worldPosition); // Play Mode용 활성 방 Registry에서 먼저 검색
+
+            if (runtimeArea != null || Application.isPlaying) // Registry에서 찾았거나 실제 게임 실행 중인지 확인
+            {
+                return runtimeArea; // Play Mode에서는 기존 빠른 Registry 결과를 그대로 사용
+            }
+
+            IndoorBrightnessArea[] editorAreas = Object.FindObjectsByType<IndoorBrightnessArea>(FindObjectsInactive.Exclude, FindObjectsSortMode.None); // Edit Mode Validator용 현재 씬 방 영역 직접 조회
+            return FindContainingInCollection(editorAreas, worldPosition); // 씬을 다시 연 직후에도 실제 Collider 기준으로 방 판정
+        }
+
+        private static IndoorBrightnessArea FindContainingInCollection(IEnumerable<IndoorBrightnessArea> areas, Vector3 worldPosition) // 전달된 방 목록에서 지정 위치를 포함하는 영역 검색
+        {
+            if (areas == null) // 검색할 방 목록 존재 여부 확인
+            {
+                return null; // 목록이 없으면 외부로 판정
+            }
+
+            foreach (IndoorBrightnessArea area in areas) // 전달된 방 영역 전체 순회
             {
                 if (area == null || !area.isActiveAndEnabled) // 유효하지 않거나 비활성화된 방 확인
                 {
