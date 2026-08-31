@@ -10,6 +10,8 @@ namespace ProjectI.Player // 플레이어 입력 기능 네임스페이스
         public const string Crouch = "Crouch"; // 웅크리기 액션 이름
         public const string Interact = "Interact"; // 상호작용 액션 이름
         public const string Use = "Use"; // 선택 아이템 사용 액션 이름
+        public const string Aim = "Aim"; // 원거리 무기 우클릭 조준 액션 이름
+        public const string Reload = "Reload"; // 원거리 무기 R 재장전 액션 이름
         public const string Drop = "Drop"; // 선택 아이템 버리기 액션 이름
         public const string SlotScroll = "SlotScroll"; // 빠른 슬롯 휠 전환 액션 이름
         public const string Pause = "Pause"; // 커서 잠금·일시정지 액션 이름

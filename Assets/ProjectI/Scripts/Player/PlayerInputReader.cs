@@ -14,6 +14,8 @@ namespace ProjectI.Player // 플레이어 입력 기능 네임스페이스
         private InputAction crouchAction; // 웅크리기 액션
         private InputAction interactAction; // 상호작용 액션
         private InputAction useAction; // 선택 아이템 사용 액션
+        private InputAction aimAction; // 원거리 무기 조준 액션
+        private InputAction reloadAction; // 원거리 무기 재장전 액션
         private InputAction dropAction; // 선택 아이템 버리기 액션
         private InputAction slotScrollAction; // 마우스 휠 슬롯 전환 액션
         private InputAction pauseAction; // 커서 잠금·일시정지 액션
@@ -32,6 +34,8 @@ namespace ProjectI.Player // 플레이어 입력 기능 네임스페이스
         public bool InteractReleased => interactAction != null && interactAction.WasReleasedThisFrame(); // 상호작용 입력 해제 여부 반환
         public bool DropPressed => dropAction != null && dropAction.WasPressedThisFrame(); // 선택 아이템 버리기 입력 반환
         public bool UsePressed => useAction != null && useAction.WasPressedThisFrame(); // 선택 아이템 사용 입력 반환
+        public bool AimHeld => aimAction != null ? aimAction.IsPressed() : Mouse.current != null && Mouse.current.rightButton.isPressed; // Aim 액션 누락 시 우클릭 직접 입력으로 조준 유지
+        public bool ReloadPressed => reloadAction != null ? reloadAction.WasPressedThisFrame() : Keyboard.current != null && Keyboard.current.rKey.wasPressedThisFrame; // Reload 액션 누락 시 R키 직접 입력으로 재장전
         public bool ThrowPressed => UsePressed; // 기존 5일차 코드 호환용 사용 입력 반환
         public int DirectSlotPressed => ReadDirectSlotPressed(); // 빠른 슬롯 직접 선택값 반환
         public float SlotScrollDelta => slotScrollAction == null ? 0f : slotScrollAction.ReadValue<float>(); // 슬롯 휠 전환값 반환
@@ -89,6 +93,8 @@ namespace ProjectI.Player // 플레이어 입력 기능 네임스페이스
             crouchAction = playerActionMap.FindAction(GameplayInputActions.Crouch, false); // Crouch 액션 조회
             interactAction = playerActionMap.FindAction(GameplayInputActions.Interact, false); // Interact 액션 조회
             useAction = playerActionMap.FindAction(GameplayInputActions.Use, false); // Use 액션 조회
+            aimAction = playerActionMap.FindAction(GameplayInputActions.Aim, false); // Aim 액션이 있으면 공통 조준 입력으로 연결
+            reloadAction = playerActionMap.FindAction(GameplayInputActions.Reload, false); // Reload 액션이 있으면 공통 재장전 입력으로 연결
             dropAction = playerActionMap.FindAction(GameplayInputActions.Drop, false); // Drop 액션 조회
             slotScrollAction = playerActionMap.FindAction(GameplayInputActions.SlotScroll, false); // SlotScroll 액션 조회
             pauseAction = playerActionMap.FindAction(GameplayInputActions.Pause, false); // Pause 액션 조회
