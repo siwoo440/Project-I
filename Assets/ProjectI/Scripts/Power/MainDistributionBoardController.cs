@@ -16,9 +16,8 @@ namespace ProjectI.Power // 전력 시스템 네임스페이스
         [SerializeField] private GameObject[] doorClosedVisuals; // 문별 닫힘 상태 표시 요소
         [SerializeField] private GameObject[] doorMovingVisuals; // 문별 이동 중 상태 표시 요소
         [SerializeField] private GameObject[] doorNoPowerVisuals; // 문별 정전 상태 표시 요소
-        private bool lastGeneratorRunning; // 발전기 상태 변화 감지용 이전 값
-        private bool lastMainPowerRequested; // 메인 요청 상태 변화 감지용 이전 값
 
+        public event System.Action StateChanged; // 메인 전력 요청·실제 공급 상태 변경 이벤트 공개
         public GeneratorController Generator => generator; // Validator용 발전기 참조 공개
         public bool MainPowerRequested => mainPowerRequested; // 배전반 메인 전원 요청 상태 공개
         public bool GeneratorAvailable => generator != null && generator.IsRunning; // 발전기 실제 가동 여부 공개
@@ -35,25 +34,18 @@ namespace ProjectI.Power // 전력 시스템 네임스페이스
 
         private void OnEnable() // 중앙 배전반 활성화 처리
         {
-            RefreshPowerState(); // 활성화 직후 전력 상태 동기화
+            SubscribeSources(); // 발전기·방·문 상태 변경 이벤트 구독
+            RefreshPowerState(); // 활성화 직후 전체 전력 상태 동기화
         }
 
-        private void Update() // 프레임별 발전기와 배전반 상태 감시
+        private void OnDisable() // 중앙 배전반 비활성화 처리
         {
-            bool generatorRunning = GeneratorAvailable; // 현재 발전기 가동 상태 조회
-
-            if (generatorRunning != lastGeneratorRunning || mainPowerRequested != lastMainPowerRequested) // 상위 전력 상태 변경 여부 확인
-            {
-                RefreshPowerState(); // 방 전력과 배전반 표시등 즉시 갱신
-                return; // 이번 프레임 추가 갱신 생략
-            }
-
-            UpdateRoomIndicators(); // 방별 버튼 조작 결과 상태 표시를 프레임마다 갱신
-            UpdateDoorIndicators(); // 움직이는 철제문 상태 표시를 프레임마다 갱신
+            UnsubscribeSources(); // 비활성 상태의 이벤트 구독 해제
         }
 
         public void Configure(GeneratorController targetGenerator, bool startMainPowerRequested, RoomPowerZone[] targetRoomZones, PoweredIronDoor[] targetDoors, GameObject[] mainOnVisuals, GameObject[] mainOffVisuals, GameObject[] roomOnVisuals, GameObject[] roomOffVisuals, GameObject[] openVisuals, GameObject[] closedVisuals, GameObject[] movingVisuals, GameObject[] noPowerVisuals) // 자동 Setup용 중앙 배전반 설정
         {
+            UnsubscribeSources(); // 이전 연결 대상 이벤트 구독 해제
             generator = targetGenerator; // 기존 발전기 연결
             mainPowerRequested = startMainPowerRequested; // 시작 메인 전원 요청 상태 저장
             roomZones = targetRoomZones; // 방 전력 구역 목록 저장
@@ -66,13 +58,25 @@ namespace ProjectI.Power // 전력 시스템 네임스페이스
             doorClosedVisuals = closedVisuals; // 문별 닫힘 표시 연결
             doorMovingVisuals = movingVisuals; // 문별 이동 표시 연결
             doorNoPowerVisuals = noPowerVisuals; // 문별 정전 표시 연결
+
+            if (isActiveAndEnabled) // 현재 배전반 활성 상태 확인
+            {
+                SubscribeSources(); // 새 연결 대상 이벤트 구독
+            }
+
             RefreshPowerState(); // 새 설정을 방과 표시등에 즉시 반영
         }
 
-        public void SetMainPowerRequested(bool powered) // 메인 ON/OFF 버튼에서 시설 전원 요청 변경
+        public void SetMainPowerRequested(bool powered) // 메인 토글 스위치에서 시설 전원 요청 변경
         {
+            if (mainPowerRequested == powered) // 기존 메인 요청 상태와 동일한지 확인
+            {
+                return; // 중복 전체 갱신과 이벤트 호출 방지
+            }
+
             mainPowerRequested = powered; // 새 메인 전원 요청 상태 저장
             RefreshPowerState(); // 모든 방과 배전반 표시 즉시 갱신
+            NotifyStateChanged(); // 메인 토글 레버와 진단 기능에 상태 변경 전달
         }
 
         public void RefreshPowerState() // 발전기와 메인 요청 상태를 전체 방에 전달
@@ -96,8 +100,84 @@ namespace ProjectI.Power // 전력 시스템 네임스페이스
             SetVisualArrayState(mainUnpoweredVisuals, !facilityPower); // 실제 시설 정전 상태 빨간 표시
             UpdateRoomIndicators(); // 방별 실제 통전 상태 표시 갱신
             UpdateDoorIndicators(); // 문별 현재 상태 표시 갱신
-            lastGeneratorRunning = GeneratorAvailable; // 현재 발전기 상태를 이전 값으로 저장
-            lastMainPowerRequested = mainPowerRequested; // 현재 메인 요청 상태를 이전 값으로 저장
+        }
+
+        private void SubscribeSources() // 연결된 전력 상태 이벤트 전체 구독
+        {
+            UnsubscribeSources(); // 중복 이벤트 등록 예방
+
+            if (generator != null) // 발전기 참조 존재 여부 확인
+            {
+                generator.StateChanged += HandleGeneratorStateChanged; // 발전기 가동 상태 이벤트 구독
+            }
+
+            if (roomZones != null) // 방 전력 구역 목록 존재 여부 확인
+            {
+                foreach (RoomPowerZone roomZone in roomZones) // 연결된 방 전체 순회
+                {
+                    if (roomZone != null) // 유효 방 전력 구역 여부 확인
+                    {
+                        roomZone.StateChanged += HandleRoomStateChanged; // 방 상태 변경 이벤트 구독
+                    }
+                }
+            }
+
+            if (controlledDoors != null) // 철제문 목록 존재 여부 확인
+            {
+                foreach (PoweredIronDoor door in controlledDoors) // 원격 제어 문 전체 순회
+                {
+                    if (door != null) // 유효 철제문 여부 확인
+                    {
+                        door.StateChanged += HandleDoorStateChanged; // 문 상태 변경 이벤트 구독
+                    }
+                }
+            }
+        }
+
+        private void UnsubscribeSources() // 연결된 전력 상태 이벤트 전체 구독 해제
+        {
+            if (generator != null) // 발전기 참조 존재 여부 확인
+            {
+                generator.StateChanged -= HandleGeneratorStateChanged; // 발전기 이벤트 구독 해제
+            }
+
+            if (roomZones != null) // 방 전력 구역 목록 존재 여부 확인
+            {
+                foreach (RoomPowerZone roomZone in roomZones) // 연결된 방 전체 순회
+                {
+                    if (roomZone != null) // 유효 방 전력 구역 여부 확인
+                    {
+                        roomZone.StateChanged -= HandleRoomStateChanged; // 방 상태 이벤트 구독 해제
+                    }
+                }
+            }
+
+            if (controlledDoors != null) // 철제문 목록 존재 여부 확인
+            {
+                foreach (PoweredIronDoor door in controlledDoors) // 원격 제어 문 전체 순회
+                {
+                    if (door != null) // 유효 철제문 여부 확인
+                    {
+                        door.StateChanged -= HandleDoorStateChanged; // 문 상태 이벤트 구독 해제
+                    }
+                }
+            }
+        }
+
+        private void HandleGeneratorStateChanged() // 발전기 가동 상태 변경 처리
+        {
+            RefreshPowerState(); // 발전기 변경 결과를 전체 방에 전달
+            NotifyStateChanged(); // 메인 스위치와 외부 진단 기능에 변경 전달
+        }
+
+        private void HandleRoomStateChanged() // 방 전력 상태 변경 처리
+        {
+            UpdateRoomIndicators(); // 변경 시점에만 방별 상태등 갱신
+        }
+
+        private void HandleDoorStateChanged() // 철제문 상태 변경 처리
+        {
+            UpdateDoorIndicators(); // 변경 시점에만 문별 상태등 갱신
         }
 
         private void UpdateRoomIndicators() // 배전반 방별 상태등 갱신
@@ -166,6 +246,11 @@ namespace ProjectI.Power // 전력 시스템 네임스페이스
             {
                 visual.SetActive(activeState); // 지정 상태로 표시 전환
             }
+        }
+
+        private void NotifyStateChanged() // 메인 배전 상태 변경 알림 실행
+        {
+            StateChanged?.Invoke(); // 토글 스위치와 상태 복구 시스템에 변경 전달
         }
 
         private void OnValidate() // 인스펙터 변경 시 전력 상태 동기화

@@ -9,6 +9,7 @@ namespace ProjectI.Power // 전력 시스템 네임스페이스
         [SerializeField] private bool facilityPowerAvailable; // 발전기와 메인 배전반에서 공급 가능한 전력 상태
         [SerializeField] private PowerConsumer[] consumers; // 이 방에 연결된 모든 공통 전력 소비자
 
+        public event System.Action StateChanged; // 방 요청·실제 전력 상태 변경 이벤트 공개
         public string DisplayName => displayName; // 방 표시 이름 공개
         public bool RequestedPower => requestedPower; // 배전반 스위치 요청 상태 공개
         public bool FacilityPowerAvailable => facilityPowerAvailable; // 상위 전력 공급 가능 상태 공개
@@ -37,16 +38,28 @@ namespace ProjectI.Power // 전력 시스템 네임스페이스
             ApplyPower(); // 새 설정을 실제 장치에 즉시 적용
         }
 
-        public void SetRequestedPower(bool powered) // 배전반 버튼에서 방 전원 요청 변경
+        public void SetRequestedPower(bool powered) // 배전반 스위치에서 방 전원 요청 변경
         {
+            if (requestedPower == powered) // 기존 요청 상태와 동일한지 확인
+            {
+                return; // 중복 장치 갱신과 이벤트 호출 방지
+            }
+
             requestedPower = powered; // 방별 요청 상태 저장
             ApplyPower(); // 상위 전력 상태와 합산하여 실제 장치 갱신
+            NotifyStateChanged(); // 배전반 상태등과 토글 레버 갱신 요청
         }
 
         public void SetFacilityPowerAvailable(bool available) // 메인 배전반에서 상위 전력 공급 상태 전달
         {
+            if (facilityPowerAvailable == available) // 기존 상위 공급 상태와 동일한지 확인
+            {
+                return; // 불필요한 전체 소비자 갱신 방지
+            }
+
             facilityPowerAvailable = available; // 상위 전력 상태 저장
             ApplyPower(); // 방별 요청 상태와 합산하여 실제 장치 갱신
+            NotifyStateChanged(); // 배전반 방 상태등 갱신 요청
         }
 
         private void ResolveConsumers() // 자식 구조에서 전력 소비자 목록 확보
@@ -71,6 +84,11 @@ namespace ProjectI.Power // 전력 시스템 네임스페이스
 
                 consumer.SetPowerAvailable(actualPower); // 전등과 문 같은 장치에 실제 전력 전달
             }
+        }
+
+        private void NotifyStateChanged() // 방 전력 상태 변경 알림 실행
+        {
+            StateChanged?.Invoke(); // 배전반과 토글 스위치에 상태 변경 전달
         }
 
         private void OnValidate() // 인스펙터 변경 시 상태 동기화

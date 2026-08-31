@@ -17,6 +17,7 @@ namespace ProjectI.Power // 전력 시스템 네임스페이스
         [SerializeField] private Transform[] rotatingParts; // 작동 중 회전할 발전기 부품
         [SerializeField] private float rotationSpeed = 480f; // 회전 부품 초당 회전 속도
 
+        public event System.Action StateChanged; // 발전기 가동 상태 변경 이벤트 공개
         public string DisplayName => displayName; // 디버그 표시 이름 공개
         public float MaxFuel => maxFuel; // 최대 연료량 공개
         public float CurrentFuel => currentFuel; // 현재 연료량 공개
@@ -97,20 +98,53 @@ namespace ProjectI.Power // 전력 시스템 네임스페이스
         {
             if (currentFuel <= 0f) // 사용 가능한 연료 여부 확인
             {
+                bool stateChanged = isRunning; // 강제 정지로 상태가 바뀌는지 기록
                 isRunning = false; // 연료 없음 상태에서 정지 유지
                 ApplyState(); // 정지 상태 시각 요소 동기화
+
+                if (stateChanged) // 실제 가동 상태 변경 여부 확인
+                {
+                    NotifyStateChanged(); // 배전반에 발전기 상태 변경 통지
+                }
+
                 return false; // 가동 실패 반환
+            }
+
+            if (isRunning) // 이미 발전기가 작동 중인지 확인
+            {
+                return true; // 중복 가동 요청 성공 처리
             }
 
             isRunning = true; // 발전기 가동 상태 저장
             ApplyState(); // 전력 공급과 시각 요소 활성화
+            NotifyStateChanged(); // 이벤트 기반 배전반 갱신 요청
             return true; // 가동 성공 반환
         }
 
         public void StopGenerator() // 외부 시스템에서 발전기 정지
         {
+            if (!isRunning) // 이미 정지 상태인지 확인
+            {
+                ApplyState(); // 현재 정지 시각 상태 재동기화
+                return; // 중복 상태 변경 통지 방지
+            }
+
             isRunning = false; // 발전기 정지 상태 저장
             ApplyState(); // 전력 공급과 시각 요소 비활성화
+            NotifyStateChanged(); // 이벤트 기반 배전반 갱신 요청
+        }
+
+        public void RestoreState(float restoredFuel, bool restoredRunning) // 13일차 런타임 스냅샷 상태 복구
+        {
+            bool previousRunning = isRunning; // 복구 전 가동 상태 기록
+            currentFuel = Mathf.Clamp(restoredFuel, 0f, maxFuel); // 저장된 연료량 안전 범위 복구
+            isRunning = restoredRunning && currentFuel > 0f; // 연료 조건을 반영한 저장 가동 상태 복구
+            ApplyState(); // 복구 상태를 시각 요소와 직결 전등에 적용
+
+            if (previousRunning != isRunning) // 실제 가동 상태가 변경됐는지 확인
+            {
+                NotifyStateChanged(); // 배전반에 복구된 발전기 상태 통지
+            }
         }
 
         private void ConsumeFuel(float deltaTime) // 작동 중 연료 소비 처리
@@ -213,6 +247,11 @@ namespace ProjectI.Power // 전력 시스템 네임스페이스
 
                 segment.SetActive(index < visibleCount); // 현재 연료 비율 안쪽 조각만 표시
             }
+        }
+
+        private void NotifyStateChanged() // 발전기 가동 상태 변경 알림 실행
+        {
+            StateChanged?.Invoke(); // 구독 중인 배전반과 진단 기능에 상태 변경 전달
         }
 
         private string BuildPrompt() // 현재 상태 기반 F 안내 문구 생성

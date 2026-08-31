@@ -12,7 +12,7 @@ namespace ProjectI.Power // 전력 시스템 네임스페이스
 
     public sealed class PoweredIronDoor : MonoBehaviour, IPowerStateReceiver // 전력을 사용해 움직이는 철제문 제어
     {
-        [SerializeField] private string displayName = "철제문"; // 배전반과 로컬 버튼에 표시할 문 이름
+        [SerializeField] private string displayName = "철제문"; // 배전반과 로컬 스위치에 표시할 문 이름
         [SerializeField] private PowerConsumer powerConsumer; // 방 전력을 받는 공통 전력 소비자
         [SerializeField] private Transform movingPanel; // 실제로 이동하는 철제문 패널
         [SerializeField] private Vector3 closedLocalPosition; // 완전 닫힘 로컬 위치
@@ -24,6 +24,7 @@ namespace ProjectI.Power // 전력 시스템 네임스페이스
         [SerializeField] private GameObject[] localMovingVisuals; // 문 옆 패널의 이동 중 표시 요소
         [SerializeField] private GameObject[] localNoPowerVisuals; // 문 옆 패널의 정전 표시 요소
 
+        public event System.Action StateChanged; // 문 이동·통전 상태 변경 이벤트 공개
         public string DisplayName => displayName; // 철제문 표시 이름 공개
         public bool HasPower => powerConsumer != null && powerConsumer.HasPower; // 현재 문에 실제 전력이 공급되는지 공개
         public PoweredIronDoorState State => state; // 현재 문 상태 공개
@@ -44,12 +45,16 @@ namespace ProjectI.Power // 전력 시스템 네임스페이스
             UpdateStatusVisuals(); // 활성화 직후 현재 상태등 동기화
         }
 
-        private void Update() // 프레임별 철제문 이동 처리
+        private void Update() // 이동 중일 때만 철제문 위치 처리
         {
+            if (!IsMoving) // 완전 열림 또는 닫힘 정지 상태 확인
+            {
+                return; // 정지 상태의 프레임별 계산 생략
+            }
+
             if (!HasPower || movingPanel == null) // 전력 또는 이동 패널 존재 여부 확인
             {
-                UpdateStatusVisuals(); // 정전 상태등 유지
-                return; // 전력이 없으면 현재 위치에서 이동 중지
+                return; // 정전 중 현재 위치를 유지하고 반복 상태등 갱신 생략
             }
 
             if (state == PoweredIronDoorState.Opening) // 열리는 중인지 확인
@@ -60,8 +65,6 @@ namespace ProjectI.Power // 전력 시스템 네임스페이스
             {
                 MovePanelTowards(closedLocalPosition, PoweredIronDoorState.Closed); // 완전 닫힘 위치로 이동
             }
-
-            UpdateStatusVisuals(); // 현재 문 상태를 로컬 표시등에 반영
         }
 
         public void Configure(string targetDisplayName, PowerConsumer consumer, Transform panel, Vector3 closedPosition, Vector3 openPosition, float targetMoveSpeed, PoweredIronDoorState startState, GameObject[] openVisuals, GameObject[] closedVisuals, GameObject[] movingVisuals, GameObject[] noPowerVisuals) // 자동 Setup용 전동 철제문 설정
@@ -81,11 +84,12 @@ namespace ProjectI.Power // 전력 시스템 네임스페이스
             UpdateStatusVisuals(); // 시작 상태등 적용
         }
 
-        public bool RequestOpen() // 배전반 또는 로컬 버튼에서 문 열기 요청
+        public bool RequestOpen() // 배전반 또는 로컬 스위치에서 문 열기 요청
         {
             if (!HasPower) // 문 전력 공급 여부 확인
             {
                 UpdateStatusVisuals(); // 정전 상태등 갱신
+                NotifyStateChanged(); // 배전반 정전 표시 갱신 요청
                 return false; // 전력이 없으면 개방 실패 반환
             }
 
@@ -96,14 +100,16 @@ namespace ProjectI.Power // 전력 시스템 네임스페이스
 
             state = PoweredIronDoorState.Opening; // 문을 열리는 중 상태로 변경
             UpdateStatusVisuals(); // 이동 상태등 즉시 반영
+            NotifyStateChanged(); // 배전반과 스위치에 이동 상태 전달
             return true; // 개방 요청 성공 반환
         }
 
-        public bool RequestClose() // 배전반 또는 로컬 버튼에서 문 닫기 요청
+        public bool RequestClose() // 배전반 또는 로컬 스위치에서 문 닫기 요청
         {
             if (!HasPower) // 문 전력 공급 여부 확인
             {
                 UpdateStatusVisuals(); // 정전 상태등 갱신
+                NotifyStateChanged(); // 배전반 정전 표시 갱신 요청
                 return false; // 전력이 없으면 폐쇄 실패 반환
             }
 
@@ -114,12 +120,22 @@ namespace ProjectI.Power // 전력 시스템 네임스페이스
 
             state = PoweredIronDoorState.Closing; // 문을 닫히는 중 상태로 변경
             UpdateStatusVisuals(); // 이동 상태등 즉시 반영
+            NotifyStateChanged(); // 배전반과 스위치에 이동 상태 전달
             return true; // 폐쇄 요청 성공 반환
+        }
+
+        public void RestoreStableState(bool open) // 13일차 스냅샷의 안정된 문 상태 즉시 복구
+        {
+            state = open ? PoweredIronDoorState.Open : PoweredIronDoorState.Closed; // 열림 또는 닫힘 최종 상태 복구
+            SnapToStoredState(); // 저장 최종 위치로 문 패널 즉시 이동
+            UpdateStatusVisuals(); // 복구 상태에 맞는 로컬 표시등 갱신
+            NotifyStateChanged(); // 배전반과 토글 스위치에 복구 결과 전달
         }
 
         public void OnPowerStateChanged(bool hasPower) // 공통 전력 소비자의 상태 변경 수신
         {
             UpdateStatusVisuals(); // 통전 또는 정전 상태를 로컬 표시등에 즉시 반영
+            NotifyStateChanged(); // 배전반에 통전 상태 변경 전달
         }
 
         private void MovePanelTowards(Vector3 targetPosition, PoweredIronDoorState completedState) // 이동 패널을 목표 로컬 위치로 이동
@@ -133,6 +149,8 @@ namespace ProjectI.Power // 전력 시스템 네임스페이스
 
             movingPanel.localPosition = targetPosition; // 완전한 목표 위치로 스냅
             state = completedState; // 열림 또는 닫힘 완료 상태 저장
+            UpdateStatusVisuals(); // 완료 상태 로컬 표시등 갱신
+            NotifyStateChanged(); // 배전반과 스위치에 이동 완료 상태 전달
         }
 
         private void SnapToStoredState() // 저장된 상태 기준 초기 위치 적용
@@ -177,6 +195,11 @@ namespace ProjectI.Power // 전력 시스템 네임스페이스
 
                 visual.SetActive(activeState); // 현재 문 상태에 맞춰 표시 전환
             }
+        }
+
+        private void NotifyStateChanged() // 철제문 상태 변경 알림 실행
+        {
+            StateChanged?.Invoke(); // 배전반과 토글 스위치에 변경 상태 전달
         }
 
         private void ClampSettings() // 전동 철제문 수치 안전 범위 보정

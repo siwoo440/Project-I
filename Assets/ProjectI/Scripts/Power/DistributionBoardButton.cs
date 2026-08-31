@@ -21,22 +21,30 @@ namespace ProjectI.Power // 전력 시스템 네임스페이스
 
         private void OnEnable() // 스위치 활성화 처리
         {
+            SubscribeTarget(); // 대상 상태 변경 이벤트 구독
             UpdateSwitchVisual(); // 현재 대상 상태에 맞춰 레버 방향 동기화
         }
 
-        private void Update() // 프레임별 스위치 상태 표시 갱신
+        private void OnDisable() // 스위치 비활성화 처리
         {
-            UpdateSwitchVisual(); // 다른 제어 위치에서 바뀐 상태도 레버에 즉시 반영
+            UnsubscribeTarget(); // 비활성 상태 이벤트 구독 해제
         }
 
         public void Configure(string targetDisplayName, DistributionBoardButtonAction targetAction, MainDistributionBoardController board, RoomPowerZone zone, PoweredIronDoor door, Transform lever) // 자동 Setup용 토글 스위치 설정
         {
+            UnsubscribeTarget(); // 이전 연결 대상 이벤트 구독 해제
             displayName = string.IsNullOrWhiteSpace(targetDisplayName) ? gameObject.name : targetDisplayName; // 스위치 표시 이름 저장
             action = targetAction; // 스위치 실행 종류 저장
             distributionBoard = board; // 메인 배전반 연결
             roomZone = zone; // 방 전력 구역 연결
             poweredDoor = door; // 전동 철제문 연결
             switchLever = lever; // 시각 레버 연결
+
+            if (isActiveAndEnabled) // 현재 스위치 활성 여부 확인
+            {
+                SubscribeTarget(); // 새 연결 대상 이벤트 구독
+            }
+
             UpdateSwitchVisual(); // 설정 직후 현재 상태 표시
         }
 
@@ -71,7 +79,7 @@ namespace ProjectI.Power // 전력 시스템 네임스페이스
                     break; // 철제문 토글 처리 종료
             }
 
-            UpdateSwitchVisual(); // 입력 직후 레버 상태 갱신
+            UpdateSwitchVisual(); // 입력 직후 레버 상태 보정
         }
 
         private void ToggleDoor() // 철제문 열림·닫힘 상태 반전
@@ -91,6 +99,56 @@ namespace ProjectI.Power // 전력 시스템 네임스페이스
             {
                 poweredDoor.RequestOpen(); // 열림 방향으로 반전 요청
             }
+        }
+
+        private void SubscribeTarget() // 현재 스위치 대상 이벤트 구독
+        {
+            UnsubscribeTarget(); // 중복 이벤트 등록 예방
+
+            switch (action) // 스위치 종류별 이벤트 대상 선택
+            {
+                case DistributionBoardButtonAction.MainPowerToggle: // 메인 전원 스위치 대상 처리
+                    if (distributionBoard != null) // 배전반 참조 존재 여부 확인
+                    {
+                        distributionBoard.StateChanged += HandleTargetStateChanged; // 메인 상태 변경 이벤트 구독
+                    }
+                    break; // 메인 이벤트 등록 종료
+                case DistributionBoardButtonAction.RoomPowerToggle: // 방 전원 스위치 대상 처리
+                    if (roomZone != null) // 방 전력 구역 참조 존재 여부 확인
+                    {
+                        roomZone.StateChanged += HandleTargetStateChanged; // 방 상태 변경 이벤트 구독
+                    }
+                    break; // 방 이벤트 등록 종료
+                case DistributionBoardButtonAction.DoorToggle: // 철제문 스위치 대상 처리
+                    if (poweredDoor != null) // 철제문 참조 존재 여부 확인
+                    {
+                        poweredDoor.StateChanged += HandleTargetStateChanged; // 문 상태 변경 이벤트 구독
+                    }
+                    break; // 문 이벤트 등록 종료
+            }
+        }
+
+        private void UnsubscribeTarget() // 현재 스위치 대상 이벤트 구독 해제
+        {
+            if (distributionBoard != null) // 배전반 참조 존재 여부 확인
+            {
+                distributionBoard.StateChanged -= HandleTargetStateChanged; // 메인 상태 이벤트 구독 해제
+            }
+
+            if (roomZone != null) // 방 전력 구역 참조 존재 여부 확인
+            {
+                roomZone.StateChanged -= HandleTargetStateChanged; // 방 상태 이벤트 구독 해제
+            }
+
+            if (poweredDoor != null) // 철제문 참조 존재 여부 확인
+            {
+                poweredDoor.StateChanged -= HandleTargetStateChanged; // 문 상태 이벤트 구독 해제
+            }
+        }
+
+        private void HandleTargetStateChanged() // 대상 상태 변경 이벤트 처리
+        {
+            UpdateSwitchVisual(); // 변경된 상태 시점에만 레버 방향 갱신
         }
 
         private string BuildPrompt() // 대상 상태에 맞는 F 안내 문구 생성
