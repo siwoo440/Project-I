@@ -16,11 +16,12 @@ namespace ProjectI.EditorTools // 에디터 자동 구성 도구 네임스페이
     {
         private const string ExplorationOfficeScenePath = "Assets/ProjectI/Scenes/ExplorationOffice.unity"; // 탐사 사무소 씬 경로
         private const string CombatRootName = "===Day14 Combat Foundation==="; // Day14 전투 시험장 루트 이름
-        private const string ReadyMarkerName = "===Day14 Combat Foundation Ready==="; // Day14 자동 구성 완료 마커 이름
+        private const string ReadyMarkerName = "===Day14 Combat Foundation Ready v2==="; // Day14 시험장 이동 보정 버전 자동 구성 완료 마커 이름
+        private const string LegacyReadyMarkerName = "===Day14 Combat Foundation Ready==="; // 기존 Day14 완료 마커 이름
         private const string MaterialFolder = "Assets/ProjectI/Art/Generated/Day14"; // Day14 테스트 재질 생성 폴더
         private const string AttackAssetFolder = "Assets/ProjectI/Resources/Combat"; // Day14 공격 데이터 생성 폴더
         private const string AttackAssetPath = AttackAssetFolder + "/Day14_TestSword.asset"; // Day14 테스트 검 공격 데이터 경로
-        private static readonly Vector3 CombatRangeCenter = new Vector3(32f, 0f, -22f); // 기존 Day3 구역과 겹치지 않는 남동쪽 시험장 중심
+        private static readonly Vector3 CombatRangeCenter = new Vector3(-27f, 0f, 12f); // 01_SprintLane 북쪽 개방 구역으로 옮긴 Day14 전투 시험장 중심
 
         static Phase4Day14Setup() // 자동 설정 등록
         {
@@ -78,7 +79,8 @@ namespace ProjectI.EditorTools // 에디터 자동 구성 도구 네임스페이
             }
 
             RemoveExistingRoot(scene, CombatRootName); // 기존 Day14 시험장 루트 제거
-            RemoveExistingRoot(scene, ReadyMarkerName); // 기존 Day14 완료 마커 제거
+            RemoveExistingRoot(scene, ReadyMarkerName); // 현재 Day14 완료 마커 제거
+            RemoveExistingRoot(scene, LegacyReadyMarkerName); // 기존 Day14 완료 마커 제거
             EnsureAssetFolder(MaterialFolder); // Day14 재질 폴더 존재 보장
             EnsureAssetFolder(AttackAssetFolder); // 공격 데이터 폴더 존재 보장
             Material floorMaterial = GetOrCreateMaterial("Combat_Floor", new Color(0.08f, 0.085f, 0.09f), 0.15f, 0.45f); // 전투 시험장 바닥 재질 생성

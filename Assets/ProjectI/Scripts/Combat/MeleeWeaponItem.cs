@@ -5,38 +5,40 @@ namespace ProjectI.Combat // 공통 전투 시스템 네임스페이스
 {
     [RequireComponent(typeof(WorldItem))] // 기존 F 획득·빠른 슬롯 연동용 WorldItem 필수 지정
     [RequireComponent(typeof(MeleeWeaponTrace))] // 근접 공격 궤적 기능 필수 지정
-    public sealed class MeleeWeaponItem : MonoBehaviour, IUsableItem // 좌클릭 사용으로 공통 CombatController 공격을 시작하는 근접 무기
+    public sealed class MeleeWeaponItem : MonoBehaviour, IUsableItem // 좌클릭 한 번으로 단일 근접 공격을 요청하는 무기
     {
-        [SerializeField] private AttackDefinition attackDefinition; // 현재 무기의 공격 데이터
-        [SerializeField] private MeleeWeaponTrace weaponTrace; // 실제 검날 이동 궤적 판정
-        [SerializeField] private Transform visualPivot; // 간단한 테스트 휘두르기 시각 피벗
+        [SerializeField] private AttackDefinition attackDefinition; // 현재 무기의 단일 공격 데이터
+        [SerializeField] private MeleeWeaponTrace weaponTrace; // 실제 무기날 이동 궤적 판정
+        [SerializeField] private Transform visualPivot; // 단일 휘두르기 시각 피벗
         private WorldItem worldItem; // 기존 인벤토리·운반 상태 확인용 월드 아이템
         private Quaternion baseVisualRotation = Quaternion.identity; // 공격 전 무기 시각 기준 회전
+        private bool baseRotationCaptured; // 런타임 기준 회전 저장 여부
 
         public AttackDefinition AttackDefinition => attackDefinition; // CombatController와 Validator용 공격 데이터 공개
         public MeleeWeaponTrace WeaponTrace => weaponTrace; // CombatController와 Validator용 궤적 공개
         public WorldItem WorldItem => worldItem; // 기존 아이템 참조 공개
         public bool IsHeld => worldItem != null && worldItem.IsHeld; // 현재 실제 손에 든 상태 공개
+        public Transform VisualPivot => visualPivot; // Validator용 시각 피벗 공개
 
         private void Awake() // 근접 무기 초기화
         {
             ResolveReferences(); // WorldItem과 궤적 참조 확보
-            CaptureBaseVisualRotation(); // 현재 시각 피벗 기준 회전 저장
+            CaptureBaseVisualRotation(true); // 런타임 시작 기준 회전 저장
         }
 
         private void OnEnable() // 근접 무기 활성화 처리
         {
             ResolveReferences(); // 활성화 직후 참조 재확인
-            CaptureBaseVisualRotation(); // 활성화 시 시각 기준 회전 재확인
+            CaptureBaseVisualRotation(!Application.isPlaying); // Edit Mode에서는 최신 기본 자세 다시 저장
         }
 
-        public void Configure(AttackDefinition definition, MeleeWeaponTrace trace, Transform pivot) // Day14 테스트 검 자동 구성
+        public void Configure(AttackDefinition definition, MeleeWeaponTrace trace, Transform pivot) // Day14~15 자동 Setup용 단일 공격 구성
         {
             attackDefinition = definition; // 공격 데이터 연결
             weaponTrace = trace; // 무기 궤적 연결
             visualPivot = pivot; // 휘두르기 시각 피벗 연결
             ResolveReferences(); // 기존 아이템 참조 확보
-            CaptureBaseVisualRotation(); // 새 시각 피벗 기준 회전 저장
+            CaptureBaseVisualRotation(true); // 새 시각 피벗 기준 회전 저장
         }
 
         public bool CanUse(PlayerInventory inventory) // 빠른 슬롯 좌클릭 사용 가능 여부 확인
@@ -49,22 +51,22 @@ namespace ProjectI.Combat // 공통 전투 시스템 네임스페이스
             }
 
             CombatController controller = inventory.GetComponent<CombatController>(); // 플레이어 공통 전투 제어기 조회
-            return controller != null; // 실제 공격 가능 여부와 실패 사유는 CombatController에서 일관되게 처리
+            return controller != null; // 쿨타임·스태미나 실패 사유는 CombatController에서 일관되게 처리
         }
 
-        public void Use(PlayerInventory inventory) // 좌클릭으로 현재 근접 공격 시작 요청
+        public void Use(PlayerInventory inventory) // 좌클릭으로 현재 무기의 단일 공격 시작 요청
         {
             CombatController controller = inventory == null ? null : inventory.GetComponent<CombatController>(); // 플레이어 공통 전투 제어기 조회
 
             if (controller != null) // 유효 전투 제어기 존재 여부 확인
             {
-                controller.TryStartAttack(this); // 공통 공격 단계 시작 요청
+                controller.TryStartAttack(this); // 콤보 없이 한 번의 공격 시작 요청
             }
         }
 
-        public void BeginAttack(int attackId, Transform instigatorRoot, Transform attackOrigin) // CombatController 공격 시작 처리
+        public void BeginAttack(int attackId, Transform instigatorRoot, Transform attackOrigin) // CombatController 단일 공격 시작 처리
         {
-            CaptureBaseVisualRotation(); // 공격 전 시각 기준 회전 갱신
+            CaptureBaseVisualRotation(false); // 공격 전 시각 기준 회전 보장
             weaponTrace?.EndTrace(); // 이전 비정상 궤적 상태 정리
         }
 
@@ -86,16 +88,16 @@ namespace ProjectI.Combat // 공통 전투 시스템 네임스페이스
             weaponTrace?.EndTrace(); // 근접 궤적 검사 비활성화
         }
 
-        public void UpdateAttackPose(AttackPhase phase, float normalizedProgress) // Day14 테스트용 간단한 무기 휘두르기 시각 처리
+        public void UpdateAttackPose(AttackPhase phase, float normalizedProgress) // 무기별 데이터에 따른 단일 휘두르기 시각 처리
         {
-            if (visualPivot == null) // 시각 피벗 존재 여부 확인
+            if (visualPivot == null || attackDefinition == null) // 시각 피벗과 공격 데이터 존재 여부 확인
             {
                 return; // 시각 애니메이션 생략
             }
 
             float t = Mathf.Clamp01(normalizedProgress); // 현재 공격 단계 진행률 0~1 보정
-            Quaternion windupRotation = baseVisualRotation * Quaternion.Euler(-25f, -35f, 20f); // 준비 단계 목표 회전 계산
-            Quaternion strikeRotation = baseVisualRotation * Quaternion.Euler(20f, 70f, -35f); // 타격 단계 목표 회전 계산
+            Quaternion windupRotation = baseVisualRotation * Quaternion.Euler(attackDefinition.WindupEuler); // 무기별 준비 자세 목표 회전 계산
+            Quaternion strikeRotation = baseVisualRotation * Quaternion.Euler(attackDefinition.StrikeEuler); // 무기별 타격 자세 목표 회전 계산
 
             if (phase == AttackPhase.Windup) // 준비 단계 여부 확인
             {
@@ -103,7 +105,7 @@ namespace ProjectI.Combat // 공통 전투 시스템 네임스페이스
             }
             else if (phase == AttackPhase.Active) // 실제 타격 단계 여부 확인
             {
-                visualPivot.localRotation = Quaternion.Slerp(windupRotation, strikeRotation, t); // 준비 자세에서 타격 자세로 회전
+                visualPivot.localRotation = Quaternion.Slerp(windupRotation, strikeRotation, t); // 준비 자세에서 타격 자세로 한 번 휘두르기
             }
             else if (phase == AttackPhase.Recovery) // 공격 회복 단계 여부 확인
             {
@@ -134,15 +136,17 @@ namespace ProjectI.Combat // 공통 전투 시스템 네임스페이스
             }
         }
 
-        private void CaptureBaseVisualRotation() // 시각 피벗의 기본 회전 저장
+        private void CaptureBaseVisualRotation(bool force) // 시각 피벗의 기본 회전 저장
         {
-            if (visualPivot != null && !Application.isPlaying) // Edit Mode 자동 구성 상태인지 확인
+            if (visualPivot == null) // 시각 피벗 누락 여부 확인
             {
-                baseVisualRotation = visualPivot.localRotation; // 에디터 기준 자세 저장
+                return; // 기준 회전 저장 중단
             }
-            else if (visualPivot != null && baseVisualRotation == Quaternion.identity) // 런타임 첫 기준 자세 저장 필요 여부 확인
+
+            if (force || !baseRotationCaptured) // 강제 갱신 또는 첫 저장 여부 확인
             {
-                baseVisualRotation = visualPivot.localRotation; // 런타임 시작 기준 자세 저장
+                baseVisualRotation = visualPivot.localRotation; // 현재 시각 피벗 로컬 회전을 기준 자세로 저장
+                baseRotationCaptured = true; // 기준 자세 저장 완료 기록
             }
         }
     }

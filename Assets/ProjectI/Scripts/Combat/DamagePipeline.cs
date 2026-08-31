@@ -54,6 +54,8 @@ namespace ProjectI.Combat // 공통 전투 시스템 네임스페이스
             if (appliedDamage > 0f) // 실제 체력 감소 여부 확인
             {
                 AppliedHitCount++; // 실제 적용된 피해 횟수 증가
+                ICombatReactionReceiver reactionReceiver = FindReactionReceiver(target.DamageTransform); // 같은 피해 대상의 경직·넉백 반응 수신기 조회
+                reactionReceiver?.ReceiveReaction(resolvedInfo); // 피해 승인 뒤 경직·넉백 후속 반응 전달
                 return true; // 피해 적용 성공 반환
             }
 
@@ -78,6 +80,26 @@ namespace ProjectI.Combat // 공통 전투 시스템 네임스페이스
             }
 
             return null; // 공통 피해 대상 없음 반환
+        }
+
+        public static ICombatReactionReceiver FindReactionReceiver(Transform targetTransform) // 피해 대상 계층에서 경직·넉백 반응 수신기 검색
+        {
+            if (targetTransform == null) // 대표 피해 Transform 누락 확인
+            {
+                return null; // 반응 수신기 없음 반환
+            }
+
+            MonoBehaviour[] behaviours = targetTransform.GetComponentsInParent<MonoBehaviour>(true); // 피해 대상과 부모 기능 컴포넌트 조회
+
+            foreach (MonoBehaviour behaviour in behaviours) // 반응 기능 컴포넌트 순회
+            {
+                if (behaviour is ICombatReactionReceiver receiver) // 공통 반응 인터페이스 구현 여부 확인
+                {
+                    return receiver; // 첫 번째 반응 수신기 반환
+                }
+            }
+
+            return null; // 경직·넉백 반응 수신기 없음 반환
         }
 
         public static void ResetDiagnostics() // F1 진단용 마지막 결과 초기화

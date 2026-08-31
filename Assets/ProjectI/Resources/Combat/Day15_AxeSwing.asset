@@ -10,19 +10,19 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b853897f935b4a6eaccb6934723f4a85, type: 3}
-  m_Name: Day14_TestSword
+  m_Name: Day15_AxeSwing
   m_EditorClassIdentifier: Assembly-CSharp::ProjectI.Combat.AttackDefinition
-  displayName: Combat Test Sword Slash
-  baseDamage: 25
+  displayName: Iron Axe Heavy Swing
+  baseDamage: 45
   damageType: 0
-  staminaCost: 12
-  windupDuration: 0.15
-  activeDuration: 0.18
-  recoveryDuration: 0.3
-  cooldownDuration: 0.63
-  movementMultiplier: 0.65
-  traceRadius: 0.12
-  staggerPower: 10
-  knockbackForce: 1.5
-  windupEuler: {x: -25, y: -35, z: 20}
-  strikeEuler: {x: 20, y: 70, z: -35}
+  staminaCost: 20
+  windupDuration: 0.28
+  activeDuration: 0.2
+  recoveryDuration: 0.42
+  cooldownDuration: 1.15
+  movementMultiplier: 0.4
+  traceRadius: 0.16
+  staggerPower: 35
+  knockbackForce: 3.5
+  windupEuler: {x: -20, y: 8, z: -34}
+  strikeEuler: {x: 18, y: -12, z: 56}

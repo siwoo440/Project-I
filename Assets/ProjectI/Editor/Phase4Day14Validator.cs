@@ -16,7 +16,7 @@ namespace ProjectI.EditorTools // 에디터 자동 검증 도구 네임스페이
     {
         private const string ExplorationOfficeScenePath = "Assets/ProjectI/Scenes/ExplorationOffice.unity"; // 탐사 사무소 씬 경로
         private const string CombatRootName = "===Day14 Combat Foundation==="; // Day14 전투 시험장 루트 이름
-        private const string ReadyMarkerName = "===Day14 Combat Foundation Ready==="; // Day14 완료 마커 이름
+        private const string ReadyMarkerName = "===Day14 Combat Foundation Ready v2==="; // Day14 시험장 이동 보정 버전 완료 마커 이름
         private const string AttackAssetPath = "Assets/ProjectI/Resources/Combat/Day14_TestSword.asset"; // Day14 테스트 검 공격 데이터 경로
 
         [MenuItem("Tools/Project I/Day 14/Validate")] // 수동 Day14 검증 메뉴 등록
@@ -55,10 +55,12 @@ namespace ProjectI.EditorTools // 에디터 자동 검증 도구 네임스페이
             CombatHealth[] combatTargets = Object.FindObjectsByType<CombatHealth>(FindObjectsInactive.Include, FindObjectsSortMode.None); // 공통 피해 시험 대상 전체 조회
             MeleeWeaponItem[] meleeWeapons = Object.FindObjectsByType<MeleeWeaponItem>(FindObjectsInactive.Include, FindObjectsSortMode.None); // 근접 무기 전체 조회
             GameObject blockerWall = combatRoot == null ? null : FindChildRecursive(combatRoot.transform, "Combat_BlockerWall"); // 벽 충돌 시험 오브젝트 조회
+            GameObject combatFloor = combatRoot == null ? null : FindChildRecursive(combatRoot.transform, "Combat_TestFloor"); // 이동된 Day14 전투 바닥 조회
             AttackDefinition attackDefinition = AssetDatabase.LoadAssetAtPath<AttackDefinition>(AttackAssetPath); // Day14 테스트 검 공격 데이터 조회
 
             Require(marker != null, "Day14 완료 마커 누락", failures); // 완료 마커 존재 검증
             Require(combatRoot != null, "Day14 Combat Foundation 루트 누락", failures); // 전투 시험장 루트 존재 검증
+            Require(combatFloor != null && Mathf.Abs(combatFloor.transform.position.x + 27f) < 0.25f && combatFloor.transform.position.z > 8f, "Day14 전투 시험장이 SprintLane 북쪽 새 위치로 이동되지 않음", failures); // 이동된 Day14 시험장 위치 검증
             Require(player != null, "Player 누락", failures); // 기존 플레이어 존재 검증
             Require(playerHealth != null, "PlayerHealth 누락", failures); // 기존 체력 시스템 존재 검증
             Require(playerStamina != null, "PlayerStamina 누락", failures); // 기존 스태미나 시스템 존재 검증
