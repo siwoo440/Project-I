@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b853897f935b4a6eaccb6934723f4a85, type: 3}
+  m_Name: Day14_TestSword
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectI.Combat.AttackDefinition
+  displayName: Combat Test Sword Slash
+  baseDamage: 25
+  damageType: 0
+  staminaCost: 12
+  windupDuration: 0.15
+  activeDuration: 0.18
+  recoveryDuration: 0.3
+  movementMultiplier: 0.65
+  traceRadius: 0.12
+  staggerPower: 10
+  knockbackForce: 1.5

@@ -24,6 +24,8 @@ namespace ProjectI.Player // 플레이어 기능 네임스페이스
         private float verticalVelocity; // 현재 수직 속도
         private float airbornePeakY; // 공중 상태 최고 높이
         private bool wasGrounded = true; // 이전 프레임 지상 상태
+        private float externalSpeedMultiplier = 1f; // 전투 등 외부 시스템이 적용하는 이동 속도 배율
+        private bool externalSprintAllowed = true; // 전투 등 외부 시스템이 달리기를 허용하는지 여부
 
         public event Action<float> Landed; // 착지 시 실제 추락 거리 전달 이벤트
 
@@ -32,6 +34,8 @@ namespace ProjectI.Player // 플레이어 기능 네임스페이스
         public float LastLandingDistance { get; private set; } // 마지막 착지 추락 거리 공개
         public bool IsSprinting { get; private set; } // 현재 달리기 여부 공개
         public bool IsGrounded { get; private set; } // 현재 지상 여부 공개
+        public float ExternalSpeedMultiplier => externalSpeedMultiplier; // 외부 이동 속도 배율 공개
+        public bool ExternalSprintAllowed => externalSprintAllowed; // 외부 달리기 허용 상태 공개
 
         private void Awake() // 이동 컴포넌트 초기화
         {
@@ -46,7 +50,6 @@ namespace ProjectI.Player // 플레이어 기능 네임스페이스
         private void Update() // 프레임별 이동 처리
         {
             bool groundedBeforeMove = characterController.isGrounded; // 이전 이동 결과 기준 지상 상태 확인
-
             bool canControl = health == null || !health.IsDead; // 생존 상태에서만 플레이어 입력 허용
             Vector2 moveInput = canControl ? inputReader.Move : Vector2.zero; // 사망 상태에서는 수평 이동 입력 차단
             Vector2 directionalInput = ApplyDirectionalSpeed(moveInput); // 방향별 이동 배율 적용
@@ -59,7 +62,7 @@ namespace ProjectI.Player // 플레이어 기능 네임스페이스
 
             bool isMoving = localMove.sqrMagnitude > 0.0001f; // 실제 이동 입력 여부 계산
             bool crouching = crouch != null && crouch.IsCrouching; // 현재 웅크림 상태 확인
-            bool sprintRequested = canControl && inputReader.SprintHeld && !crouching; // 생존하고 웅크리지 않을 때만 달리기 요청 허용
+            bool sprintRequested = canControl && inputReader.SprintHeld && !crouching && externalSprintAllowed; // 외부 제한을 포함한 달리기 요청 판정
             IsSprinting = stamina.UpdateSprint(sprintRequested, isMoving, Time.deltaTime); // 스태미나 기반 달리기 상태 갱신
             float targetSpeed = IsSprinting ? sprintSpeed : walkSpeed; // 현재 목표 이동 속도 선택
 
@@ -68,6 +71,7 @@ namespace ProjectI.Player // 플레이어 기능 네임스페이스
                 targetSpeed *= crouchSpeedMultiplier; // 웅크린 이동 속도 적용
             }
 
+            targetSpeed *= externalSpeedMultiplier; // 공격 중 이동 감속 등 외부 배율 적용
             Vector3 worldMove = transform.TransformDirection(localMove) * targetSpeed; // 플레이어 몸체 방향 기준 월드 이동 계산
             CurrentPlanarSpeed = new Vector3(worldMove.x, 0f, worldMove.z).magnitude; // 현재 수평 속도 저장
 
@@ -112,6 +116,18 @@ namespace ProjectI.Player // 플레이어 기능 네임스페이스
             wasGrounded = groundedAfterMove; // 다음 프레임 비교용 지상 상태 저장
         }
 
+        public void SetExternalMovementModifier(float speedMultiplier, bool allowSprint) // 전투 등 외부 시스템의 이동 제한 적용
+        {
+            externalSpeedMultiplier = Mathf.Clamp(speedMultiplier, 0f, 1.5f); // 외부 이동 배율 안전 범위 보정
+            externalSprintAllowed = allowSprint; // 외부 달리기 허용 상태 저장
+        }
+
+        public void ResetExternalMovementModifier() // 외부 이동 제한 기본값 복구
+        {
+            externalSpeedMultiplier = 1f; // 이동 배율 기본값 복구
+            externalSprintAllowed = true; // 달리기 허용 기본값 복구
+        }
+
         private Vector2 ApplyDirectionalSpeed(Vector2 input) // 방향별 이동 속도 배율 적용
         {
             Vector2 adjusted = input; // 원본 입력 복사
@@ -134,6 +150,7 @@ namespace ProjectI.Player // 플레이어 기능 네임스페이스
             backwardMultiplier = Mathf.Clamp(backwardMultiplier, 0.1f, 1f); // 후진 배율 범위 보정
             jumpHeight = Mathf.Max(0.1f, jumpHeight); // 점프 높이 최소값 보정
             gravity = Mathf.Min(-0.1f, gravity); // 중력 방향을 아래쪽으로 고정
+            externalSpeedMultiplier = Mathf.Clamp(externalSpeedMultiplier, 0f, 1.5f); // 외부 이동 배율 안전 범위 보정
         }
     }
 }

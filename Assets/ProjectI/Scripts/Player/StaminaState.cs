@@ -62,6 +62,32 @@ namespace ProjectI.Player // 플레이어 기능 네임스페이스
             return false; // 이번 프레임 달리기 중지
         }
 
+        public bool CanSpend(float amount) // 공격 등 즉시 소비에 필요한 스태미나 보유 여부 확인
+        {
+            float safeAmount = amount > 0f ? amount : 0f; // 음수 소비량을 0으로 보정
+            return !IsExhausted && CurrentValue >= safeAmount; // 탈진이 아니고 충분한 스태미나가 있을 때 허용
+        }
+
+        public bool TrySpend(float amount) // 공격 등 즉시 스태미나 소비 시도
+        {
+            float safeAmount = amount > 0f ? amount : 0f; // 음수 소비량을 0으로 보정
+
+            if (!CanSpend(safeAmount)) // 현재 소비 가능 여부 확인
+            {
+                return false; // 스태미나 부족 또는 탈진 상태에서는 소비 실패
+            }
+
+            CurrentValue = Clamp(CurrentValue - safeAmount, 0f, MaxValue); // 요청한 즉시 소비량 차감
+            recoveryDelayRemaining = recoveryDelay; // 공격 직후 회복 지연 다시 적용
+
+            if (CurrentValue <= 0f) // 소비 결과 완전 소진 여부 확인
+            {
+                IsExhausted = true; // 스태미나 0 도달 시 탈진 상태 활성화
+            }
+
+            return true; // 즉시 스태미나 소비 성공 반환
+        }
+
         private static float Clamp(float value, float minimum, float maximum) // 실수 범위 제한
         {
             if (value < minimum) // 최소값 미만 확인

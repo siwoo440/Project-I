@@ -23,12 +23,28 @@ namespace ProjectI.Player // 플레이어 기능 네임스페이스
 
         public bool UpdateSprint(bool sprintRequested, bool isMoving, float deltaTime) // 달리기 요청과 스태미나 갱신
         {
-            if (state == null) // 상태 미생성 확인
-            {
-                CreateState(); // 상태 지연 생성
-            }
-
+            EnsureState(); // 스태미나 상태 존재 보장
             return state.Tick(sprintRequested, isMoving, deltaTime); // 현재 달리기 가능 여부 반환
+        }
+
+        public bool CanSpend(float amount) // 공격 등 즉시 소비 가능 여부 확인
+        {
+            EnsureState(); // 스태미나 상태 존재 보장
+            return state.CanSpend(amount); // 순수 상태 모델의 소비 가능 여부 반환
+        }
+
+        public bool TrySpend(float amount) // 공격 등 즉시 스태미나 소비 시도
+        {
+            EnsureState(); // 스태미나 상태 존재 보장
+            return state.TrySpend(amount); // 순수 상태 모델에 즉시 소비 요청 전달
+        }
+
+        private void EnsureState() // 스태미나 상태 지연 생성 보장
+        {
+            if (state == null) // 상태 미생성 여부 확인
+            {
+                CreateState(); // 누락 상태 생성
+            }
         }
 
         private void CreateState() // 스태미나 상태 생성
