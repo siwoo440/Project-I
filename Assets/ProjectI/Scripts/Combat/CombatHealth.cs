@@ -11,6 +11,7 @@ namespace ProjectI.Combat // 공통 전투 시스템 네임스페이스
         [SerializeField] private float currentHealth = 100f; // 현재 체력
 
         public event Action<float, float> HealthChanged; // 현재·최대 체력 변경 이벤트
+        public event Action<DamageInfo, float> Damaged; // 몬스터 AI가 실제 피해 공격자를 추적할 수 있는 피해 수신 이벤트
         public event Action Died; // 사망 이벤트
 
         public string DisplayName => displayName; // 진단용 표시 이름 공개
@@ -43,6 +44,7 @@ namespace ProjectI.Combat // 공통 전투 시스템 네임스페이스
             if (appliedDamage > 0f) // 실제 체력 변화 여부 확인
             {
                 HealthChanged?.Invoke(currentHealth, maxHealth); // 체력 변경 이벤트 발생
+                Damaged?.Invoke(damageInfo, appliedDamage); // AI 대상 선정용 실제 피해 정보와 적용량 전달
             }
 
             if (previousHealth > 0f && currentHealth <= 0f) // 이번 피해로 사망했는지 확인

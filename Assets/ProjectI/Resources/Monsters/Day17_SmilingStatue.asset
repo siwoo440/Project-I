@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 03980c1c1aca4cf88ac1c0aaa91bba1b, type: 3}
+  m_Name: Day17_SmilingStatue
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectI.Monsters.MonsterData
+  displayName: "\uC6C3\uB294 \uC11D\uC0C1"
+  archetype: 2
+  maxHealth: 0
+  moveSpeed: 0.1
+  chaseSpeed: 5.7
+  retreatSpeed: 5.7
+  turnSpeed: 720
+  visionRange: 30
+  visionAngle: 180
+  visionInterval: 0.08
+  hearingRange: 0
+  memoryDuration: 4.5
+  investigateDuration: 4
+  preferredMinRange: 0.8525
+  preferredMaxRange: 1.55
+  attackRange: 1.55
+  aimTime: 0.18
+  attackCooldown: 1.25
+  projectileSpeed: 5
+  attackDamage: 34
+  staggerPower: 28
+  knockbackForce: 2.2
+  staggerThreshold: 95
+  knockbackResistance: 0.72

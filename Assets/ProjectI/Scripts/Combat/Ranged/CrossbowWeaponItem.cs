@@ -1,4 +1,5 @@
 using ProjectI.Items; // 기존 빠른 슬롯 기능 참조
+using ProjectI.Monsters; // 몬스터 청각용 무기 소음 이벤트 참조
 using UnityEngine; // 투사체 생성과 Transform 기능 참조
 
 namespace ProjectI.Combat.Ranged // 원거리 전투 기능 네임스페이스
@@ -9,7 +10,7 @@ namespace ProjectI.Combat.Ranged // 원거리 전투 기능 네임스페이스
         [SerializeField] private CrossbowBoltProjectile boltTemplate; // 런타임 복제용 비활성 볼트 템플릿
         [SerializeField] private GameObject loadedBoltVisual; // 석궁 레일 위 장전 볼트 시각 요소
         [SerializeField] private Transform stringRoot; // 장전 시 당겨지는 시위 시각 루트
-        [SerializeField] private float projectileSpeed = 38f; // 석궁 볼트 초기 발사 속도
+        [SerializeField] private float projectileSpeed = 95f; // 16일차 최종 보정된 석궁 볼트 초기 발사 속도
         [SerializeField] private float baseDamage = 55f; // 석궁 기본 관통 피해량
         [SerializeField] private float staggerPower = 28f; // 석궁 피격 경직 힘
         [SerializeField] private float knockbackForce = 1.0f; // 석궁 피격 넉백 힘
@@ -86,6 +87,7 @@ namespace ProjectI.Combat.Ranged // 원거리 전투 기능 네임스페이스
             bolt.gameObject.SetActive(true); // 복제된 볼트 활성화
             shotSequence++; // 석궁 공격 식별 번호 증가
             bolt.Launch(gameObject, InstigatorObject, direction, projectileSpeed, baseDamage, staggerPower, knockbackForce, shotSequence); // 중력 적용 포물선 비행과 Damage Pipeline 정보 전달
+            MonsterNoiseSystem.Emit(gameObject, muzzle.position, 12f, 0.42f, MonsterNoiseKind.Weapon, "Player Crossbow Shot"); // 17일차 몬스터 청각에 전달할 중간 크기 석궁 발사 소음 발생
             loaded = false; // 발사 후 레일 장전 상태 비움
             lastShotTime = Time.time; // 마지막 발사 시각 기록
             RefreshLoadedVisual(); // 레일의 장전 볼트 시각 숨김

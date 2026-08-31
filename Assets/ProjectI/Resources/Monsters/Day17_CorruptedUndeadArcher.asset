@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 03980c1c1aca4cf88ac1c0aaa91bba1b, type: 3}
+  m_Name: Day17_CorruptedUndeadArcher
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectI.Monsters.MonsterData
+  displayName: "\uBD80\uD328\uD55C \uB9DD\uC790 \uAD81\uC218"
+  archetype: 1
+  maxHealth: 55
+  moveSpeed: 2
+  chaseSpeed: 3.15
+  retreatSpeed: 3
+  turnSpeed: 420
+  visionRange: 24
+  visionAngle: 110
+  visionInterval: 0.14
+  hearingRange: 24
+  memoryDuration: 4.5
+  investigateDuration: 4
+  preferredMinRange: 8
+  preferredMaxRange: 13
+  attackRange: 17
+  aimTime: 0.8
+  attackCooldown: 2.05
+  projectileSpeed: 24
+  attackDamage: 14
+  staggerPower: 6
+  knockbackForce: 0.25
+  staggerThreshold: 42
+  knockbackResistance: 0.25

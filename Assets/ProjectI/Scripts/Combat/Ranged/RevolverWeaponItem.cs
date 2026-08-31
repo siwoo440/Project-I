@@ -1,3 +1,4 @@
+using ProjectI.Monsters; // 몬스터 청각용 총성 소음 이벤트 참조
 using UnityEngine; // Raycast·Transform·탄퍼짐 기능 참조
 
 namespace ProjectI.Combat.Ranged // 원거리 전투 기능 네임스페이스
@@ -131,6 +132,7 @@ namespace ProjectI.Combat.Ranged // 원거리 전투 기능 네임스페이스
                 }
             }
 
+            MonsterNoiseSystem.Emit(gameObject, muzzle == null ? transform.position : muzzle.position, 30f, 1f, MonsterNoiseKind.Weapon, "Revolver Gunshot"); // 17일차 몬스터가 먼 거리에서도 조사하는 큰 총성 소음 발생
             TriggerMuzzleFlash(); // 짧은 총구 화염 표시
             RotateCylinderAfterShot(); // 한 발 발사 후 실린더 다음 약실로 회전
             RefreshRoundVisuals(); // 남은 6발 탄약 시각 동기화
