@@ -3,7 +3,7 @@ using UnityEngine; // 유니티 기본 기능 참조
 
 namespace ProjectI.Power // 전력 시스템 네임스페이스
 {
-    public sealed class ElectricLightController : MonoBehaviour // 발전기 전력을 받아 전기등 상태를 관리
+    public sealed class ElectricLightController : MonoBehaviour, IPowerStateReceiver // 발전기 또는 방 전력을 받아 전기등 상태를 관리
     {
         [SerializeField] private string displayName = "전기등"; // 디버그 표시 이름
         [SerializeField] private bool isPowered; // 현재 전력 공급 상태
@@ -38,10 +38,15 @@ namespace ProjectI.Power // 전력 시스템 네임스페이스
             ApplyState(); // 새 설정을 즉시 실제 상태에 적용
         }
 
-        public void SetPowered(bool powered) // 발전기에서 전력 상태 전달
+        public void SetPowered(bool powered) // 발전기 또는 전력 소비자에서 전력 상태 전달
         {
             isPowered = powered; // 현재 전력 상태 저장
             ApplyState(); // 실제 Light와 시각 요소 동기화
+        }
+
+        public void OnPowerStateChanged(bool hasPower) // 공통 PowerConsumer의 방 전력 상태 변경 수신
+        {
+            SetPowered(hasPower); // 공통 전력 상태를 기존 전기등 동작에 연결
         }
 
         private void ApplyState() // 전력 상태를 밝기와 시각 요소에 적용
