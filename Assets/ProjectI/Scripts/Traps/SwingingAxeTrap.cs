@@ -2,86 +2,60 @@ using UnityEngine; // Quaternion 보간·시간 기능 참조
 
 namespace ProjectI.Traps // 함정 공통 시스템 네임스페이스
 {
-    public sealed class SwingingAxeTrap : TrapControllerBase // 통로를 빠르게 가로지르는 회전 도끼 함정
+    public sealed class SwingingAxeTrap : TrapControllerBase // 좌우 180도를 끊임없이 왕복하는 회전 도끼 함정
     {
+        private const float StartAngle = -90f; // 왼쪽 끝 회전 각도
+        private const float EndAngle = 90f; // 오른쪽 끝 회전 각도
+        private const float SweepDuration = 1.70f; // 절반 속도로 한쪽 끝에서 반대편까지 이동하는 시간
         [SerializeField] private Transform pivot; // 도끼 자루·날 전체 회전 기준점
-        [SerializeField] private Vector3 startEuler = new Vector3(0f, 0f, -72f); // 대기 중 한쪽 벽 방향 각도
-        [SerializeField] private Vector3 endEuler = new Vector3(0f, 0f, 72f); // 공격 시 반대편까지 가르는 각도
-        [SerializeField] private float warningDuration = 0.28f; // Swing 직전 지연 시간
-        [SerializeField] private float swingDuration = 0.34f; // 통로를 가르는 실제 공격 시간
-        [SerializeField] private float holdDuration = 0.08f; // 반대편 도달 후 짧은 유지 시간
-        [SerializeField] private float resetDuration = 0.58f; // 원위치 복귀 시간
-        [SerializeField] private float cooldownDuration = 1.20f; // 재사용 대기 시간
         [SerializeField] private float damage = 55f; // 도끼 기본 피해량
         [SerializeField] private float staggerPower = 40f; // 도끼 경직 힘
         [SerializeField] private float knockbackForce = 2f; // 도끼 강한 횡방향 넉백
-        private float stateTime; // 현재 상태 경과 시간
-        private int currentAttackId; // 현재 Swing 공격 ID
+        private float sweepTime; // 현재 왕복 구간 경과 시간
+        private bool movingToEnd = true; // 현재 오른쪽 끝으로 이동 중인지 여부
 
         public float Damage => damage; // Validator·F1용 피해량 공개
 
-        private void Awake() // 시작 시 도끼 원위치 설정
+        private void Awake() // 시작 시 도끼를 왼쪽 끝 위치로 정렬
         {
-            SetPivotEuler(startEuler); // 대기 각도로 도끼 정렬
+            SetPivotAngle(StartAngle); // 정확한 -90도 시작 각도 적용
+            state = TrapState.Triggered; // 자동 왕복 상태 지정
         }
 
-        private void Update() // 도끼 경고·Swing·유지·복귀·쿨다운 상태 처리
+        private void Start() // 모든 컴포넌트 초기화 후 자동 왕복 시작
         {
-            stateTime += Time.deltaTime; // 현재 상태 경과 시간 누적
-
-            if (state == TrapState.Warning && stateTime >= warningDuration) // 경고 시간 종료 여부 확인
-            {
-                state = TrapState.Triggered; // 실제 Swing 상태 진입
-                stateTime = 0f; // 상태 시간 초기화
-                damageSource?.BeginDamageWindow(DisplayName, damage, staggerPower, knockbackForce, transform.right, currentAttackId); // Swing 동안 공통 함정 피해 창 활성화
-            }
-            else if (state == TrapState.Triggered) // 실제 도끼 Swing 중 여부 확인
-            {
-                float progress = Mathf.Clamp01(stateTime / Mathf.Max(0.01f, swingDuration)); // 공격 진행률 계산
-                float eased = Mathf.SmoothStep(0f, 1f, progress); // 도끼 회전 가감속 보간
-                SetPivotEuler(Vector3.Lerp(startEuler, endEuler, eased)); // 한쪽 벽에서 반대편까지 회전
-
-                if (progress >= 1f) // 공격 회전 완료 여부 확인
-                {
-                    state = TrapState.Active; // 반대편 짧은 유지 상태 진입
-                    stateTime = 0f; // 상태 시간 초기화
-                }
-            }
-            else if (state == TrapState.Active && stateTime >= holdDuration) // 공격 후 유지 종료 여부 확인
-            {
-                damageSource?.EndDamageWindow(); // Swing 피해 창 종료
-                state = TrapState.Resetting; // 도끼 원위치 복귀 시작
-                stateTime = 0f; // 상태 시간 초기화
-            }
-            else if (state == TrapState.Resetting) // 도끼 원위치 복귀 중 여부 확인
-            {
-                float progress = Mathf.Clamp01(stateTime / Mathf.Max(0.01f, resetDuration)); // 복귀 진행률 계산
-                SetPivotEuler(Vector3.Lerp(endEuler, startEuler, progress)); // 반대편에서 대기 위치로 천천히 복귀
-
-                if (progress >= 1f) // 복귀 완료 여부 확인
-                {
-                    state = TrapState.Cooldown; // 재작동 대기 상태 진입
-                    stateTime = 0f; // 상태 시간 초기화
-                }
-            }
-            else if (state == TrapState.Cooldown && stateTime >= cooldownDuration) // 도끼 재사용 대기 완료 여부 확인
-            {
-                state = TrapState.Ready; // 다음 Trigger 허용
-                stateTime = 0f; // 상태 시간 초기화
-            }
+            BeginAutomaticSweep(); // 첫 번째 180도 왕복 구간 시작
         }
 
-        public override bool TriggerTrap(GameObject triggerSource = null) // 숨은 Trigger·압력판에서 도끼 공격 시작
+        private void Update() // 도끼의 연속 좌우 180도 왕복 처리
         {
-            if (state != TrapState.Ready) // 이미 작동 중인지 확인
+            if (pivot == null) // Pivot 연결 여부 확인
             {
-                return false; // 중복 공격 요청 거부
+                return; // Pivot이 없으면 회전 처리 중단
             }
 
-            currentAttackId = BeginActivation(triggerSource); // 새 Swing 공격 ID 생성
-            state = TrapState.Warning; // 경고 단계 시작
-            stateTime = 0f; // 상태 시간 초기화
-            return true; // 작동 성공 반환
+            sweepTime += Time.deltaTime; // 현재 왕복 구간 시간 누적
+            float progress = Mathf.Clamp01(sweepTime / SweepDuration); // 현재 180도 이동 진행률 계산
+            float eased = Mathf.SmoothStep(0f, 1f, progress); // 끝점에서 자연스럽게 방향을 바꾸는 보간 적용
+            float fromAngle = movingToEnd ? StartAngle : EndAngle; // 현재 출발 각도 결정
+            float toAngle = movingToEnd ? EndAngle : StartAngle; // 현재 도착 각도 결정
+            float angle = Mathf.Lerp(fromAngle, toAngle, eased); // -90도와 +90도 사이 현재 각도 계산
+            SetPivotAngle(angle); // 계산된 로컬 Z 회전 적용
+
+            if (progress < 1f) // 현재 180도 이동이 아직 남았는지 확인
+            {
+                return; // 끝점에 도달할 때까지 현재 방향 유지
+            }
+
+            damageSource?.EndDamageWindow(); // 현재 방향의 피해 중복 기록 종료
+            movingToEnd = !movingToEnd; // 도달 즉시 반대 방향으로 전환
+            sweepTime = 0f; // 새 180도 이동 시간 초기화
+            BeginSweepDamageWindow(); // 반대 방향 이동용 새 피해 창 시작
+        }
+
+        public override bool TriggerTrap(GameObject triggerSource = null) // 기존 Trigger 인터페이스 호환 유지
+        {
+            return false; // 자동 연속 왕복형이므로 외부 Trigger 요청 미사용
         }
 
         public void Configure(string targetName, TrapDamageSource source, Transform targetPivot, float targetDamage, float targetStagger, float targetKnockback) // Editor Setup용 도끼 함정 구성
@@ -91,15 +65,38 @@ namespace ProjectI.Traps // 함정 공통 시스템 네임스페이스
             damage = Mathf.Max(0f, targetDamage); // 피해량 저장
             staggerPower = Mathf.Max(0f, targetStagger); // 경직 값 저장
             knockbackForce = Mathf.Max(0f, targetKnockback); // 넉백 값 저장
-            state = TrapState.Ready; // 최초 Trigger 가능 상태 설정
-            SetPivotEuler(startEuler); // Edit Mode 대기 각도 정렬
+            state = TrapState.Triggered; // 자동 왕복형 상태 지정
+            sweepTime = 0f; // 왕복 시간 초기화
+            movingToEnd = true; // 첫 이동 방향을 오른쪽으로 설정
+            SetPivotAngle(StartAngle); // Edit Mode에서도 -90도 시작 위치 정렬
         }
 
-        private void SetPivotEuler(Vector3 euler) // 도끼 Pivot 회전 안전 적용
+        private void BeginAutomaticSweep() // 런타임 자동 왕복 시작
+        {
+            state = TrapState.Triggered; // 항상 작동 중인 도끼 상태 지정
+            sweepTime = 0f; // 첫 왕복 구간 시간 초기화
+            movingToEnd = true; // -90도에서 +90도로 첫 이동 설정
+            SetPivotAngle(StartAngle); // 정확한 시작 각도 보정
+            BeginSweepDamageWindow(); // 첫 이동 피해 창 활성화
+        }
+
+        private void BeginSweepDamageWindow() // 현재 왕복 방향별 새 피해 구간 시작
+        {
+            int attackId = BeginActivation(gameObject); // 왕복 한 번마다 새로운 공격 ID 생성
+            Vector3 forceDirection = movingToEnd ? transform.right : -transform.right; // 도끼 이동 방향에 맞춘 넉백 방향 결정
+            damageSource?.BeginDamageWindow(DisplayName, damage, staggerPower, knockbackForce, forceDirection, attackId); // 현재 180도 이동 전체에서 피해 판정 활성화
+        }
+
+        private void OnDisable() // 오브젝트 비활성화 시 피해 판정 정리
+        {
+            damageSource?.EndDamageWindow(); // 비활성 상태에서 잔여 피해 판정 차단
+        }
+
+        private void SetPivotAngle(float angle) // 도끼 Pivot 로컬 Z 회전 안전 적용
         {
             if (pivot != null) // Pivot 존재 여부 확인
             {
-                pivot.localRotation = Quaternion.Euler(euler); // 현재 로컬 회전 적용
+                pivot.localRotation = Quaternion.Euler(0f, 0f, angle); // 정확한 좌우 180도 회전 범위 적용
             }
         }
     }
