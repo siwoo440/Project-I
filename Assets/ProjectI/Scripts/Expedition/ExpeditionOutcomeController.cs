@@ -1,4 +1,5 @@
 using System.Collections.Generic; // 귀환·손실 아이템 결과 목록 기능 참조
+using ProjectI.Economy; // Day23 사무소 영구 보관·판매 상태 참조
 using ProjectI.Items; // 기존 WorldItem·PlayerInventory 기능 참조
 using ProjectI.Player; // 생존·사망 플레이어 상태 기능 참조
 using ProjectI.Wagon; // 마차 확보 회수품·공동 보관함 기능 참조
@@ -15,7 +16,7 @@ namespace ProjectI.Expedition // 원정 결과 기능 네임스페이스
         public bool HasResolved { get; private set; } // 현재 원정 결과 처리 완료 여부 공개
         public int LastReturnedCount => returnedItems.Count; // 최근 귀환 아이템 개수 공개
         public int LastLostCount => lostItems.Count; // 최근 손실 아이템 개수 공개
-        public IReadOnlyList<WorldItem> ReturnedItems => returnedItems; // Day23 감정·판매 연결용 귀환 아이템 목록 공개
+        public IReadOnlyList<WorldItem> ReturnedItems => returnedItems; // Day23 판매·경제 연결용 귀환 아이템 목록 공개
         public IReadOnlyList<WorldItem> LostItems => lostItems; // 진단용 손실 아이템 목록 공개
 
         public bool ResolveFromCurrentPlayers() // 현재 플레이어 생존 상태에서 정상·부분·실패 결과 자동 결정
@@ -62,11 +63,25 @@ namespace ProjectI.Expedition // 원정 결과 기능 네임스페이스
                     continue; // 다음 아이템 검사
                 }
 
+                RecoverableValue recoverableValue = item.GetComponent<RecoverableValue>(); // Day23 회수품 가격·판매 상태 조회
+
+                if (recoverableValue != null && recoverableValue.IsSold) // 이미 판매 완료된 아이템 여부 확인
+                {
+                    continue; // 판매 완료품은 이후 원정 귀환·손실 목록에서 완전히 제외
+                }
+
+                OfficeStoredItemState officeState = item.GetComponent<OfficeStoredItemState>(); // Day23 사무소 단상 영구 보관 상태 조회
+
+                if (officeState != null && officeState.IsOfficeStored) // 전멸과 무관하게 보호되는 사무소 보관품인지 확인
+                {
+                    continue; // 원정 결과가 Failed여도 보관 단상 아이템을 손실 처리하지 않음
+                }
+
                 bool returned = result != ExpeditionResult.Failed && IsReturnedItem(item); // 실패가 아니면서 마차 확보·보관·생존자 소지인지 판정
 
                 if (returned) // 귀환 처리 대상 여부 확인
                 {
-                    returnedItems.Add(item); // Day23에서 사용할 귀환 목록에 유지
+                    returnedItems.Add(item); // Day23 이후 경제 흐름에서 사용할 귀환 목록에 유지
                     continue; // 손실 처리 건너뜀
                 }
 
