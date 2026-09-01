@@ -115,6 +115,53 @@ namespace ProjectI.Items // 아이템 기능 네임스페이스
             return true; // 획득 성공 반환
         }
 
+        public bool TryStoreSelectedItem(Transform targetStorage, out WorldItem storedItem) // 현재 선택 아이템을 외부 공동 보관함으로 이동
+        {
+            storedItem = null; // 반환 아이템 초기화
+            WorldItem selectedItem = SelectedItem; // 현재 선택 슬롯 아이템 조회
+
+            if (selectedItem == null || targetStorage == null || carryController == null) // 아이템·보관 루트·운반 기능 유효성 확인
+            {
+                return false; // 외부 보관 실패 반환
+            }
+
+            if (carryController.HeldItem == selectedItem) // 현재 화면에 실제로 들고 있는 아이템인지 확인
+            {
+                carryController.HolsterHeldItem(targetStorage); // 손에서 해제하면서 외부 보관 루트로 이동
+            }
+            else // 선택 아이템이 화면에 들려 있지 않은 예외 상태
+            {
+                selectedItem.Store(targetStorage); // 외부 보관 루트에 직접 숨김 저장
+            }
+
+            slots[selectedIndex].Clear(); // 플레이어 빠른 슬롯에서 제거
+            storedItem = selectedItem; // 공동 보관함에 전달할 아이템 반환값 저장
+            RefreshSelectedItem(); // 선택 슬롯이 비워진 상태를 화면에 즉시 반영
+            return true; // 외부 보관 성공 반환
+        }
+
+        public bool TryReceiveStoredItem(WorldItem item) // 외부 공동 보관함 아이템을 빈 빠른 슬롯으로 회수
+        {
+            if (item == null || !item.IsStored || IsSelectionLocked) // 아이템 저장 상태와 양손 잠금 여부 확인
+            {
+                return false; // 회수 불가 반환
+            }
+
+            int emptyIndex = FindFirstEmptySlot(); // 플레이어의 첫 빈 슬롯 조회
+
+            if (emptyIndex < 0) // 빈 슬롯 존재 여부 확인
+            {
+                return false; // 인벤토리 가득 참 반환
+            }
+
+            EnsureStorageRoot(); // 플레이어 내부 보관 루트 확보
+            item.IgnoreCollisionsWith(transform); // 플레이어 충돌 무시 규칙 유지
+            item.Store(storageRoot); // 공동 보관함에서 플레이어 내부 보관 루트로 이동
+            slots[emptyIndex].SetItem(item); // 첫 빈 슬롯에 아이템 등록
+            SelectSlot(emptyIndex); // 회수한 아이템을 즉시 선택하여 손에 표시
+            return true; // 공동 보관함 아이템 회수 성공
+        }
+
         public bool SelectSlot(int index) // 숫자키 또는 휠로 빠른 슬롯 선택
         {
             EnsureSlots(); // 슬롯 데이터 확보
@@ -250,7 +297,7 @@ namespace ProjectI.Items // 아이템 기능 네임스페이스
 
         private int FindFirstEmptySlot() // 첫 번째 빈 빠른 슬롯 인덱스 조회
         {
-            EnsureSlots(); // 슬롯 데이터 확보
+            EnsureSlots(); // 빠른 슬롯 데이터 확보
 
             for (int index = 0; index < Capacity; index++) // 1번부터 6번 슬롯 순회
             {
