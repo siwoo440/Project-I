@@ -190,7 +190,7 @@ namespace ProjectI.Items // 아이템 기능 네임스페이스
             transform.localRotation = Quaternion.Euler(carryEulerOffset); // CarryPoint 기준 로컬 회전 정확히 고정
         }
 
-        public void Release(Vector3 position, Quaternion rotation, Vector3 throwVelocityChange) // 빠른 슬롯에서 제거하고 월드 물체로 복귀
+        public void Release(Vector3 position, Quaternion rotation, Vector3 throwVelocityChange) // 소유 상태에서 제거하고 월드 물체로 복귀
         {
             EnsureCaches(); // 아이템 구성 요소 목록 확보
             transform.SetParent(null, true); // 플레이어 종속을 해제하면서 현재 월드 Transform 유지
