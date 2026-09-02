@@ -8,7 +8,8 @@ namespace ProjectI.Core // 프로젝트 공통 네임스페이스
     {
         public const string BootSceneName = "Boot"; // 부트 씬 이름
         public const string MainMenuSceneName = "MainMenu"; // 메인 메뉴 씬 이름
-        public const string ExplorationOfficeSceneName = "ExplorationOffice"; // 탐사 사무소 씬 이름
+        public const string WagonPersistentSceneName = "00_WagonPersistent"; // 마차 영구 씬 이름
+        public const string ExplorationOfficeSceneName = WagonPersistentSceneName; // 기존 사무소 진입 API를 영구 마차 씬으로 연결
 
         private void Awake() // 객체 초기 진입
         {
@@ -47,7 +48,7 @@ namespace ProjectI.Core // 프로젝트 공통 네임스페이스
 
         public void LoadExplorationOffice() // 탐사 사무소 이동
         {
-            LoadScene(ExplorationOfficeSceneName, GameState.ExplorationOffice); // 탐사 사무소 요청
+            LoadScene(WagonPersistentSceneName, GameState.ExplorationOffice); // 영구 마차 씬 진입 후 Office 맵을 Additive 로드
         }
 
         private void LoadScene(string sceneName, GameState state) // 공통 씬 이동
@@ -60,13 +61,13 @@ namespace ProjectI.Core // 프로젝트 공통 네임스페이스
 
             GameManager.Instance?.SetState(state); // 게임 상태 선반영
             ProjectLog.Log($"씬 이동 요청: {sceneName}"); // 씬 이동 로그 출력
-            SceneManager.LoadScene(sceneName); // 대상 씬 로드
+            SceneManager.LoadScene(sceneName); // 영구 마차 씬 또는 메뉴 계열 씬 로드
         }
 
         private void HandleSceneLoaded(Scene scene, LoadSceneMode mode) // 씬 로드 완료 처리
         {
             GameEvents.PublishSceneChanged(scene.name); // 씬 변경 이벤트 발행
-            ProjectLog.Log($"씬 로드 완료: {scene.name}"); // 씬 완료 로그 출력
+            ProjectLog.Log($"씬 로드 완료: {scene.name} / Mode={mode}"); // 씬 완료 로그 출력
         }
     }
 }
