@@ -224,6 +224,14 @@ namespace ProjectI.Persistence // 일차 저장·복구 네임스페이스
                 store = new DailySnapshotStore(); // 기본 로컬 저장소 생성
             }
 
+            Scene office = SceneManager.GetSceneByName("01_Office"); // 안전 시작점 Office 로드 상태 조회
+
+            if (!office.IsValid() || !office.isLoaded) // 초기 Office 준비 실패 여부 확인
+            {
+                Debug.LogError("[Project I] 01_Office가 로드되지 않아 저장·복구 초기화를 중단합니다 / 기존 저장 파일은 변경하지 않습니다. Build Settings(Build Profiles 씬 목록)를 확인하세요.", this); // 실제 원인 안내
+                yield break; // initialized를 올리지 않아 자동 저장·출발 저장을 차단
+            }
+
             bool currentExists = store.CurrentFileExists(); // Current 파일 실제 존재 여부 확인
             bool currentReadable = store.TryReadCurrent(out DailySnapshotData current, out string currentReason); // Current 무결성 검사
 
@@ -457,6 +465,7 @@ namespace ProjectI.Persistence // 일차 저장·복구 네임스페이스
             }
 
             runtimeEconomy = CloneEconomy(snapshot.economy); // 저장된 경제 상태를 Persistent 메모리에 먼저 복원
+            loader.OfficeItemKeeper?.DiscardStash(); // Snapshot이 사무소 상태를 대체하므로 이동 중 보관 상태 폐기
             Day23SnapshotBridge.ClearInventoryForRestore(); // 빠른 슬롯의 기존 참조 제거
             Day23SnapshotBridge.ClearOfficeStorageForRestore(); // 단상 기존 참조 제거
             WorldItem[] oldItems = UnityEngine.Object.FindObjectsByType<WorldItem>(FindObjectsInactive.Include, FindObjectsSortMode.None); // 현재 실제 WorldItem 전체 조회
@@ -561,7 +570,7 @@ namespace ProjectI.Persistence // 일차 저장·복구 네임스페이스
 
         private IEnumerator WaitForMapLoaderReady() // PersistentMapLoader의 초기 환경 준비 대기
         {
-            float timeout = 15f; // 초기 씬 로드 무한 대기 방지 시간
+            float timeout = 60f; // 느린 디스크에서도 초기 Office 로드를 기다리되 무한 대기는 방지
             float elapsed = 0f; // 경과 시간 초기화
 
             while (elapsed < timeout) // 제한 시간 동안 준비 상태 검사

@@ -22,6 +22,7 @@ namespace ProjectI.Loop // 원정 루프 기능 네임스페이스
         [SerializeField] private float fadeDuration = 0.75f; // 암전 시간
         [SerializeField] private float arrivalDuration = 2.25f; // 마차 진입 이동 시간
         [SerializeField] private TravelDestination initialDestination = TravelDestination.Office; // 최초 환경 목적지
+        private OfficeWorldItemKeeper officeItemKeeper; // Office 언로드 동안 사무소 WorldItem 보관 관리자
         private WagonTravelBellInteractable travelBell; // 현재 마차 이동 종
         private TravelDestination currentDestination; // 현재 로드된 환경 목적지
         private bool isTransitioning; // 환경 교체 진행 여부
@@ -30,6 +31,7 @@ namespace ProjectI.Loop // 원정 루프 기능 네임스페이스
         public TravelDestination CurrentDestination => currentDestination; // 현재 목적지 공개
         public bool IsTransitioning => isTransitioning; // 이동 진행 상태 공개
         public WagonCargoPersistence CargoPersistence => cargoPersistence; // Cargo 보존 관리자 공개
+        public OfficeWorldItemKeeper OfficeItemKeeper => officeItemKeeper; // 사무소 아이템 보관 관리자 공개
 
         private void Awake() // Persistent 로더 초기화
         {
@@ -41,6 +43,13 @@ namespace ProjectI.Loop // 원정 루프 기능 네임스페이스
 
             instance = this; // 현재 로더 등록
             currentDestination = initialDestination; // 초기 목적지 설정
+            officeItemKeeper = GetComponent<OfficeWorldItemKeeper>(); // 기존 보관 관리자 조회
+
+            if (officeItemKeeper == null) // 씬에 보관 관리자가 없는지 확인
+            {
+                officeItemKeeper = gameObject.AddComponent<OfficeWorldItemKeeper>(); // 런타임에 같은 Persistent 오브젝트로 추가
+            }
+
             BindPersistentReferences(); // Player/Wagon 참조 연결
             SetFadeImmediate(1f); // 최초 맵 준비 전 화면 암전
         }
@@ -166,7 +175,7 @@ namespace ProjectI.Loop // 원정 루프 기능 네임스페이스
 
                 if (loadOperation == null) // 로드 요청 실패 여부 확인
                 {
-                    Debug.LogError($"[Project I] 초기 맵 로드 실패 / Scene={initialSceneName}", this); // 실패 로그
+                    Debug.LogError($"[Project I] 초기 맵 로드 실패 / Scene={initialSceneName} / Build Settings(Build Profiles 씬 목록)에 00_WagonPersistent·01_Office·02_TestDungeon 등록 여부를 확인하세요.", this); // 실패 원인 안내
                     yield break; // 초기화 중단
                 }
 
@@ -266,10 +275,20 @@ namespace ProjectI.Loop // 원정 루프 기능 네임스페이스
                 SceneManager.SetActiveScene(targetScene); // 목적지를 현재 활성 환경으로 지정
             }
 
+            if (targetDestination == TravelDestination.Office) // 사무소로 돌아오는 경우인지 확인
+            {
+                officeItemKeeper?.RestoreIntoScene(targetScene); // 씬 기본 아이템 대신 떠날 때의 실제 사무소 아이템 복귀
+            }
+
             Scene previousScene = SceneManager.GetSceneByName(previousSceneName); // 기존 환경 조회
 
             if (previousScene.IsValid() && previousScene.isLoaded && previousScene.name != targetSceneName) // 기존 환경이 별도로 남아있는지 확인
             {
+                if (previousSceneName == OfficeSceneName) // 사무소를 떠나는 경우인지 확인
+                {
+                    officeItemKeeper?.StashFromScene(previousScene); // 언로드 전에 사무소 실제 아이템을 같은 GameObject로 보관
+                }
+
                 AsyncOperation unloadOperation = SceneManager.UnloadSceneAsync(previousScene); // 기존 환경만 언로드
 
                 if (unloadOperation != null) // 언로드 요청 성공 여부 확인
