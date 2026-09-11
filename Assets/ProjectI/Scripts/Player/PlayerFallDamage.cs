@@ -7,8 +7,8 @@ namespace ProjectI.Player // 플레이어 기능 네임스페이스
     [RequireComponent(typeof(PlayerHealth))] // 체력 컴포넌트 필수 지정
     public sealed class PlayerFallDamage : MonoBehaviour // 플레이어 추락 피해 컴포넌트
     {
-        [SerializeField] private float safeFallDistance = 3f; // 피해 없는 최대 추락 거리
-        [SerializeField] private float damagePerMeter = 20f; // 안전 거리 초과 미터당 피해
+        [SerializeField] private float safeFallDistance = 5f; // 피해 없는 최대 추락 거리 (5m 이하 무피해)
+        [SerializeField] private float damagePerMeter = 10f; // 안전 거리 초과 미터당 피해 (6m=10, 7m=20 …)
         [SerializeField] private float maximumDamage = 100f; // 한 번의 추락 최대 피해
         private PlayerMovement movement; // 플레이어 이동 참조
         private PlayerHealth health; // 플레이어 체력 참조

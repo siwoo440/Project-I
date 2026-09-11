@@ -25,6 +25,7 @@ namespace ProjectI.Persistence // 일차 저장·복구 네임스페이스
         private bool dayCompletionInProgress; // 일차 확정 중 중복 저장 방지 상태
         private float nextOfficeAutosaveTime; // 다음 사무소 자동 저장 시각
         private ExpeditionDayPhase dayPhase = ExpeditionDayPhase.OfficePrep; // 오늘 원정 진행 단계
+        private int campaignSeed; // 절차적 던전 시드 기준값 (캠페인마다 고정)
 
         public static DailySnapshotService Instance => instance; // 전역 저장 서비스 공개
         public int CurrentDay => currentDay; // UI·다음 날 시스템용 현재 일차 공개
@@ -33,6 +34,7 @@ namespace ProjectI.Persistence // 일차 저장·복구 네임스페이스
         public bool IsDayCompletionInProgress => dayCompletionInProgress; // 일차 마감 처리 여부 공개
         public ExpeditionDayPhase DayPhase => dayPhase; // 오늘 원정 진행 단계 공개
         public bool CanDepartToday => initialized && !restoreInProgress && !dayCompletionInProgress && dayPhase == ExpeditionDayPhase.OfficePrep; // 오늘 원정 출발 가능 여부 공개
+        public int CampaignSeed => EnsureCampaignSeed(); // 캠페인 시드 공개 (같은 캠페인·일차 → 같은 던전)
 
         private void Awake() // Persistent 저장 서비스 초기화
         {
@@ -143,6 +145,16 @@ namespace ProjectI.Persistence // 일차 저장·복구 네임스페이스
         public bool SaveCurrentDayStart() // 기존 호출 호환용 현재 일차 시작 저장 API
         {
             return SaveSafeOfficeCheckpoint(); // 새 규칙에서는 사무소 안전 체크포인트와 동일하게 처리
+        }
+
+        private int EnsureCampaignSeed() // 캠페인 시드가 없으면 새로 생성
+        {
+            if (campaignSeed == 0) // 새 게임 또는 이전 버전 저장 확인
+            {
+                campaignSeed = (Guid.NewGuid().GetHashCode() & 0x7FFFFFFF) | 1; // 0이 아닌 양수 시드
+            }
+
+            return campaignSeed; // 시드 반환
         }
 
         public void MarkExpeditionDeparted() // 마차가 던전에 도착해 오늘 원정이 시작됐음을 기록
@@ -379,6 +391,7 @@ namespace ProjectI.Persistence // 일차 저장·복구 네임스페이스
                 completedDay = Mathf.Max(0, completedDay), // 직전 또는 이번 완료 일차 기록
                 activeDestination = GetCurrentDestinationName(), // 현재 환경 목적지 기록
                 dayPhase = dayPhase == ExpeditionDayPhase.OnExpedition ? ExpeditionDayPhase.OfficePrep : dayPhase, // 원정 중 단계는 저장하지 않음
+                campaignSeed = EnsureCampaignSeed(), // 캠페인 시드 기록
                 economy = CloneEconomy(runtimeEconomy) // Office가 없어도 Persistent 경제 메모리 복사
             };
 
@@ -573,6 +586,8 @@ namespace ProjectI.Persistence // 일차 저장·복구 네임스페이스
             RestoreRuntimeOfficeState(); // 공동 자금·채무 상태 복구
             currentDay = Mathf.Max(1, snapshot.currentDay); // 저장된 다음 원정 일차 적용
             dayPhase = snapshot.dayPhase == ExpeditionDayPhase.OnExpedition ? ExpeditionDayPhase.OfficePrep : snapshot.dayPhase; // 저장된 원정 단계 적용 (원정 중은 준비 단계로 복구)
+            campaignSeed = snapshot.campaignSeed; // 저장된 캠페인 시드 적용 (0이면 다음 조회 때 생성)
+            snapshot.campaignSeed = EnsureCampaignSeed(); // 이전 버전 파일도 시드를 가진 상태로 저장
             bool currentWritten = true; // Current 갱신 결과 기본값 설정
 
             if (failedItems == 0 && writeCurrentAfterRestore) // 전체 아이템 복구 성공 시 새 정상 Current 작성 여부 확인

@@ -35,7 +35,14 @@ namespace ProjectI.EditorTools // 프로젝트 에디터 도구 네임스페이�
             new ItemSpawn("recoverable.silver_coin", 300, new Vector2(-17f, -6f)), // 왼쪽 바위 뒤 은화
             new ItemSpawn("recoverable.artisan_metal_ornament", 900, new Vector2(-15f, 13f)), // 왼쪽 언덕 위 금속 장식
             new ItemSpawn("recoverable.gods_statue", 1500, new Vector2(18f, -8f)), // 오른쪽 움푹한 곳 조각상
-            new ItemSpawn("recoverable.crown", 2250, new Vector2(2f, 15f)) // 가장 안쪽 왕관
+            new ItemSpawn("recoverable.crown", 2250, new Vector2(9f, -3f)) // 마차 오른쪽 뒤 왕관 (27일차 정문 자리에서 이동)
+        };
+
+        private static readonly ExteriorDoorSpec[] ExteriorDoorSpecs = // 27일차 외부 출입문 (정문 1 + 서브문 N, 이 씬의 서브문 수 = 실내 서브문 수)
+        {
+            new ExteriorDoorSpec(ProjectI.Dungeon.DungeonDoorKind.Main, 0, new Vector2(0f, 13f), 180f), // 마차 정면 정문 (남쪽을 바라봄)
+            new ExteriorDoorSpec(ProjectI.Dungeon.DungeonDoorKind.Sub, 0, new Vector2(-21f, -18f), 90f), // 서남쪽 서브문 1 (동쪽을 바라봄)
+            new ExteriorDoorSpec(ProjectI.Dungeon.DungeonDoorKind.Sub, 1, new Vector2(21f, 6f), -90f) // 동쪽 서브문 2 (서쪽을 바라봄)
         };
 
         [MenuItem("Tools/Project I/Day 26/Build Terrain Test Dungeon + Day-End Ledger")] // 메뉴 등록
@@ -236,7 +243,151 @@ namespace ProjectI.EditorTools // 프로젝트 에디터 도구 네임스페이�
             CreateLighting(root); // 조명·환경광 구성
             CreateTravelAnchor(scene); // 마차 진입·정차 지점 생성
             PlaceItems(scene, terrain); // 테스트 회수품 배치
+            CreateExteriorDoors(root, terrain); // 27일차 외부 정문·서브문
+            CreateInteriorGenerator(scene); // 27일차 지하 실내 생성기
             EditorSceneManager.SaveScene(scene, TestDungeonScenePath); // 기존 경로에 저장 (GUID 유지)
+        }
+
+        [MenuItem("Tools/Project I/Day 27/Rebuild Test Dungeon (Terrain + Exterior Doors + Interior Generator)")] // 27일차 테스트 던전 재구성
+        public static void RebuildTestDungeon() // 테스트 던전 씬만 재생성
+        {
+            if (!Application.isBatchMode && !EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) // 저장하지 않은 씬 보호
+            {
+                return; // 취소
+            }
+
+            EnsureFolder(GeneratedFolder); // 생성 폴더
+            BuildTerrainTestDungeon(); // 재생성
+            AssetDatabase.SaveAssets(); // 저장
+            Debug.Log("[Project I] 27일차 테스트 던전 재구성 완료 (Terrain + 외부 출입문 + 실내 생성기)"); // 결과
+        }
+
+        [MenuItem("Tools/Project I/Day 27/Preview Interior In Open Test Dungeon")] // 에디터 미리보기
+        public static void PreviewInterior() // 열린 테스트 던전 씬에서 실내를 미리 생성 (저장 전 Clear 권장)
+        {
+            ProjectI.Dungeon.ProceduralInteriorGenerator generator = Object.FindFirstObjectByType<ProjectI.Dungeon.ProceduralInteriorGenerator>(); // 생성기
+
+            if (generator == null) // 확인
+            {
+                Debug.LogWarning("[Project I] 02_TestDungeon을 열고 실행하세요."); // 안내
+                return; // 종료
+            }
+
+            generator.Generate(Random.Range(1, int.MaxValue)); // 무작위 시드 미리보기
+            Debug.Log("[Project I] 실내 미리보기 생성 — 씬을 저장하기 전에 Clear Interior Preview를 실행하세요 (플레이 시에는 자동으로 다시 생성됩니다)."); // 안내
+        }
+
+        [MenuItem("Tools/Project I/Day 27/Clear Interior Preview")] // 미리보기 제거
+        public static void ClearInteriorPreview() // 미리보기 생성물 제거
+        {
+            ProjectI.Dungeon.ProceduralInteriorGenerator generator = Object.FindFirstObjectByType<ProjectI.Dungeon.ProceduralInteriorGenerator>(); // 생성기
+            generator?.Clear(); // 제거
+        }
+
+        private static void CreateExteriorDoors(Transform root, Terrain terrain) // 지상 정문·서브문 구조물 (지형은 뚫지 않음)
+        {
+            Transform doorsRoot = new GameObject("Day27_ExteriorDoors").transform; // 출입문 루트
+            doorsRoot.SetParent(root, false); // 환경 루트 아래
+            Material stone = AssetDatabase.LoadAssetAtPath<Material>("Assets/ProjectI/Materials/Day24/Dungeon_StoneWall.mat"); // 석재
+            Material door = CreateLitMaterial("Door_Teleport", new Color(0.22f, 0.14f, 0.08f)); // 출입문
+
+            foreach (ExteriorDoorSpec spec in ExteriorDoorSpecs) // 출입문 순회
+            {
+                bool main = spec.Kind == ProjectI.Dungeon.DungeonDoorKind.Main; // 정문 여부
+                Transform structure = new GameObject(main ? "MainEntrance" : $"SubDoor_{spec.Index + 1}").transform; // 구조물 루트
+                structure.SetParent(doorsRoot, false); // 부모
+                structure.position = new Vector3(spec.Position.x, SampleGround(terrain, spec.Position), spec.Position.y); // 평탄 구역 지면
+                structure.rotation = Quaternion.Euler(0f, spec.Yaw, 0f); // 로컬 +Z = 출입문이 바라보는 쪽
+                float width = main ? 5f : 2.6f; // 구조물 폭
+                float height = main ? 3.6f : 2.8f; // 구조물 높이
+                float depth = main ? 3.4f : 1.2f; // 구조물 깊이
+                CreateVisualWithCollider(structure, "Body", new Vector3(0f, height * 0.5f, -depth * 0.5f), new Vector3(width, height, depth), stone); // 석조 몸체
+                GameObject panel = CreateVisualWithCollider(structure, "DoorPanel", new Vector3(0f, main ? 1.3f : 1.1f, 0.07f), new Vector3(main ? 1.8f : 1.4f, main ? 2.6f : 2.2f, 0.12f), door); // 문짝
+
+                if (main) // 정문 지붕
+                {
+                    CreateVisualWithCollider(structure, "Roof", new Vector3(0f, height + 0.2f, -depth * 0.5f), new Vector3(width + 0.6f, 0.4f, depth + 0.6f), stone); // 지붕
+                }
+
+                Transform arrival = new GameObject("ArrivalPoint").transform; // 도착 지점
+                arrival.SetParent(structure, false); // 부모
+                arrival.localPosition = new Vector3(0f, 0.05f, 1.6f); // 문 앞 1.6m
+                arrival.localRotation = Quaternion.identity; // 문 반대쪽(바깥)을 바라봄
+                ProjectI.Dungeon.DungeonTeleportDoor teleport = panel.AddComponent<ProjectI.Dungeon.DungeonTeleportDoor>(); // 순간이동 문
+                teleport.Configure(ProjectI.Dungeon.DungeonDoorSide.Exterior, spec.Kind, spec.Index, arrival); // 종류·번호
+                GameObject lamp = new GameObject("DoorLamp"); // 표시등
+                lamp.transform.SetParent(structure, false); // 부모
+                lamp.transform.localPosition = new Vector3(0f, height - 0.3f, 0.6f); // 문 위
+                Light light = lamp.AddComponent<Light>(); // 점광원
+                light.type = LightType.Point; // 점광원
+                light.range = 6f; // 범위
+                light.intensity = 1.8f; // 밝기
+                light.color = main ? new Color(0.55f, 1f, 0.6f) : new Color(0.55f, 0.75f, 1f); // 정문 녹색·서브문 청색
+            }
+        }
+
+        private static GameObject CreateVisualWithCollider(Transform parent, string name, Vector3 localPosition, Vector3 localScale, Material material) // 충돌체 있는 상자
+        {
+            GameObject box = GameObject.CreatePrimitive(PrimitiveType.Cube); // 상자
+            box.name = name; // 이름
+            box.transform.SetParent(parent, false); // 부모
+            box.transform.localPosition = localPosition; // 위치
+            box.transform.localScale = localScale; // 크기
+            box.GetComponent<Renderer>().sharedMaterial = material; // 재질
+            box.isStatic = true; // 정적
+            return box; // 반환
+        }
+
+        private static void CreateInteriorGenerator(Scene scene) // 지하 실내 생성기 오브젝트 (플레이 시 자동 생성)
+        {
+            GameObject generatorObject = new GameObject("Day27_InteriorGenerator"); // 생성기 루트
+            SceneManager.MoveGameObjectToScene(generatorObject, scene); // 테스트 던전 씬 소속
+            ProjectI.Dungeon.ProceduralInteriorGenerator generator = generatorObject.AddComponent<ProjectI.Dungeon.ProceduralInteriorGenerator>(); // 생성기
+            generatorObject.AddComponent<ProjectI.Dungeon.ProceduralInteriorDebugPage>(); // F1 Dungeon 페이지
+            Dictionary<string, ItemDefinition> definitions = LoadDefinitions(); // 정의
+            ProjectI.Dungeon.InteriorLootEntry[] loot = // 깊이별 회수품 표
+            {
+                LootEntry(definitions, "recoverable.silver_coin", 200, 450, 0f, 0.55f, 3), // 얕은 곳 은화
+                LootEntry(definitions, "recoverable.artisan_metal_ornament", 550, 950, 0.2f, 0.85f, 3), // 중간 금속 장식
+                LootEntry(definitions, "recoverable.gods_statue", 1200, 1700, 0.5f, 1f, 2), // 깊은 곳 조각상
+                LootEntry(definitions, "recoverable.crown", 2000, 2600, 0.7f, 1f, 1) // 최심부 왕관
+            };
+            generator.Configure( // 재질·아이템 연결
+                AssetDatabase.LoadAssetAtPath<Material>("Assets/ProjectI/Materials/Day24/Dungeon_StoneFloor.mat"), // 바닥
+                AssetDatabase.LoadAssetAtPath<Material>("Assets/ProjectI/Materials/Day24/Dungeon_StoneWall.mat"), // 벽
+                CreateLitMaterial("Door_Teleport", new Color(0.22f, 0.14f, 0.08f)), // 출입문
+                AssetDatabase.LoadAssetAtPath<Material>("Assets/ProjectI/Materials/Day24/Dungeon_Metal.mat"), // 잠긴 문
+                definitions.TryGetValue("key.basic", out ItemDefinition key) ? key : null, // 열쇠
+                loot); // 회수품
+            EditorUtility.SetDirty(generator); // 변경 기록
+        }
+
+        private static ProjectI.Dungeon.InteriorLootEntry LootEntry(Dictionary<string, ItemDefinition> definitions, string itemId, int min, int max, float minDepth, float maxDepth, int weight) // 회수품 항목 생성
+        {
+            definitions.TryGetValue(itemId, out ItemDefinition definition); // 정의 조회
+
+            if (definition == null) // 누락 확인
+            {
+                Debug.LogError($"[Project I] 실내 회수품 정의 없음 / {itemId}"); // 오류
+            }
+
+            return new ProjectI.Dungeon.InteriorLootEntry { definition = definition, minValue = min, maxValue = max, minDepthRatio = minDepth, maxDepthRatio = maxDepth, weight = weight }; // 항목
+        }
+
+        private readonly struct ExteriorDoorSpec // 외부 출입문 배치 정보
+        {
+            public readonly ProjectI.Dungeon.DungeonDoorKind Kind; // 정문·서브문
+            public readonly int Index; // 서브문 번호
+            public readonly Vector2 Position; // 월드 XZ
+            public readonly float Yaw; // 바라보는 방향
+
+            public ExteriorDoorSpec(ProjectI.Dungeon.DungeonDoorKind kind, int index, Vector2 position, float yaw) // 생성자
+            {
+                Kind = kind; // 종류
+                Index = index; // 번호
+                Position = position; // 위치
+                Yaw = yaw; // 방향
+            }
         }
 
         private static Terrain CreateTerrain(Transform root) // 높이·재질이 적용된 Terrain 생성
@@ -305,7 +456,14 @@ namespace ProjectI.EditorTools // 프로젝트 에디터 도구 네임스페이�
         {
             float road = world.y < 7f ? Mathf.Clamp01((6.5f - Mathf.Abs(world.x)) / 2.5f) : 0f; // 폭 8m 흙길 + 2.5m 완충
             float stop = Mathf.Clamp01((12f - Vector2.Distance(world, new Vector2(0f, 0f))) / 3f); // 정차 구역 반경 9m + 3m 완충
-            return Mathf.Max(road, stop); // 둘 중 큰 값 사용
+            float pads = 0f; // 외부 출입문 평탄 구역
+
+            foreach (ExteriorDoorSpec door in ExteriorDoorSpecs) // 출입문 순회
+            {
+                pads = Mathf.Max(pads, Mathf.Clamp01((6f - Vector2.Distance(world, door.Position)) / 2.5f)); // 반경 3.5m + 2.5m 완충
+            }
+
+            return Mathf.Max(Mathf.Max(road, stop), pads); // 가장 큰 평탄화 가중치 사용
         }
 
         private static float Bump(Vector2 world, Vector2 center, float radius, float height) // 원형 언덕·구덩이
@@ -405,6 +563,11 @@ namespace ProjectI.EditorTools // 프로젝트 에디터 도구 네임스페이�
                 foreach (ItemSpawn spawn in ItemSpawns) // 아이템 주변 제외
                 {
                     blocked |= Vector2.Distance(point, spawn.Position) < 3f; // 아이템 3m 이내 제외
+                }
+
+                foreach (ExteriorDoorSpec door in ExteriorDoorSpecs) // 출입문 주변 제외
+                {
+                    blocked |= Vector2.Distance(point, door.Position) < 7f; // 출입문 7m 이내 제외
                 }
 
                 if (blocked) // 제외 구역 확인

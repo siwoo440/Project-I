@@ -22,6 +22,7 @@ namespace ProjectI.Persistence // 일차 저장·복구 네임스페이스
         public int completedDay; // 불변 DailySnapshot이면 완료한 일차 번호
         public string activeDestination = "Office"; // 저장 당시 환경 맵 목적지
         public ExpeditionDayPhase dayPhase = ExpeditionDayPhase.OfficePrep; // 저장 당시 하루 원정 단계 (버전 1 파일은 준비 단계로 해석)
+        public int campaignSeed; // 절차적 던전 시드 기준값 (0이면 로드 시 새로 생성)
         public EconomySnapshotData economy = new EconomySnapshotData(); // 공동 자금과 채무 상태
         public int selectedQuickSlot; // 플레이어 선택 슬롯 인덱스
         public List<ItemInstanceData> items = new List<ItemInstanceData>(); // 모든 보존 대상 아이템

@@ -2,6 +2,7 @@ using System; // 복구 결과 콜백 사용
 using System.Collections; // Coroutine 이동 절차 사용
 using ProjectI.Items; // 플레이어 운반 기능 참조
 using ProjectI.Persistence; // 사무소 안전 체크포인트 저장 서비스 참조
+using ProjectI.Player; // 플레이어 이동 추락 판정 초기화 참조
 using ProjectI.Wagon; // 마차 CargoArea 참조
 using UnityEngine; // 유니티 기본 기능 참조
 using UnityEngine.SceneManagement; // Additive 씬 로드·언로드 기능 참조
@@ -248,6 +249,51 @@ namespace ProjectI.Loop // 원정 루프 기능 네임스페이스
             return null; // 출발 가능
         }
 
+        public bool RequestPlayerTeleport(Vector3 position, Quaternion rotation) // 짧은 암전과 함께 플레이어 순간이동 (던전 출입구용)
+        {
+            BindPersistentReferences(); // 최신 참조 확보
+
+            if (isTransitioning || playerRoot == null) // 이동 중 또는 플레이어 누락 확인
+            {
+                return false; // 요청 거부
+            }
+
+            StartCoroutine(PlayerTeleportRoutine(position, rotation)); // 순간이동 절차 시작
+            return true; // 요청 수락
+        }
+
+        private IEnumerator PlayerTeleportRoutine(Vector3 position, Quaternion rotation) // 암전 → 위치 이동 → 암전 해제
+        {
+            isTransitioning = true; // 이동 중 종·저장·중복 순간이동 차단
+            yield return FadeTo(1f, 0.25f); // 짧은 암전
+            CharacterController controller = playerRoot.GetComponentInChildren<CharacterController>(); // 이동 충돌체
+            bool controllerWasEnabled = controller != null && controller.enabled; // 원래 활성 상태
+
+            if (controller != null) // 충돌체 확인
+            {
+                controller.enabled = false; // 순간이동 중 충돌 보정 방지
+            }
+
+            playerRoot.SetPositionAndRotation(position, Quaternion.Euler(0f, rotation.eulerAngles.y, 0f)); // 좌우 방향만 적용해 이동
+            Physics.SyncTransforms(); // 물리 위치 즉시 반영
+            NotifyPlayerTeleported(); // 높이 변화를 추락 피해로 계산하지 않도록 초기화
+
+            if (controller != null) // 충돌체 확인
+            {
+                controller.enabled = controllerWasEnabled; // 원래 상태 복원
+            }
+
+            yield return null; // 한 프레임 안정화
+            yield return FadeTo(0f, 0.25f); // 암전 해제
+            isTransitioning = false; // 이동 완료
+        }
+
+        private void NotifyPlayerTeleported() // 플레이어 이동 컴포넌트에 순간이동 알림 (추락 판정 기준 초기화)
+        {
+            PlayerMovement movement = playerRoot == null ? null : playerRoot.GetComponentInChildren<PlayerMovement>(); // 이동 컴포넌트
+            movement?.NotifyTeleported(); // 추락 판정 초기화
+        }
+
         public bool IsPlayerAboard() // 플레이어가 마차 적재 창고 안에 있는지 판정
         {
             BindPersistentReferences(); // 최신 참조 확보
@@ -434,6 +480,7 @@ namespace ProjectI.Loop // 원정 루프 기능 네임스페이스
                 if (playerRoot != null && !playerIsWagonChild) // 별도 Player 루트 이동 필요 여부 확인
                 {
                     playerRoot.SetPositionAndRotation(wagonRoot.TransformPoint(playerLocalPosition), wagonRoot.rotation * playerLocalRotation); // Player를 Wagon과 함께 이동
+                    NotifyPlayerTeleported(); // 마차 진입 중 높이 변화를 추락으로 계산하지 않음
                 }
 
                 cargoPersistence?.SyncCapturedCargoToWagon(); // 실제 Cargo GameObject 위치 동기화
@@ -451,6 +498,7 @@ namespace ProjectI.Loop // 원정 루프 기능 네임스페이스
             if (playerRoot != null && !playerIsWagonChild) // 별도 Player 루트 최종 정렬
             {
                 playerRoot.SetPositionAndRotation(wagonRoot.TransformPoint(playerLocalPosition), wagonRoot.rotation * playerLocalRotation); // Player 최종 위치 확정
+                NotifyPlayerTeleported(); // 도착 위치 기준으로 추락 판정 초기화
             }
 
             cargoPersistence?.SyncCapturedCargoToWagon(); // Cargo 최종 위치 확정
@@ -483,6 +531,7 @@ namespace ProjectI.Loop // 원정 루프 기능 네임스페이스
             if (playerRoot != null && !playerIsWagonChild) // 별도 Player 루트 동기화
             {
                 playerRoot.SetPositionAndRotation(wagonRoot.TransformPoint(playerLocalPosition), wagonRoot.rotation * playerLocalRotation); // Player 즉시 이동
+                NotifyPlayerTeleported(); // 맵 간 높이 차이를 추락 피해로 계산하지 않도록 초기화
             }
 
             cargoPersistence?.SyncCapturedCargoToWagon(); // 이동 중 고정 Cargo 동기화

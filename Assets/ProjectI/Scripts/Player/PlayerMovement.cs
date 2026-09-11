@@ -116,6 +116,13 @@ namespace ProjectI.Player // 플레이어 기능 네임스페이스
             wasGrounded = groundedAfterMove; // 다음 프레임 비교용 지상 상태 저장
         }
 
+        public void NotifyTeleported() // 순간이동·마차 이동 직후 추락 판정 기준을 새 위치로 초기화 (높이 변화를 추락으로 계산하지 않음)
+        {
+            airbornePeakY = transform.position.y; // 공중 최고점을 새 위치로 초기화
+            verticalVelocity = 0f; // 누적 낙하 속도 제거
+            wasGrounded = true; // 첫 프레임을 새 착지로 판정하지 않음
+        }
+
         public void SetExternalMovementModifier(float speedMultiplier, bool allowSprint) // 전투 등 외부 시스템의 이동 제한 적용
         {
             externalSpeedMultiplier = Mathf.Clamp(speedMultiplier, 0f, 1.5f); // 외부 이동 배율 안전 범위 보정
