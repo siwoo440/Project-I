@@ -22,7 +22,9 @@ namespace ProjectI.Loop // 원정 루프 기능 네임스페이스
         [SerializeField] private float fadeDuration = 0.75f; // 암전 시간
         [SerializeField] private float arrivalDuration = 2.25f; // 마차 진입 이동 시간
         [SerializeField] private TravelDestination initialDestination = TravelDestination.Office; // 최초 환경 목적지
+        [SerializeField] private float boardingMargin = 0.4f; // 탑승 판정 시 적재칸 박스 바깥 허용 여유
         private OfficeWorldItemKeeper officeItemKeeper; // Office 언로드 동안 사무소 WorldItem 보관 관리자
+        private ExpeditionReportTracker reportTracker; // 원정 출발·귀환 물건 비교 기록기
         private WagonTravelBellInteractable travelBell; // 현재 마차 이동 종
         private TravelDestination currentDestination; // 현재 로드된 환경 목적지
         private bool isTransitioning; // 환경 교체 진행 여부
@@ -32,6 +34,7 @@ namespace ProjectI.Loop // 원정 루프 기능 네임스페이스
         public bool IsTransitioning => isTransitioning; // 이동 진행 상태 공개
         public WagonCargoPersistence CargoPersistence => cargoPersistence; // Cargo 보존 관리자 공개
         public OfficeWorldItemKeeper OfficeItemKeeper => officeItemKeeper; // 사무소 아이템 보관 관리자 공개
+        public ExpeditionReportTracker ReportTracker => reportTracker; // 원정 결과 기록기 공개
 
         private void Awake() // Persistent 로더 초기화
         {
@@ -48,6 +51,13 @@ namespace ProjectI.Loop // 원정 루프 기능 네임스페이스
             if (officeItemKeeper == null) // 씬에 보관 관리자가 없는지 확인
             {
                 officeItemKeeper = gameObject.AddComponent<OfficeWorldItemKeeper>(); // 런타임에 같은 Persistent 오브젝트로 추가
+            }
+
+            reportTracker = GetComponent<ExpeditionReportTracker>(); // 기존 원정 결과 기록기 조회
+
+            if (reportTracker == null) // 씬에 기록기가 없는지 확인
+            {
+                reportTracker = gameObject.AddComponent<ExpeditionReportTracker>(); // 런타임에 같은 Persistent 오브젝트로 추가
             }
 
             BindPersistentReferences(); // Player/Wagon 참조 연결
@@ -122,6 +132,7 @@ namespace ProjectI.Loop // 원정 루프 기능 네임스페이스
 
                 yield return loadOperation; // 실제 씬 로드 완료 대기
                 targetScene = SceneManager.GetSceneByName(targetSceneName); // 로드된 씬 재조회
+                EnvironmentSceneGuard.SanitizeLoadedEnvironment(targetScene, gameObject.scene, this); // 새로 로드한 환경 씬에 섞인 전역 시스템 차단
             }
 
             MapTravelAnchor anchor = FindAnchor(targetScene, targetDestination); // 목표 마차 정차 지점 조회
@@ -181,6 +192,7 @@ namespace ProjectI.Loop // 원정 루프 기능 네임스페이스
 
                 yield return loadOperation; // 환경 로드 완료 대기
                 initialScene = SceneManager.GetSceneByName(initialSceneName); // 로드 씬 재조회
+                EnvironmentSceneGuard.SanitizeLoadedEnvironment(initialScene, gameObject.scene, this); // 새로 로드한 환경 씬에 섞인 전역 시스템 차단
             }
 
             if (!initialScene.IsValid() || !initialScene.isLoaded) // 최종 환경 유효성 확인
@@ -204,11 +216,65 @@ namespace ProjectI.Loop // 원정 루프 기능 네임스페이스
             Debug.Log($"[Project I] 24일차 2단계 초기 맵 준비 / Persistent + {initialSceneName}", this); // 준비 완료 로그
         }
 
+        public string GetTravelBlockReason() // 현재 마차 종으로 이동할 수 없는 이유 반환 (가능하면 null)
+        {
+            if (isTransitioning) // 이동 진행 여부 확인
+            {
+                return "마차 이동 중"; // 중복 이동 차단 사유
+            }
+
+            if (!IsPlayerAboard()) // 플레이어 탑승 여부 확인
+            {
+                return "마차 창고 안에 탑승한 뒤 종을 울리세요"; // 탑승 판정 실패 사유
+            }
+
+            if (currentDestination != TravelDestination.Office) // 던전에서 귀환하는 경우인지 확인
+            {
+                return null; // 귀환은 항상 허용
+            }
+
+            DailySnapshotService snapshotService = DailySnapshotService.Instance; // 일차 저장 서비스 조회
+
+            if (snapshotService == null || !snapshotService.IsInitialized || snapshotService.IsRestoreInProgress || snapshotService.IsDayCompletionInProgress) // 저장 시스템 준비 여부 확인
+            {
+                return "사무소 기록 정리 중 — 잠시 후 다시 시도하세요"; // 저장 준비 전 출발 차단 사유
+            }
+
+            if (snapshotService.DayPhase == ExpeditionDayPhase.Returned) // 오늘 원정을 이미 다녀왔는지 확인
+            {
+                return $"오늘 원정 완료 — 일차 마감 장부에서 {snapshotService.CurrentDay}일차를 마감하세요"; // 하루 1회 원정 사유
+            }
+
+            return null; // 출발 가능
+        }
+
+        public bool IsPlayerAboard() // 플레이어가 마차 적재 창고 안에 있는지 판정
+        {
+            BindPersistentReferences(); // 최신 참조 확보
+            WagonCargoArea cargoArea = wagonRoot == null ? null : wagonRoot.GetComponentInChildren<WagonCargoArea>(true); // 적재칸 조회
+            BoxCollider cargoTrigger = cargoArea == null ? null : cargoArea.GetComponent<BoxCollider>(); // 적재칸 판정 박스 조회
+
+            if (playerRoot == null || cargoTrigger == null) // 판정 기준 누락 확인
+            {
+                return true; // 구성 누락 시 이동 자체는 막지 않음
+            }
+
+            Vector3 chest = playerRoot.position + Vector3.up * 0.9f; // 발 위치 대신 몸통 중심으로 판정
+            Vector3 local = cargoTrigger.transform.InverseTransformPoint(chest) - cargoTrigger.center; // 적재칸 로컬 좌표 변환
+            Vector3 lossy = cargoTrigger.transform.lossyScale; // 월드 여유를 로컬 단위로 바꾸기 위한 배율
+            Vector3 half = cargoTrigger.size * 0.5f; // 적재칸 반크기
+            Vector3 margin = new Vector3(boardingMargin / Mathf.Max(0.01f, lossy.x), boardingMargin / Mathf.Max(0.01f, lossy.y), boardingMargin / Mathf.Max(0.01f, lossy.z)); // 로컬 단위 여유
+            return Mathf.Abs(local.x) <= half.x + margin.x && Mathf.Abs(local.y) <= half.y + margin.y && Mathf.Abs(local.z) <= half.z + margin.z; // 세 축 모두 탑승 범위 안인지 반환
+        }
+
         private void HandleTravelRequested() // 마차 종 이동 요청 처리
         {
-            if (isTransitioning) // 이미 이동 중인지 확인
+            string blockReason = GetTravelBlockReason(); // 이동 불가 사유 확인
+
+            if (blockReason != null) // 이동할 수 없는 상태인지 확인
             {
-                return; // 중복 이동 차단
+                Debug.LogWarning($"[Project I] 마차 이동 거부 / {blockReason}", this); // 거부 사유 로그
+                return; // 이동 차단
             }
 
             TravelDestination targetDestination = currentDestination == TravelDestination.Office // 현재 목적지 기준 반대 환경 계산
@@ -234,6 +300,16 @@ namespace ProjectI.Loop // 원정 루프 기능 네임스페이스
             yield return FadeTo(1f, fadeDuration); // 화면 완전 암전
             BindPersistentReferences(); // 최신 Persistent 참조 확보
             CaptureRuntimeOfficeState(); // Office를 떠나기 전 경제 상태 보존
+
+            if (currentDestination == TravelDestination.Office) // 원정 출발인지 확인
+            {
+                reportTracker?.BeginExpedition(wagonRoot); // 가져가는 물건 기록
+            }
+            else // 던전에서 귀환하는 경우
+            {
+                reportTracker?.CompleteExpedition(wagonRoot); // 가져오는 물건과 비교해 원정 결과 계산
+            }
+
             cargoPersistence?.CaptureCargoForTravel(); // 마차 안 실제 WorldItem을 같은 GameObject로 고정
 
             string previousSceneName = GetSceneName(currentDestination); // 기존 환경 씬 이름 저장
@@ -255,6 +331,7 @@ namespace ProjectI.Loop // 원정 루프 기능 네임스페이스
 
                 yield return loadOperation; // 목적지 로드 완료 대기
                 targetScene = SceneManager.GetSceneByName(targetSceneName); // 로드 씬 재조회
+                EnvironmentSceneGuard.SanitizeLoadedEnvironment(targetScene, gameObject.scene, this); // 새로 로드한 환경 씬에 섞인 전역 시스템 차단
             }
 
             MapTravelAnchor targetAnchor = FindAnchor(targetScene, targetDestination); // 목적지 Entry/Stop 지점 조회
@@ -298,6 +375,16 @@ namespace ProjectI.Loop // 원정 루프 기능 네임스페이스
             }
 
             currentDestination = targetDestination; // 현재 환경 목적지 갱신
+
+            if (targetDestination == TravelDestination.Office) // 사무소 귀환인지 확인
+            {
+                DailySnapshotService.Instance?.MarkExpeditionReturned(); // 오늘 원정 귀환 완료 단계로 전환
+            }
+            else // 던전 도착인 경우
+            {
+                DailySnapshotService.Instance?.MarkExpeditionDeparted(); // 오늘 원정 진행 단계로 전환
+            }
+
             RestoreRuntimeOfficeState(); // Office 도착이면 경제 상태 복원
             yield return MovePersistentGroup(targetAnchor); // Entry에서 Stop까지 실제 마차 진입 연출
             BindBell(); // 이동 종 참조 재연결

@@ -8,7 +8,7 @@ using UnityEngine.SceneManagement; // 씬 자료형 참조
 
 namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
 {
-    [InitializeOnLoad] // 컴파일 완료 후 Day 7 자동 구성
+    // 26일차 정리: 에디터 로드 시 자동 실행 제거 — Tools > Project I 메뉴에서만 수동 실행
     public static class Phase3Day7Setup // 외부·내부 밝기 코어와 대형 건축물 테스트 모듈 구성
     {
         private const string ExplorationOfficeScenePath = "Assets/ProjectI/Scenes/ExplorationOffice.unity"; // 탐사 사무소 씬 경로
@@ -18,11 +18,6 @@ namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
         private const string BrightnessZoneName = "10_BrightnessTest"; // Day 7 밝기 시험 모듈 이름
         private const string ReadyMarkerName = "===Day7 Brightness Ready==="; // Day 7 자동 적용 완료 마커
         private const string MaterialFolder = "Assets/ProjectI/Art/Test/Materials"; // 기존 테스트 재질 폴더 경로
-
-        static Phase3Day7Setup() // 자동 설정 등록
-        {
-            EditorApplication.delayCall += TryAutoApply; // 컴파일 완료 후 구성 예약
-        }
 
         [MenuItem("Tools/Project I/Day 7/Apply Brightness Core + Building")] // 수동 Day 7 구성 메뉴 등록
         public static void ApplyFromMenu() // 메뉴 기반 구성 실행

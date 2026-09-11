@@ -10,7 +10,7 @@ using UnityEngine.SceneManagement; // 씬 자료형 참조
 
 namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
 {
-    [InitializeOnLoad] // 컴파일 완료 후 Day 8 휴대 조명 자동 구성
+    // 26일차 정리: 에디터 로드 시 자동 실행 제거 — Tools > Project I 메뉴에서만 수동 실행
     public static class Phase3Day8Setup // 횃불·랜턴·이동형 밝기·연료 테스트 구역 구성
     {
         private const string ExplorationOfficeScenePath = "Assets/ProjectI/Scenes/ExplorationOffice.unity"; // 탐사 사무소 씬 경로
@@ -20,11 +20,6 @@ namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
         private const string PortableTestName = "PortableLightTest"; // 8일차 휴대 조명 시험 루트 이름
         private const string ReadyMarkerName = "===Day8 Torch Tip Light Ready==="; // 횃불 끝부분 광원 위치 수정 자동 적용 완료 마커 이름
         private const string MaterialFolder = "Assets/ProjectI/Art/Test/Materials"; // 기존 테스트 재질 폴더 경로
-
-        static Phase3Day8Setup() // 자동 설정 등록
-        {
-            EditorApplication.delayCall += TryAutoApply; // 컴파일 완료 후 휴대 조명 구성 예약
-        }
 
         [MenuItem("Tools/Project I/Day 8/Apply Portable Lights")] // 수동 Day 8 구성 메뉴 등록
         public static void ApplyFromMenu() // 메뉴 기반 구성 실행

@@ -7,7 +7,7 @@ using UnityEngine.SceneManagement; // Scene 자료형 참조
 
 namespace ProjectI.EditorTools // 프로젝트 에디터 자동 구성 도구 네임스페이스
 {
-    [InitializeOnLoad] // 스크립트 컴파일 뒤 기존 Day18 함정 시험장 위치 자동 보정
+    // 26일차 정리: 에디터 로드 시 자동 실행 제거 — Tools > Project I 메뉴에서만 수동 실행
     public static class Phase4Day18Relocation // Day18 함정 루트의 내부 배치를 유지한 채 빈 공간으로 이동하는 도구
     {
         private const string ScenePath = "Assets/ProjectI/Scenes/ExplorationOffice.unity"; // 이동 대상 탐사 사무소 씬 경로
@@ -17,12 +17,6 @@ namespace ProjectI.EditorTools // 프로젝트 에디터 자동 구성 도구 �
         private const float PositionTolerance = 0.02f; // 이미 목표 위치인지 판정하는 허용 오차
         private const int MaximumAutoAttempts = 8; // Day18 Setup과 실행 순서가 엇갈릴 때 재시도할 최대 횟수
         private static int autoAttemptCount; // 현재 자동 재시도 횟수
-
-        static Phase4Day18Relocation() // Editor 자동 이동 예약 초기화
-        {
-            autoAttemptCount = 0; // 도메인 리로드마다 자동 재시도 횟수 초기화
-            EditorApplication.delayCall += TryAutoRelocate; // Day18 Setup 이후 위치 보정을 시도하도록 지연 호출 등록
-        }
 
         [MenuItem("Tools/Project I/Day 18/Relocate Trap Test Area")] // 수동 함정 시험장 위치 보정 메뉴 등록
         public static void RelocateFromMenu() // 사용자가 언제든 새 빈 공간 위치를 강제로 다시 적용하는 진입점

@@ -10,7 +10,7 @@ using UnityEngine.SceneManagement; // 씬 자료형 참조
 
 namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
 {
-    [InitializeOnLoad] // 컴파일 완료 후 Day 10 시간대·자연광 환경 자동 구성
+    // 26일차 정리: 에디터 로드 시 자동 실행 제거 — Tools > Project I 메뉴에서만 수동 실행
     public static class Phase3Day10Setup // 24시간 흐름과 태양·달 Directional Light·F1 디버그 구성
     {
         private const string ExplorationOfficeScenePath = "Assets/ProjectI/Scenes/ExplorationOffice.unity"; // 탐사 사무소 씬 경로
@@ -18,11 +18,6 @@ namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
         private const string SunLightName = "Day10_SunDirectionalLight"; // 태양 Directional Light 오브젝트 이름
         private const string MoonLightName = "Day10_MoonDirectionalLight"; // 달 Directional Light 오브젝트 이름
         private const string ReadyMarkerName = "===Day10 Time Of Day Ready==="; // Day 10 자동 적용 완료 마커 이름
-
-        static Phase3Day10Setup() // 자동 적용 등록
-        {
-            EditorApplication.delayCall += TryAutoApply; // 스크립트 컴파일 완료 후 Day 10 구성 예약
-        }
 
         [MenuItem("Tools/Project I/Day 10/Apply Time + Natural Light")] // 수동 Day 10 적용 메뉴 등록
         public static void ApplyFromMenu() // 메뉴 기반 Day 10 구성 실행

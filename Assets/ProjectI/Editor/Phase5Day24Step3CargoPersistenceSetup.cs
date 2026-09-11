@@ -8,15 +8,10 @@ using UnityEngine.SceneManagement; // Scene 구조 기능 참조
 
 namespace ProjectI.EditorTools // 프로젝트 Editor 도구 네임스페이스
 {
-    [InitializeOnLoad] // 스크립트 컴파일 후 자동 적용 등록
+    // 26일차 정리: 에디터 로드 시 자동 실행 제거 — Tools > Project I 메뉴에서만 수동 실행
     public static class Phase5Day24Step3CargoPersistenceSetup // 24일차 3단계 실제 Cargo 보존 자동 구성
     {
         private const string PersistentScenePath = "Assets/ProjectI/Scenes/00_WagonPersistent.unity"; // Step2 Persistent 씬 경로
-
-        static Phase5Day24Step3CargoPersistenceSetup() // Editor 로드 시 자동 실행 예약
-        {
-            EditorApplication.delayCall += ApplyStep3Automatically; // 컴파일 완료 뒤 한 번 자동 적용
-        }
 
         [MenuItem("Tools/Project I/Day 24/Apply Step 3 - Physical Cargo Persistence")] // 수동 재적용 메뉴 등록
         public static void ApplyStep3() // 00_WagonPersistent에 Cargo 보존 컴포넌트 연결

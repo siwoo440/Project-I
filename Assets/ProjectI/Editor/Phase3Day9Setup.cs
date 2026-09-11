@@ -10,7 +10,7 @@ using UnityEngine.SceneManagement; // 씬 자료형 참조
 
 namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
 {
-    [InitializeOnLoad] // 컴파일 완료 후 Day 9 고정 광원·F1 진단 환경 자동 구성
+    // 26일차 정리: 에디터 로드 시 자동 실행 제거 — Tools > Project I 메뉴에서만 수동 실행
     public static class Phase3Day9Setup // 벽 횃불·화로와 월드 밝기 숫자·전체 계산 페이지 구성
     {
         private const string ExplorationOfficeScenePath = "Assets/ProjectI/Scenes/ExplorationOffice.unity"; // 탐사 사무소 씬 경로
@@ -18,11 +18,6 @@ namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
         private const string BrightnessZoneName = "10_BrightnessTest"; // 7~9일차 밝기 시험 모듈 이름
         private const string ReadyMarkerName = "===Day9 Fixed Light Debug Ready==="; // Day 9 자동 적용 완료 마커 이름
         private const string MaterialFolder = "Assets/ProjectI/Art/Test/Materials"; // 기존 테스트 재질 폴더 경로
-
-        static Phase3Day9Setup() // 자동 적용 등록
-        {
-            EditorApplication.delayCall += TryAutoApply; // 스크립트 컴파일 완료 후 Day 9 구성 예약
-        }
 
         [MenuItem("Tools/Project I/Day 9/Apply Fixed Lights + Debug")] // 수동 Day 9 적용 메뉴 등록
         public static void ApplyFromMenu() // 메뉴 기반 Day 9 구성 실행

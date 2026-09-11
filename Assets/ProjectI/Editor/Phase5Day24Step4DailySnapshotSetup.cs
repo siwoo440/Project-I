@@ -12,7 +12,7 @@ using UnityEngine.SceneManagement; // Scene 구조 기능 사용
 
 namespace ProjectI.EditorTools // 프로젝트 Editor 도구 네임스페이스
 {
-    [InitializeOnLoad] // 스크립트 컴파일 후 자동 적용 등록
+    // 26일차 정리: 에디터 로드 시 자동 실행 제거 — Tools > Project I 메뉴에서만 수동 실행
     public static class Phase5Day24Step4DailySnapshotSetup // 24일차 4단계 일차 Snapshot·아이템 복구 데이터 자동 구성
     {
         private const string PersistentScenePath = "Assets/ProjectI/Scenes/00_WagonPersistent.unity"; // Step2 Persistent 씬 경로
@@ -22,11 +22,6 @@ namespace ProjectI.EditorTools // 프로젝트 Editor 도구 네임스페이스
         private const string DefinitionFolder = "Assets/ProjectI/Resources/Day24Recovery/Definitions"; // 런타임 ItemRegistry용 Resources 정의 폴더
         private const string RecoveryPrefabFolder = "Assets/ProjectI/Resources/Day24Recovery/GeneratedPrefabs"; // 씬 전용 아이템 복구 Prefab 폴더
         private const string ItemPrefabRoot = "Assets/ProjectI/Prefabs"; // 기존 아이템 Prefab 검색 루트
-
-        static Phase5Day24Step4DailySnapshotSetup() // Editor 로드 시 자동 적용 예약
-        {
-            EditorApplication.delayCall += ApplyStep4Automatically; // 컴파일 완료 뒤 한 번 자동 실행
-        }
 
         [MenuItem("Tools/Project I/Day 24/Apply Step 4 - Daily Snapshot Recovery")] // 수동 재적용 메뉴 등록
         public static void ApplyStep4() // 복구 Definition 생성과 Persistent 저장 서비스 연결
@@ -212,6 +207,17 @@ namespace ProjectI.EditorTools // 프로젝트 Editor 도구 네임스페이스
         private static ItemDefinition GetOrCreateDefinition(string displayName, GameObject recoveryPrefab) // 표시 이름 기준 안정 ItemDefinition 생성·갱신
         {
             string itemId = BuildItemId(displayName); // 저장 파일용 안정 ID 생성
+
+            foreach (string guid in AssetDatabase.FindAssets("t:ItemDefinition", new[] { DefinitionFolder })) // 26일차 고정 ID로 전환된 기존 정의 우선 검색
+            {
+                ItemDefinition existing = AssetDatabase.LoadAssetAtPath<ItemDefinition>(AssetDatabase.GUIDToAssetPath(guid)); // 기존 정의 로드
+
+                if (existing != null && existing.Matches(itemId)) // 과거 LEGACY ID 별칭과 일치하는지 확인
+                {
+                    return existing; // 고정 ID를 LEGACY로 되돌리지 않고 그대로 사용
+                }
+            }
+
             string assetPath = $"{DefinitionFolder}/{MakeSafeFileName(itemId)}.asset"; // Resources Definition 에셋 경로 계산
             ItemDefinition definition = AssetDatabase.LoadAssetAtPath<ItemDefinition>(assetPath); // 기존 Definition 조회
 

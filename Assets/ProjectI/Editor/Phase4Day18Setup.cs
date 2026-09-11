@@ -9,7 +9,7 @@ using UnityEngine.SceneManagement; // Scene 자료형 참조
 
 namespace ProjectI.EditorTools // 프로젝트 에디터 자동 구성 도구 네임스페이스
 {
-    [InitializeOnLoad] // 컴파일 완료 후 Day18 함정 시험장 자동 구성
+    // 26일차 정리: 에디터 로드 시 자동 실행 제거 — Tools > Project I 메뉴에서만 수동 실행
     public static class Phase4Day18Setup // 바닥·천장 가시·도끼·압력판 시험장을 자동 생성하는 도구
     {
         private const string ScenePath = "Assets/ProjectI/Scenes/ExplorationOffice.unity"; // 테스트 대상 탐사 사무소 씬 경로
@@ -17,11 +17,6 @@ namespace ProjectI.EditorTools // 프로젝트 에디터 자동 구성 도구 �
         private const string ReadyMarkerName = "===Day18 Trap System Ready==="; // Day18 자동 구성 완료 마커 이름
         private const string MaterialFolder = "Assets/ProjectI/Art/Generated/Day18"; // Day18 생성 재질 폴더
         private static readonly Vector3 TestCenter = new Vector3(-27f, 0f, 18.2f); // Day17 몬스터 Spawn 앞 SprintLane 함정 시험장 중심
-
-        static Phase4Day18Setup() // 자동 설정 등록
-        {
-            EditorApplication.delayCall += TryAutoApply; // 스크립트 컴파일 완료 뒤 한 번 자동 적용 예약
-        }
 
         [MenuItem("Tools/Project I/Day 18/Apply Trap System")] // 수동 Day18 함정 구성 메뉴 등록
         public static void ApplyFromMenu() // 사용자가 강제로 Day18 시험장을 재구성하는 진입점

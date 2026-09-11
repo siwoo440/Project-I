@@ -14,7 +14,7 @@ using UnityEngine.UI; // 공통 디버그 Canvas UI 구성 기능 참조
 
 namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
 {
-    [InitializeOnLoad] // 컴파일 완료 후 F1 공통 디버그 페이지 자동 구성
+    // 26일차 정리: 에디터 로드 시 자동 실행 제거 — Tools > Project I 메뉴에서만 수동 실행
     public static class Phase3Day7DebugPagerSetup // 기존 두 디버그 창을 하나의 F1 페이지형 창으로 통합
     {
         private const string InputActionsPath = "Assets/InputSystem_Actions.inputactions"; // 프로젝트 Input Action Asset 경로
@@ -23,11 +23,6 @@ namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
         private const string OldBrightnessCanvasName = "BrightnessDebugCanvas"; // 제거할 기존 밝기 전용 Canvas 이름
         private const string DebugCanvasName = "DebugPageCanvas"; // 새 공통 F1 디버그 Canvas 이름
         private const string ReadyMarkerName = "===Day7 Debug Pager Ready==="; // 자동 적용 완료 마커 이름
-
-        static Phase3Day7DebugPagerSetup() // 자동 구성 등록
-        {
-            EditorApplication.delayCall += TryAutoApply; // 에디터 준비 뒤 입력과 씬 수정 예약
-        }
 
         [MenuItem("Tools/Project I/Day 7/Apply F1 Debug Pager")] // 수동 통합 디버그 적용 메뉴 등록
         public static void ApplyFromMenu() // 메뉴 기반 구성 실행

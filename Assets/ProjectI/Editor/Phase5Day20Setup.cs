@@ -9,7 +9,7 @@ using UnityEngine.SceneManagement; // 씬 자료형 참조
 
 namespace ProjectI.EditorTools // 에디터 자동 구성 도구 네임스페이스
 {
-    [InitializeOnLoad] // 컴파일 완료 후 Day20 기존 아이템 방식 자동 구성
+    // 26일차 정리: 에디터 로드 시 자동 실행 제거 — Tools > Project I 메뉴에서만 수동 실행
     public static class Phase5Day20Setup // 별도 회수품 시스템 없이 기존 빠른 슬롯 아이템 구조로 시험품 구성
     {
         private const string ExplorationOfficeScenePath = "Assets/ProjectI/Scenes/ExplorationOffice.unity"; // 탐사 사무소 씬 경로
@@ -29,11 +29,6 @@ namespace ProjectI.EditorTools // 에디터 자동 구성 도구 네임스페이
             "Assets/ProjectI/Scripts/Items/PlayerRecoverableCarrier.cs", // 이전 빠른 슬롯 외 직접 운반 코드 경로
             "Assets/ProjectI/Scripts/Diagnostics/RecoverableDebugPage.cs" // 이전 회수품 전용 F1 페이지 코드 경로
         }; // 이전 Day20 전용 소스 삭제 대상 배열 정의 완료
-
-        static Phase5Day20Setup() // 자동 설정 등록
-        {
-            EditorApplication.delayCall += TryAutoApply; // 스크립트 컴파일 완료 뒤 자동 적용 예약
-        }
 
         [MenuItem("Tools/Project I/Day 20/Apply Existing Item Carry Fix")] // 수동 Day20 기존 아이템 방식 재구성 메뉴 등록
         public static void ApplyFromMenu() // 메뉴 기반 Day20 재구성 실행

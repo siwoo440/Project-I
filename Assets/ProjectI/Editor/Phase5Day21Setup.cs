@@ -8,7 +8,7 @@ using UnityEngine.SceneManagement; // 씬 자료형 참조
 
 namespace ProjectI.EditorTools // 에디터 자동 구성 도구 네임스페이스
 {
-    [InitializeOnLoad] // 스크립트 컴파일 완료 뒤 Day21 자동 구성 등록
+    // 26일차 정리: 에디터 로드 시 자동 실행 제거 — Tools > Project I 메뉴에서만 수동 실행
     public static class Phase5Day21Setup // 세로형 대형 창고 마차 프리팹 생성과 테스트 씬 배치
     {
         private const string ExplorationOfficeScenePath = "Assets/ProjectI/Scenes/ExplorationOffice.unity"; // Day21 테스트 대상 씬 경로
@@ -18,11 +18,6 @@ namespace ProjectI.EditorTools // 에디터 자동 구성 도구 네임스페이
         private const string SceneRootName = "===Day21 Wagon System==="; // Day21 테스트 루트 이름
         private const string ReadyMarkerName = "===Day21 Wagon Ready v1==="; // Day21 적용 완료 마커 이름
         private static readonly Vector3 TestPosition = new Vector3(0f, 0.05f, 18f); // 기존 시험장과 분리한 마차 테스트 위치
-
-        static Phase5Day21Setup() // 자동 구성 생성자
-        {
-            EditorApplication.delayCall += TryAutoApply; // 컴파일 완료 후 자동 적용 예약
-        }
 
         [MenuItem("Tools/Project I/Day 21/Apply Wagon System")] // 수동 전체 재구성 메뉴 등록
         public static void ApplyFromMenu() // 메뉴 기반 전체 Day21 구성

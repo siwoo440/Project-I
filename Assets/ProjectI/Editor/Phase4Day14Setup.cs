@@ -11,7 +11,7 @@ using UnityEngine.SceneManagement; // 씬 자료형 참조
 
 namespace ProjectI.EditorTools // 에디터 자동 구성 도구 네임스페이스
 {
-    [InitializeOnLoad] // 컴파일 완료 후 Day14 전투 기반 자동 구성
+    // 26일차 정리: 에디터 로드 시 자동 실행 제거 — Tools > Project I 메뉴에서만 수동 실행
     public static class Phase4Day14Setup // 공통 Damage Pipeline과 전투 시험장 자동 구성
     {
         private const string ExplorationOfficeScenePath = "Assets/ProjectI/Scenes/ExplorationOffice.unity"; // 탐사 사무소 씬 경로
@@ -22,11 +22,6 @@ namespace ProjectI.EditorTools // 에디터 자동 구성 도구 네임스페이
         private const string AttackAssetFolder = "Assets/ProjectI/Resources/Combat"; // Day14 공격 데이터 생성 폴더
         private const string AttackAssetPath = AttackAssetFolder + "/Day14_TestSword.asset"; // Day14 테스트 검 공격 데이터 경로
         private static readonly Vector3 CombatRangeCenter = new Vector3(-27f, 0f, 12f); // 01_SprintLane 북쪽 개방 구역으로 옮긴 Day14 전투 시험장 중심
-
-        static Phase4Day14Setup() // 자동 설정 등록
-        {
-            EditorApplication.delayCall += TryAutoApply; // 스크립트 컴파일 완료 후 Day14 자동 구성 예약
-        }
 
         [MenuItem("Tools/Project I/Day 14/Apply Combat Foundation")] // 수동 Day14 전투 기반 구성 메뉴 등록
         public static void ApplyFromMenu() // 메뉴 기반 Day14 전체 구성 실행

@@ -11,7 +11,7 @@ using UnityEngine.SceneManagement; // 씬 자료형 참조
 
 namespace ProjectI.EditorTools // 에디터 자동 구성 도구 네임스페이스
 {
-    [InitializeOnLoad] // 컴파일 완료 후 Day17 몬스터 AI 자동 구성
+    // 26일차 정리: 에디터 로드 시 자동 실행 제거 — Tools > Project I 메뉴에서만 수동 실행
     public static class Phase4Day17Setup // 공통 Monster AI와 4종 테스트 몬스터를 자동 생성하는 도구
     {
         private const string ExplorationOfficeScenePath = "Assets/ProjectI/Scenes/ExplorationOffice.unity"; // 탐사 사무소 씬 경로
@@ -26,11 +26,6 @@ namespace ProjectI.EditorTools // 에디터 자동 구성 도구 네임스페이
         private const string MimicDataPath = MonsterDataFolder + "/Day17_ChestMimic.asset"; // 상자 미믹 데이터 에셋 경로
         private static readonly Vector3 SpawnLineCenter = new Vector3(-27f, 0f, 25.8f); // 첨부 이미지의 SprintLane 북쪽 끝 4종 몬스터 나란히 소환 중심
         private const float SpawnSpacing = 2.15f; // 네 SpawnPoint가 파란 Lane 폭 안에서 겹치지 않는 가로 간격
-
-        static Phase4Day17Setup() // 자동 설정 등록
-        {
-            EditorApplication.delayCall += TryAutoApply; // 스크립트 컴파일 완료 후 Day17 자동 구성 예약
-        }
 
         [MenuItem("Tools/Project I/Day 17/Apply Monster AI + 4 Monster Types")] // 수동 Day17 4종 몬스터 구성 메뉴 등록
         public static void ApplyFromMenu() // 메뉴 기반 Day17 전체 구성 실행

@@ -8,6 +8,7 @@ namespace ProjectI.Brightness // 밝기 시스템 네임스페이스
         [SerializeField] private float updateInterval = 0.10f; // 밝기 재계산 간격
         private float updateTimer; // 다음 계산까지 남은 시간
         private BrightnessSample currentSample; // 마지막으로 계산된 현재 밝기 결과
+        private float nextManagerSearchTime; // 밝기 관리자 재검색 가능 시각
 
         public BrightnessSample CurrentSample => currentSample; // UI와 이후 몬스터 시스템용 현재 결과 공개
         public float CurrentBrightness => currentSample.TotalBrightness; // 0~1 현재 밝기 공개
@@ -47,8 +48,15 @@ namespace ProjectI.Brightness // 밝기 시스템 네임스페이스
 
         public void SampleNow() // 현재 플레이어 위치 밝기를 즉시 계산
         {
+            if (brightnessManager == null && Time.unscaledTime >= nextManagerSearchTime) // Persistent 플레이어는 환경 씬이 바뀌므로 관리자 재검색
+            {
+                brightnessManager = Object.FindFirstObjectByType<BrightnessManager>(); // 현재 로드된 환경의 밝기 관리자 조회
+                nextManagerSearchTime = Time.unscaledTime + 1f; // 없는 환경에서는 1초 간격으로만 재검색
+            }
+
             if (brightnessManager == null) // 밝기 관리자 존재 여부 확인
             {
+                currentSample = default; // 밝기 관리자가 없는 환경은 기본값(어둠)으로 표시
                 return; // 계산 중단
             }
 

@@ -10,17 +10,12 @@ using UnityEngine.SceneManagement; // 씬 자료형 참조
 
 namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
 {
-    [InitializeOnLoad] // 컴파일 완료 후 Day13 상태 복구·최적화 시스템 자동 구성
+    // 26일차 정리: 에디터 로드 시 자동 실행 제거 — Tools > Project I 메뉴에서만 수동 실행
     public static class Phase3Day13Setup // 조명·전력 상태 복구와 F1 진단 자동 구성
     {
         private const string ExplorationOfficeScenePath = "Assets/ProjectI/Scenes/ExplorationOffice.unity"; // 탐사 사무소 씬 경로
         private const string SystemRootName = "===Day13 Power Recovery System==="; // Day13 런타임 상태 관리자 루트 이름
         private const string ReadyMarkerName = "===Day13 Power Recovery Ready==="; // Day13 자동 적용 완료 마커 이름
-
-        static Phase3Day13Setup() // 자동 설정 등록
-        {
-            EditorApplication.delayCall += TryAutoApply; // 스크립트 컴파일 완료 후 자동 구성 예약
-        }
 
         [MenuItem("Tools/Project I/Day 13/Apply Power Recovery + Optimization")] // 수동 Day13 구성 메뉴 등록
         public static void ApplyFromMenu() // 메뉴 기반 Day13 전체 구성 실행

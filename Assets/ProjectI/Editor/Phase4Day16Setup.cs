@@ -12,7 +12,7 @@ using UnityEngine.SceneManagement; // 씬 자료형 참조
 
 namespace ProjectI.EditorTools // 에디터 자동 구성 도구 네임스페이스
 {
-    [InitializeOnLoad] // 컴파일 완료 후 Day16 원거리 전투 자동 구성
+    // 26일차 정리: 에디터 로드 시 자동 실행 제거 — Tools > Project I 메뉴에서만 수동 실행
     public static class Phase4Day16Setup // 석궁·리볼버 모델·사격장·장전 기능 자동 구성
     {
         private const string ExplorationOfficeScenePath = "Assets/ProjectI/Scenes/ExplorationOffice.unity"; // 탐사 사무소 씬 경로
@@ -21,11 +21,6 @@ namespace ProjectI.EditorTools // 에디터 자동 구성 도구 네임스페이
         private const string LegacyReadyMarkerName = "===Day16 Ranged Combat Ready==="; // 기존 Day16 완료 마커 이름
         private const string MaterialFolder = "Assets/ProjectI/Art/Generated/Day16"; // Day16 무기·사격장 재질 생성 폴더
         private static readonly Vector3 RangeCenter = new Vector3(-27f, 0f, -13.5f); // 01_SprintLane 남쪽 사격 구역 중심
-
-        static Phase4Day16Setup() // 자동 설정 등록
-        {
-            EditorApplication.delayCall += TryAutoApply; // 스크립트 컴파일 완료 후 Day16 자동 구성 예약
-        }
 
         [MenuItem("Tools/Project I/Day 16/Apply Crossbow + Revolver")] // 수동 Day16 구성 메뉴 등록
         public static void ApplyFromMenu() // 메뉴 기반 Day16 전체 구성 실행

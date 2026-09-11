@@ -9,7 +9,7 @@ using UnityEngine.SceneManagement; // 씬 자료형 참조
 
 namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
 {
-    [InitializeOnLoad] // 컴파일 완료 후 Day 11 전력 시험 환경 자동 구성
+    // 26일차 정리: 에디터 로드 시 자동 실행 제거 — Tools > Project I 메뉴에서만 수동 실행
     public static class Phase3Day11Setup // 발전기·전기등·연료 소비 시험 환경 구성
     {
         private const string ExplorationOfficeScenePath = "Assets/ProjectI/Scenes/ExplorationOffice.unity"; // 탐사 사무소 씬 경로
@@ -19,11 +19,6 @@ namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
         private const string ReadyMarkerName = "===Day11 Generator Power Ready==="; // 11일차 자동 적용 완료 마커 이름
         private const string GeneratedRootFolder = "Assets/ProjectI/Art/Generated"; // 자동 생성 아트 루트 경로
         private const string MaterialFolder = "Assets/ProjectI/Art/Generated/Day11"; // 발전기와 전기등 생성 재질 경로
-
-        static Phase3Day11Setup() // 자동 적용 등록
-        {
-            EditorApplication.delayCall += TryAutoApply; // 스크립트 컴파일 완료 후 11일차 구성 예약
-        }
 
         [MenuItem("Tools/Project I/Day 11/Apply Generator + Electric Lights")] // 수동 11일차 적용 메뉴 등록
         public static void ApplyFromMenu() // 메뉴 기반 11일차 구성 실행

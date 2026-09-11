@@ -11,7 +11,7 @@ using UnityEngine.SceneManagement; // 씬 자료형 참조
 
 namespace ProjectI.EditorTools // 에디터 자동 구성 도구 네임스페이스
 {
-    [InitializeOnLoad] // 스크립트 컴파일 완료 후 Day22 자동 패치 등록
+    // 26일차 정리: 에디터 로드 시 자동 실행 제거 — Tools > Project I 메뉴에서만 수동 실행
     public static class Phase5Day22Setup // 기존 Player를 래그돌 시체로 전환하고 마차 회수·원정 손실 구조를 구성
     {
         private const string ExplorationOfficeScenePath = "Assets/ProjectI/Scenes/ExplorationOffice.unity"; // Day22 테스트 대상 씬 경로
@@ -22,11 +22,6 @@ namespace ProjectI.EditorTools // 에디터 자동 구성 도구 네임스페이
         private const string RagdollRootName = "DeathRagdoll"; // Player 내부 사망 전용 래그돌 루트 이름
         private const string SystemRootName = "===Day22 Death Expedition System==="; // Day22 테스트 시스템 루트 이름
         private const string ReadyMarkerName = "===Day22 Death Expedition Ready v1==="; // Day22 적용 완료 마커 이름
-
-        static Phase5Day22Setup() // 자동 적용 예약
-        {
-            EditorApplication.delayCall += TryAutoApply; // 컴파일 완료 다음 에디터 틱에 적용
-        }
 
         [MenuItem("Tools/Project I/Day 22/Apply Ragdoll Death + Expedition Loss")] // Day22 전체 수동 재적용 메뉴
         public static void ApplyFromMenu() // 수동 전체 적용 실행

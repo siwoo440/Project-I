@@ -11,7 +11,7 @@ using UnityEngine.UI;
 
 namespace ProjectI.EditorTools
 {
-    [InitializeOnLoad]
+    // 26일차 정리: 에디터 로드 시 자동 실행 제거 — Tools > Project I 메뉴에서만 수동 실행
     public static class Phase5Day24Step2AdditiveMapSetup
     {
         private const string SourceOfficeScenePath = "Assets/ProjectI/Scenes/ExplorationOffice.unity";
@@ -24,11 +24,6 @@ namespace ProjectI.EditorTools
         private const string GeneratedMaterialFolder = "Assets/ProjectI/Materials/Day24";
         private const float OfficeEntryDistance = 12f;
         private const float DungeonEntryDistance = 18f;
-
-        static Phase5Day24Step2AdditiveMapSetup()
-        {
-            EditorApplication.delayCall += ApplyStep2Automatically;
-        }
 
         [MenuItem("Tools/Project I/Day 24/Apply Step 2 - Persistent Wagon And Additive Maps")]
         public static void ApplyStep2()

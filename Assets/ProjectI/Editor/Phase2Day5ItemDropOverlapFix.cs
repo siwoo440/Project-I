@@ -7,17 +7,12 @@ using UnityEngine.SceneManagement; // 씬 자료형 참조
 
 namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
 {
-    [InitializeOnLoad] // 스크립트 갱신 후 기존 테스트 아이템 자동 보정
+    // 26일차 정리: 에디터 로드 시 자동 실행 제거 — Tools > Project I 메뉴에서만 수동 실행
     public static class Phase2Day5ItemDropOverlapFix // 작은 아이템과 새 배치 규칙을 현재 씬에 적용
     {
         private const string ExplorationOfficeScenePath = "Assets/ProjectI/Scenes/ExplorationOffice.unity"; // 탐사 사무소 씬 경로
         private const string MapRootName = "===Day3 Test Map==="; // 공용 테스트 맵 루트 이름
         private const string FixMarkerName = "===Day5 Small Item Drop Overlap Fix==="; // 이번 수정 적용 완료 마커
-
-        static Phase2Day5ItemDropOverlapFix() // 자동 수정 등록
-        {
-            EditorApplication.delayCall += TryApplyFix; // 컴파일 완료 후 수정 예약
-        }
 
         [MenuItem("Tools/Project I/Day 5/Apply Small Item Drop Overlap Fix")] // 수동 재적용 메뉴 등록
         public static void ApplyFromMenu() // 메뉴 기반 수정 실행

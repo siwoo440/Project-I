@@ -11,7 +11,7 @@ using UnityEngine.SceneManagement; // 씬 자료형 참조
 
 namespace ProjectI.EditorTools // 에디터 자동 구성 도구 네임스페이스
 {
-    [InitializeOnLoad] // 컴파일 완료 후 Day15 근접 전투 자동 구성
+    // 26일차 정리: 에디터 로드 시 자동 실행 제거 — Tools > Project I 메뉴에서만 수동 실행
     public static class Phase4Day15Setup // 검·도끼 단발 공격과 경직·넉백 시험장 자동 구성
     {
         private const string ExplorationOfficeScenePath = "Assets/ProjectI/Scenes/ExplorationOffice.unity"; // 탐사 사무소 씬 경로
@@ -24,11 +24,6 @@ namespace ProjectI.EditorTools // 에디터 자동 구성 도구 네임스페이
         private const string SwordAttackPath = AttackAssetFolder + "/Day15_SwordSlash.asset"; // Day15 검 단발 공격 데이터 경로
         private const string AxeAttackPath = AttackAssetFolder + "/Day15_AxeSwing.asset"; // Day15 도끼 단발 공격 데이터 경로
         private static readonly Vector3 CombatRangeCenter = new Vector3(-27f, 0f, 2f); // Day3 01_SprintLane 파란 테스트 구역 중심 위치
-
-        static Phase4Day15Setup() // 자동 설정 등록
-        {
-            EditorApplication.delayCall += TryAutoApply; // 스크립트 컴파일 완료 후 Day15 자동 구성 예약
-        }
 
         [MenuItem("Tools/Project I/Day 15/Apply Single Melee Combat")] // 수동 Day15 근접 전투 구성 메뉴 등록
         public static void ApplyFromMenu() // 메뉴 기반 Day15 전체 구성 실행

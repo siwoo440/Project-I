@@ -24,11 +24,15 @@ namespace ProjectI.Persistence // 일차 저장·복구 네임스페이스
         private bool restoreInProgress; // 중복 복구 방지 상태
         private bool dayCompletionInProgress; // 일차 확정 중 중복 저장 방지 상태
         private float nextOfficeAutosaveTime; // 다음 사무소 자동 저장 시각
+        private ExpeditionDayPhase dayPhase = ExpeditionDayPhase.OfficePrep; // 오늘 원정 진행 단계
 
         public static DailySnapshotService Instance => instance; // 전역 저장 서비스 공개
         public int CurrentDay => currentDay; // UI·다음 날 시스템용 현재 일차 공개
         public bool IsInitialized => initialized; // 저장 시스템 준비 완료 여부 공개
         public bool IsRestoreInProgress => restoreInProgress; // 복구 진행 여부 공개
+        public bool IsDayCompletionInProgress => dayCompletionInProgress; // 일차 마감 처리 여부 공개
+        public ExpeditionDayPhase DayPhase => dayPhase; // 오늘 원정 진행 단계 공개
+        public bool CanDepartToday => initialized && !restoreInProgress && !dayCompletionInProgress && dayPhase == ExpeditionDayPhase.OfficePrep; // 오늘 원정 출발 가능 여부 공개
 
         private void Awake() // Persistent 저장 서비스 초기화
         {
@@ -141,6 +145,16 @@ namespace ProjectI.Persistence // 일차 저장·복구 네임스페이스
             return SaveSafeOfficeCheckpoint(); // 새 규칙에서는 사무소 안전 체크포인트와 동일하게 처리
         }
 
+        public void MarkExpeditionDeparted() // 마차가 던전에 도착해 오늘 원정이 시작됐음을 기록
+        {
+            dayPhase = ExpeditionDayPhase.OnExpedition; // 런타임 전용 원정 단계 (던전에서는 저장하지 않음)
+        }
+
+        public void MarkExpeditionReturned() // 마차가 사무소로 귀환했음을 기록
+        {
+            dayPhase = ExpeditionDayPhase.Returned; // 일차 마감 전까지 재출발 금지 단계
+        }
+
         public void CompleteCurrentDay() // 사무소에서 현재 일차를 완료 일차로 확정
         {
             if (!initialized || restoreInProgress || dayCompletionInProgress) // 저장 서비스 준비와 중복 실행 여부 확인
@@ -173,6 +187,7 @@ namespace ProjectI.Persistence // 일차 저장·복구 네임스페이스
 
             snapshot.currentDay = snapshot.completedDay + 1; // 완료 일차 다음 날을 다시 시작하도록 계산
             snapshot.activeDestination = "Office"; // 진행 중 던전은 없었던 것으로 처리하고 Office로 강제 복구
+            snapshot.dayPhase = ExpeditionDayPhase.OfficePrep; // 다음 날 준비 단계에서 다시 시작
             Debug.LogWarning($"[Project I] 이전 일차 롤백 시작 / Source={path} / RestartDay={snapshot.currentDay} / Start=Office", this); // 복구 출처 안내
             StartCoroutine(RestoreSnapshotRoutine(snapshot, true, null)); // Office 전체 상태 복구 후 Current 재생성
         }
@@ -259,6 +274,7 @@ namespace ProjectI.Persistence // 일차 저장·복구 네임스페이스
             {
                 fallback.currentDay = fallback.completedDay + 1; // 이전 완료 일차 다음 날부터 다시 시작
                 fallback.activeDestination = "Office"; // 진행 중 원정은 없었던 것으로 처리
+                fallback.dayPhase = ExpeditionDayPhase.OfficePrep; // 다음 날 준비 단계에서 다시 시작
                 Debug.LogWarning($"[Project I] Current 데이터 {(currentExists ? "사용 불가" : "누락")} / 이유={currentReason} / 이전 완료 일차 복구={fallbackPath}", this); // 자동 폴백 이유 출력
                 bool restored = false; // 폴백 복구 결과 초기화
                 yield return RestoreSnapshotRoutine(fallback, true, success => restored = success); // 이전 완료 상태를 Office에 적용하고 새 Current 생성
@@ -289,6 +305,13 @@ namespace ProjectI.Persistence // 일차 저장·복구 네임스페이스
                 Debug.LogWarning("[Project I] 일차 완료는 마차 이동이 끝난 사무소에서만 가능합니다.", this); // 안전 규칙 안내
                 dayCompletionInProgress = false; // 일차 완료 잠금 해제
                 yield break; // Dungeon 또는 전환 중 저장 차단
+            }
+
+            if (dayPhase != ExpeditionDayPhase.Returned) // 오늘 원정을 다녀왔는지 확인
+            {
+                Debug.LogWarning($"[Project I] {currentDay}일차 마감 불가 / 오늘 원정을 다녀온 뒤 마감할 수 있습니다.", this); // 하루 1회 원정 규칙 안내
+                dayCompletionInProgress = false; // 일차 완료 잠금 해제
+                yield break; // 원정 없이 날짜 넘기기 차단
             }
 
             int completedDay = currentDay; // 이번에 확정할 일차 번호 저장
@@ -323,6 +346,7 @@ namespace ProjectI.Persistence // 일차 저장·복구 네임스페이스
             nextDayStart.currentDay = completedDay + 1; // 다음 원정 일차 번호 설정
             nextDayStart.completedDay = completedDay; // 직전 정상 완료 일차 기록
             nextDayStart.activeDestination = "Office"; // 다음 일차도 사무소에서 시작하도록 고정
+            nextDayStart.dayPhase = ExpeditionDayPhase.OfficePrep; // 다음 일차는 준비 단계에서 시작
 
             if (!store.WriteCurrent(nextDayStart)) // 다음 일차 시작 Current 저장 성공 여부 확인
             {
@@ -332,6 +356,7 @@ namespace ProjectI.Persistence // 일차 저장·복구 네임스페이스
             }
 
             currentDay = nextDayStart.currentDay; // Current 저장까지 성공한 뒤에만 실제 일차 증가
+            dayPhase = ExpeditionDayPhase.OfficePrep; // 새 일차 원정 준비 단계 시작
             runtimeEconomy = CloneEconomy(nextDayStart.economy); // 다음 일차 사무소 경제 상태 동기화
             string envelopeText = store.ReadEnvelopeTextForRemote(completedDay); // 향후 서버 업로드에 사용할 완료 백업 원문 조회
 
@@ -353,6 +378,7 @@ namespace ProjectI.Persistence // 일차 저장·복구 네임스페이스
                 currentDay = Mathf.Max(1, targetCurrentDay), // 시작 일차 기록
                 completedDay = Mathf.Max(0, completedDay), // 직전 또는 이번 완료 일차 기록
                 activeDestination = GetCurrentDestinationName(), // 현재 환경 목적지 기록
+                dayPhase = dayPhase == ExpeditionDayPhase.OnExpedition ? ExpeditionDayPhase.OfficePrep : dayPhase, // 원정 중 단계는 저장하지 않음
                 economy = CloneEconomy(runtimeEconomy) // Office가 없어도 Persistent 경제 메모리 복사
             };
 
@@ -532,19 +558,21 @@ namespace ProjectI.Persistence // 일차 저장·복구 네임스페이스
                             break; // Cargo 복구 종료
                         }
 
-                        item.transform.SetPositionAndRotation(wagonRoot.TransformPoint(data.position), wagonRoot.rotation * data.rotation); // Wagon 로컬 위치·회전 복원
+                        PlaceRestoredItem(item, wagonRoot.TransformPoint(data.position), wagonRoot.rotation * data.rotation); // Wagon 로컬 위치·회전 복원
                         break; // Cargo 복구 종료
                     default: // 일반 Office WorldItem 복구
                         MoveRootToScene(itemObject, environmentScene); // 안전 체크포인트는 항상 Office 환경에 배치
-                        item.transform.SetPositionAndRotation(data.position, data.rotation); // 저장 당시 Office 월드 위치·회전 복구
+                        PlaceRestoredItem(item, data.position, data.rotation); // 저장 당시 Office 월드 위치·회전 복구
                         break; // World 복구 종료
                 }
             }
 
+            Physics.SyncTransforms(); // 복구 위치를 물리 엔진에 즉시 반영
             yield return null; // Trigger와 인벤토리 상태가 생성 아이템을 인식할 프레임 제공
             Day23SnapshotBridge.FinalizeInventorySelection(snapshot.selectedQuickSlot); // 저장 당시 선택 슬롯 화면 복구
             RestoreRuntimeOfficeState(); // 공동 자금·채무 상태 복구
             currentDay = Mathf.Max(1, snapshot.currentDay); // 저장된 다음 원정 일차 적용
+            dayPhase = snapshot.dayPhase == ExpeditionDayPhase.OnExpedition ? ExpeditionDayPhase.OfficePrep : snapshot.dayPhase; // 저장된 원정 단계 적용 (원정 중은 준비 단계로 복구)
             bool currentWritten = true; // Current 갱신 결과 기본값 설정
 
             if (failedItems == 0 && writeCurrentAfterRestore) // 전체 아이템 복구 성공 시 새 정상 Current 작성 여부 확인
@@ -642,6 +670,26 @@ namespace ProjectI.Persistence // 일차 저장·복구 네임스페이스
                 debtPhaseIndex = source.debtPhaseIndex, // 채무 단계 복사
                 paidInCurrentPhase = source.paidInCurrentPhase // 현재 단계 납부액 복사
             };
+        }
+
+        private static void PlaceRestoredItem(WorldItem item, Vector3 position, Quaternion rotation) // 복구 아이템의 Transform과 Rigidbody 위치를 함께 지정
+        {
+            item.transform.SetPositionAndRotation(position, rotation); // 표시 위치 지정
+            Rigidbody body = item.Body != null ? item.Body : item.GetComponent<Rigidbody>(); // 아이템 Rigidbody 조회
+
+            if (body == null) // Rigidbody 없는 아이템 확인
+            {
+                return; // Transform만으로 충분
+            }
+
+            body.position = position; // 물리 위치도 지정해야 보간(Interpolate)이 Prefab 원본 위치로 되돌리지 않음
+            body.rotation = rotation; // 물리 회전 지정
+
+            if (!body.isKinematic) // Dynamic Rigidbody 여부 확인
+            {
+                body.linearVelocity = Vector3.zero; // 복구 순간 속도 제거
+                body.angularVelocity = Vector3.zero; // 복구 순간 회전 속도 제거
+            }
         }
 
         private static void MoveRootToScene(GameObject target, Scene scene) // 복구 아이템 루트를 지정 씬으로 안전 이동

@@ -3,7 +3,7 @@ using UnityEngine; // Transform·Vector3·GameObject 기능 참조
 
 namespace ProjectI.EditorTools // 에디터 자동 보정 도구 네임스페이스
 {
-    [InitializeOnLoad] // 컴파일 완료 후 마차 말 2마리 구성을 자동 적용
+    // 26일차 정리: 에디터 로드 시 자동 실행 제거 — Tools > Project I 메뉴에서만 수동 실행
     public static class Phase5Day21HorsePairUpgrade // 기존 한 마리를 80% 크기의 좌우 2마리로 보정
     {
         private const string WagonPrefabPath = "Assets/ProjectI/Prefabs/Wagon/Wagon.prefab"; // 공통 마차 프리팹 경로
@@ -11,11 +11,6 @@ namespace ProjectI.EditorTools // 에디터 자동 보정 도구 네임스페이
         private const float HorseSideOffset = 0.95f; // 좌우 말 중심 간격을 위한 X축 오프셋
         private const float HorseForwardOffset = 1.71f; // 80% 축소 후 기존 전방 위치를 보정할 Z축 오프셋
         private const float PositionTolerance = 0.001f; // 프리팹 반복 저장 방지를 위한 위치 비교 허용 오차
-
-        static Phase5Day21HorsePairUpgrade() // 자동 보정 예약
-        {
-            EditorApplication.delayCall += TryAutoApply; // Unity 컴파일 완료 다음 에디터 틱에 말 2마리 적용
-        }
 
         [MenuItem("Tools/Project I/Day 21/Apply 80% Horse Pair")] // 수동 말 2마리 재적용 메뉴 등록
         public static void ApplyFromMenu() // 메뉴 기반 강제 보정 실행

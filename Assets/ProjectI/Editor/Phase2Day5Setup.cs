@@ -12,7 +12,7 @@ using UnityEngine.SceneManagement; // 씬 자료형 참조
 
 namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
 {
-    [InitializeOnLoad] // 에디터 로드 시 자동 업그레이드 등록
+    // 26일차 정리: 에디터 로드 시 자동 실행 제거 — Tools > Project I 메뉴에서만 수동 실행
     public static class Phase2Day5Setup // 5일차 상호작용과 월드 아이템 자동 구성
     {
         private const string ExplorationOfficeScenePath = "Assets/ProjectI/Scenes/ExplorationOffice.unity"; // 탐사 사무소 씬 경로
@@ -21,11 +21,6 @@ namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
         private const string PlayerRootName = "Player"; // 플레이어 루트 이름
         private const string Day5MarkerName = "===Day5 Ready==="; // 5일차 적용 완료 마커 이름
         private const string MaterialFolder = "Assets/ProjectI/Art/Test/Materials"; // 기존 테스트 재질 폴더 경로
-
-        static Phase2Day5Setup() // 자동 설정 생성자
-        {
-            EditorApplication.delayCall += TryAutoUpgrade; // 스크립트 컴파일 후 자동 업그레이드 예약
-        }
 
         private static void TryAutoUpgrade() // 자동 업그레이드 진입
         {

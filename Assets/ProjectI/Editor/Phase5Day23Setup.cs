@@ -9,7 +9,7 @@ using UnityEngine.SceneManagement; // 씬 자료형 참조
 
 namespace ProjectI.EditorTools // 에디터 자동 구성 도구 네임스페이스
 {
-    [InitializeOnLoad] // 컴파일 완료 후 Day23 거리형 사무소 구역 자동 구성
+    // 26일차 정리: 에디터 로드 시 자동 실행 제거 — Tools > Project I 메뉴에서만 수동 실행
     public static class Phase5Day23Setup // 건물 거리·사무소 내부 경제 기능·도로 마차 재배치 자동 구성
     {
         private const string ExplorationOfficeScenePath = "Assets/ProjectI/Scenes/ExplorationOffice.unity"; // Day23 테스트 대상 씬 경로
@@ -26,11 +26,6 @@ namespace ProjectI.EditorTools // 에디터 자동 구성 도구 네임스페이
         private static readonly Vector3 StreetDistrictCenter = new Vector3(44f, 0f, 5f); // 다른 테스트 구역과 분리한 새 거리 중심
         private static readonly Vector3 WagonStreetPosition = StreetDistrictCenter + new Vector3(0f, 0.05f, -7.2f); // 중앙 도로 위 마차 주차 위치
         private static readonly Vector3 OfficeCenter = StreetDistrictCenter + new Vector3(9.2f, 0f, 1.5f); // 도로 오른쪽 사무소 건물 중심
-
-        static Phase5Day23Setup() // 자동 적용 생성자
-        {
-            EditorApplication.delayCall += TryAutoApply; // 컴파일 완료 다음 에디터 틱에 거리형 Day23 구성 예약
-        }
 
         [MenuItem("Tools/Project I/Day 23/Apply Office Street District")] // 거리형 Day23 전체 재구성 메뉴 등록
         public static void ApplyFromMenu() // 메뉴 기반 거리·사무소·마차 전체 재구성

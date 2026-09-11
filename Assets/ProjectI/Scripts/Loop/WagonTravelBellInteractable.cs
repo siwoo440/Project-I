@@ -19,7 +19,7 @@ namespace ProjectI.Loop
         private Vector3 ropeRestPosition;
 
         public event Action TravelRequested;
-        public string Prompt => isRinging ? "종이 울리는 중" : "마차 종 울리기";
+        public string Prompt => BuildPrompt();
         public InteractionType InteractionType => InteractionType.Press;
         public float HoldDuration => 0f;
         public bool IsRinging => isRinging;
@@ -48,8 +48,40 @@ namespace ProjectI.Loop
                 return;
             }
 
+            string blockReason = PersistentMapLoader.Instance == null ? null : PersistentMapLoader.Instance.GetTravelBlockReason();
+
+            if (blockReason != null)
+            {
+                Debug.Log($"[Project I] 마차 종 / {blockReason}", this);
+                return;
+            }
+
             TravelRequested?.Invoke();
             StartCoroutine(PlayRingAnimation());
+        }
+
+        private string BuildPrompt()
+        {
+            if (isRinging)
+            {
+                return "종이 울리는 중";
+            }
+
+            PersistentMapLoader loader = PersistentMapLoader.Instance;
+
+            if (loader == null)
+            {
+                return "마차 종 울리기";
+            }
+
+            string blockReason = loader.GetTravelBlockReason();
+
+            if (blockReason != null)
+            {
+                return blockReason;
+            }
+
+            return loader.CurrentDestination == TravelDestination.Office ? "마차 종 울리기 — 원정 출발" : "마차 종 울리기 — 사무소로 귀환";
         }
 
         private IEnumerator PlayRingAnimation()

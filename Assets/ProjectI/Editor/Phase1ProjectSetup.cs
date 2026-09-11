@@ -8,7 +8,7 @@ using UnityEngine.SceneManagement; // 씬 자료형 참조
 
 namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
 {
-    [InitializeOnLoad] // 에디터 로드 시 자동 실행
+    // 26일차 정리: 에디터 로드 시 자동 실행 제거 — Tools > Project I 메뉴에서만 수동 실행
     public static class Phase1ProjectSetup // Phase 1 자동 설정 도구
     {
         private const string RootFolder = "Assets/ProjectI"; // 프로젝트 루트 폴더
@@ -18,11 +18,6 @@ namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
         private const string MainMenuScenePath = ScenesFolder + "/MainMenu.unity"; // 메인 메뉴 씬 경로
         private const string ExplorationOfficeScenePath = ScenesFolder + "/ExplorationOffice.unity"; // 사무소 씬 경로
         private const string DevelopmentSettingsPath = ResourcesFolder + "/ProjectDevelopmentSettings.asset"; // 개발 설정 경로
-
-        static Phase1ProjectSetup() // 자동 설정 등록
-        {
-            EditorApplication.delayCall += TryAutoSetup; // 컴파일 이후 자동 설정 예약
-        }
 
         private static void TryAutoSetup() // 자동 설정 진입
         {

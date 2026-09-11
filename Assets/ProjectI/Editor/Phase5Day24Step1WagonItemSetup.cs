@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace ProjectI.EditorTools
 {
-    [InitializeOnLoad]
+    // 26일차 정리: 에디터 로드 시 자동 실행 제거 — Tools > Project I 메뉴에서만 수동 실행
     public static class Phase5Day24Step1WagonItemSetup
     {
         private const string WagonPrefabPath = "Assets/ProjectI/Prefabs/Wagon/Wagon.prefab";
@@ -14,11 +14,6 @@ namespace ProjectI.EditorTools
         private static readonly Vector3 CargoLocalPosition = new Vector3(0f, 2.55f, -1.25f);
         private static readonly Vector3 CargoSize = new Vector3(3.65f, 2.60f, 9.50f);
         private static readonly Vector3 BellLocalPosition = new Vector3(1.62f, 2.82f, 2.55f);
-
-        static Phase5Day24Step1WagonItemSetup()
-        {
-            EditorApplication.delayCall += ApplyStep1Automatically;
-        }
 
         [MenuItem("Tools/Project I/Day 24/Apply Step 1 - Wagon And Item")]
         public static void ApplyStep1()

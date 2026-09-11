@@ -9,7 +9,7 @@ using UnityEngine.SceneManagement; // 씬 자료형 참조
 
 namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
 {
-    [InitializeOnLoad] // 스크립트 컴파일 후 Day 6 자동 구성
+    // 26일차 정리: 에디터 로드 시 자동 실행 제거 — Tools > Project I 메뉴에서만 수동 실행
     public static class Phase2Day6Setup // 빠른 슬롯 6칸과 인벤토리 테스트 구역 자동 구성
     {
         private const string ExplorationOfficeScenePath = "Assets/ProjectI/Scenes/ExplorationOffice.unity"; // 탐사 사무소 씬 경로
@@ -17,11 +17,6 @@ namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
         private const string PlayerRootName = "Player"; // 플레이어 루트 이름
         private const string Day6MarkerName = "===Day6 Ready==="; // Day 6 적용 완료 마커
         private const string MaterialFolder = "Assets/ProjectI/Art/Test/Materials"; // 기존 테스트 재질 폴더 경로
-
-        static Phase2Day6Setup() // 자동 설정 등록
-        {
-            EditorApplication.delayCall += TryAutoApply; // 컴파일 완료 후 자동 구성 예약
-        }
 
         [MenuItem("Tools/Project I/Day 6/Apply Day 6 Upgrade")] // 수동 Day 6 구성 메뉴 등록
         public static void ApplyFromMenu() // 메뉴 기반 구성 실행

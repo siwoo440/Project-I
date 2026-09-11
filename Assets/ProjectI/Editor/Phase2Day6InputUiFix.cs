@@ -11,7 +11,7 @@ using UnityEngine.UI; // Canvas UI 구성 기능 참조
 
 namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
 {
-    [InitializeOnLoad] // 컴파일 후 입력·Canvas 수정 자동 적용
+    // 26일차 정리: 에디터 로드 시 자동 실행 제거 — Tools > Project I 메뉴에서만 수동 실행
     public static class Phase2Day6InputUiFix // Q 버리기·재바인딩·Canvas 빠른 슬롯 UI·숫자키 직접 선택 통합 수정
     {
         private const string InputActionsPath = "Assets/InputSystem_Actions.inputactions"; // 프로젝트 Input Action Asset 경로
@@ -19,11 +19,6 @@ namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
         private const string PlayerRootName = "Player"; // 플레이어 루트 이름
         private const string CanvasName = "PlayerHUDCanvas"; // 빠른 슬롯 Canvas 이름
         private const string FixMarkerName = "===Day6 Rebindable Input Canvas UI Ready==="; // 이번 수정 적용 완료 마커
-
-        static Phase2Day6InputUiFix() // 자동 수정 등록
-        {
-            EditorApplication.delayCall += TryAutoApply; // 에디터 준비 후 자동 적용 예약
-        }
 
         [MenuItem("Tools/Project I/Day 6/Apply Rebindable Input + Canvas UI")] // 수동 재적용 메뉴 등록
         public static void ApplyFromMenu() // 메뉴 기반 수정 실행

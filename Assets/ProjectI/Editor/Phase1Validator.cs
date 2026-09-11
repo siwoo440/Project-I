@@ -11,13 +11,17 @@ namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
     {
         private const string BootScenePath = "Assets/ProjectI/Scenes/Boot.unity"; // 부트 씬 경로
         private const string MainMenuScenePath = "Assets/ProjectI/Scenes/MainMenu.unity"; // 메인 메뉴 씬 경로
-        private const string ExplorationOfficeScenePath = "Assets/ProjectI/Scenes/ExplorationOffice.unity"; // 사무소 씬 경로
+        private const string PersistentScenePath = "Assets/ProjectI/Scenes/00_WagonPersistent.unity"; // 24일차 Persistent 마차 씬 경로 (Play 시작 씬)
+        private const string OfficeScenePath = "Assets/ProjectI/Scenes/01_Office.unity"; // 24일차 사무소 환경 씬 경로
+        private const string TestDungeonScenePath = "Assets/ProjectI/Scenes/02_TestDungeon.unity"; // 24일차 테스트 던전 환경 씬 경로
 
         private static readonly string[] RequiredScenePaths = // 필수 씬 경로 목록
         {
             BootScenePath, // 부트 씬 경로 등록
             MainMenuScenePath, // 메인 메뉴 씬 경로 등록
-            ExplorationOfficeScenePath // 사무소 씬 경로 등록
+            PersistentScenePath, // Persistent 마차 씬 등록
+            OfficeScenePath, // 사무소 환경 씬 등록
+            TestDungeonScenePath // 테스트 던전 환경 씬 등록
         };
 
         private static readonly string[] ObsoleteTemplatePaths = // 삭제 대상 기본 템플릿 경로 목록
@@ -40,7 +44,7 @@ namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
             bool buildScenesMatch = enabledScenes.SequenceEqual(RequiredScenePaths); // 빌드 씬 순서 확인
             SceneAsset playModeStartScene = EditorSceneManager.playModeStartScene; // 플레이 시작 씬 조회
             string playModeStartScenePath = playModeStartScene == null ? string.Empty : AssetDatabase.GetAssetPath(playModeStartScene); // 플레이 시작 씬 경로 계산
-            bool playModeStartsFromBoot = playModeStartScenePath == BootScenePath; // 부트 씬 시작 여부 확인
+            bool playModeStartsFromBoot = playModeStartScenePath == PersistentScenePath || playModeStartScenePath == BootScenePath; // 26일차 기준 Persistent(테스트) 또는 Boot(정식 흐름) 시작 여부 확인
             bool linearColorSpace = PlayerSettings.colorSpace == ColorSpace.Linear; // 선형 색 공간 확인
             RenderPipelineAsset activeRenderPipeline = GraphicsSettings.currentRenderPipeline; // 현재 품질에 적용된 활성 렌더 파이프라인 조회
             bool urpConfigured = activeRenderPipeline is UniversalRenderPipelineAsset; // 실제 활성 파이프라인이 URP인지 확인

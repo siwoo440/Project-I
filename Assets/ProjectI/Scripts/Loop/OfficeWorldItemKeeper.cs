@@ -106,6 +106,12 @@ namespace ProjectI.Loop // 원정 루프 기능 네임스페이스
                 itemObject.transform.SetPositionAndRotation(kept.Position, kept.Rotation); // 떠날 때의 Office 위치·회전 복원
                 Rigidbody body = kept.Item.Body; // 아이템 Rigidbody 조회
 
+                if (body != null) // Rigidbody 존재 여부 확인
+                {
+                    body.position = kept.Position; // 물리 위치도 함께 지정해 보간이 이전 위치로 되돌리지 않도록 처리
+                    body.rotation = kept.Rotation; // 물리 회전 지정
+                }
+
                 if (body != null && !body.isKinematic) // Dynamic Rigidbody 여부 확인
                 {
                     body.linearVelocity = Vector3.zero; // 복귀 순간 직선 속도 제거

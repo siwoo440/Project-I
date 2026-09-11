@@ -47,7 +47,28 @@ namespace ProjectI.Items // 프로젝트 아이템 데이터 네임스페이스
                     continue; // 잘못된 정의 제외
                 }
 
-                Definitions[definition.ItemId] = definition; // 같은 ID는 마지막 정의로 갱신
+                if (Definitions.TryGetValue(definition.ItemId, out ItemDefinition duplicate) && duplicate != definition) // 고정 ID 중복 확인
+                {
+                    Debug.LogError($"[Project I] ItemId 중복 / {definition.ItemId} / {duplicate.name} · {definition.name}"); // 중복 정의 경고
+                }
+
+                Definitions[definition.ItemId] = definition; // 현재 고정 ID 등록
+            }
+
+            foreach (ItemDefinition definition in definitions) // 과거 ID 별칭 등록
+            {
+                if (definition == null) // 유효 정의 확인
+                {
+                    continue; // 다음 정의
+                }
+
+                foreach (string legacyId in definition.LegacyIds) // 과거 ID 순회
+                {
+                    if (!string.IsNullOrWhiteSpace(legacyId) && !Definitions.ContainsKey(legacyId)) // 현재 ID와 충돌하지 않는 과거 ID인지 확인
+                    {
+                        Definitions[legacyId] = definition; // 이전 저장 파일의 ID도 같은 정의로 연결
+                    }
+                }
             }
         }
     }
