@@ -359,6 +359,9 @@ namespace ProjectI.EditorTools // 프로젝트 에디터 도구 네임스페이�
                 AssetDatabase.LoadAssetAtPath<Material>("Assets/ProjectI/Materials/Day24/Dungeon_Metal.mat"), // 잠긴 문
                 definitions.TryGetValue("key.basic", out ItemDefinition key) ? key : null, // 열쇠
                 loot); // 회수품
+            generator.ConfigureStairMaterials( // 28일차 계단·사다리 재질
+                CreateLitMaterial("Dungeon_StairStone", new Color(0.34f, 0.33f, 0.31f)), // 계단 석재
+                CreateLitMaterial("Dungeon_LadderWood", new Color(0.38f, 0.25f, 0.12f))); // 사다리 목재
             EditorUtility.SetDirty(generator); // 변경 기록
         }
 

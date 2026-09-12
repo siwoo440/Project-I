@@ -1131,6 +1131,11 @@ MonoBehaviour:
   gridMaxY: 5
   enableLockedDoor: 1
   seedOverride: 0
+  floorsAbove: 2
+  floorsBelow: 2
+  minOtherFloorRooms: 6
+  maxOtherFloorRooms: 11
+  forcedVerticalKind: 0
   cellSize: 9
   roomSize: 7
   corridorSize: 3.5
@@ -1140,10 +1145,19 @@ MonoBehaviour:
   doorHeight: 2.8
   surfaceClearance: 12
   gridOriginXZ: {x: 0, y: -38}
+  stairWidth: 2.6
+  stairStepHeight: 0.3
+  stairEntryInset: 0.9
+  stairRampThickness: 0.4
+  ladderHoleWidth: 1.6
+  ladderHoleDepth: 1.3
+  ladderTopOverhang: 1
   floorMaterial: {fileID: 2100000, guid: adadeccc18f928140897329130f074c1, type: 2}
   wallMaterial: {fileID: 2100000, guid: 43b9a30fca1bd3b49bab2c0ea95fe976, type: 2}
   doorMaterial: {fileID: 2100000, guid: ef03be02d80f9ca41a192c35d5039640, type: 2}
   lockedDoorMaterial: {fileID: 2100000, guid: bd9ef98b6039f3e4186a274d20c94691, type: 2}
+  stairMaterial: {fileID: 2100000, guid: 9c58f6891d4c12c4e9b663920f099294, type: 2}
+  ladderMaterial: {fileID: 2100000, guid: 9f9fcf08e292f714890f9a6d87032463, type: 2}
   keyDefinition: {fileID: 11400000, guid: 2b8a6a6fcf292d6479f27f03cd088430, type: 2}
   lootTable:
   - definition: {fileID: 11400000, guid: 930a9175b54340a408b28e938fff9da3, type: 2}

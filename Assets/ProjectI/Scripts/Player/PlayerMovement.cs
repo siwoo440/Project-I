@@ -16,6 +16,8 @@ namespace ProjectI.Player // 플레이어 기능 네임스페이스
         [SerializeField] private float jumpHeight = 1.2f; // 기본 점프 높이
         [SerializeField] private float gravity = -20f; // 중력 가속도
         [SerializeField] private float groundStickVelocity = -2f; // 지면 밀착용 하강 속도
+        [SerializeField] private float climbSpeed = 2.4f; // 사다리 오르내리기 속도
+        [SerializeField] private float climbSnapSpeed = 6f; // 사다리 중심선으로 붙는 속도
         private CharacterController characterController; // 캐릭터 충돌 컨트롤러
         private PlayerInputReader inputReader; // 플레이어 입력 래퍼
         private PlayerStamina stamina; // 플레이어 스태미나
@@ -26,6 +28,13 @@ namespace ProjectI.Player // 플레이어 기능 네임스페이스
         private bool wasGrounded = true; // 이전 프레임 지상 상태
         private float externalSpeedMultiplier = 1f; // 전투 등 외부 시스템이 적용하는 이동 속도 배율
         private bool externalSprintAllowed = true; // 전투 등 외부 시스템이 달리기를 허용하는지 여부
+        private bool isClimbing; // 사다리 이용 중 여부
+        private Vector3 climbAnchor; // 사다리 중심선 월드 위치 (XZ만 사용)
+        private float climbBottomY; // 사다리 아래 끝 높이
+        private float climbTopY; // 사다리 위 끝 높이
+        private Vector3 climbExitTop; // 위에서 내려서는 위치
+        private Vector3 climbExitBottom; // 아래에서 내려서는 위치
+        private int climbStartFrame = -1; // 사다리를 탄 프레임 (같은 프레임에 즉시 내리지 않도록)
 
         public event Action<float> Landed; // 착지 시 실제 추락 거리 전달 이벤트
 
@@ -34,6 +43,8 @@ namespace ProjectI.Player // 플레이어 기능 네임스페이스
         public float LastLandingDistance { get; private set; } // 마지막 착지 추락 거리 공개
         public bool IsSprinting { get; private set; } // 현재 달리기 여부 공개
         public bool IsGrounded { get; private set; } // 현재 지상 여부 공개
+        public bool IsClimbing => isClimbing; // 사다리 이용 중 여부 공개
+        public float ClimbProgress => isClimbing && climbTopY > climbBottomY ? Mathf.Clamp01((transform.position.y - climbBottomY) / (climbTopY - climbBottomY)) : 0f; // 사다리 진행도 공개
         public float ExternalSpeedMultiplier => externalSpeedMultiplier; // 외부 이동 속도 배율 공개
         public bool ExternalSprintAllowed => externalSprintAllowed; // 외부 달리기 허용 상태 공개
 
@@ -49,6 +60,12 @@ namespace ProjectI.Player // 플레이어 기능 네임스페이스
 
         private void Update() // 프레임별 이동 처리
         {
+            if (isClimbing) // 사다리 이용 중 확인
+            {
+                HandleClimb(); // 사다리 전용 이동 처리
+                return; // 일반 이동·중력 건너뜀
+            }
+
             bool groundedBeforeMove = characterController.isGrounded; // 이전 이동 결과 기준 지상 상태 확인
             bool canControl = health == null || !health.IsDead; // 생존 상태에서만 플레이어 입력 허용
             Vector2 moveInput = canControl ? inputReader.Move : Vector2.zero; // 사망 상태에서는 수평 이동 입력 차단
@@ -118,9 +135,126 @@ namespace ProjectI.Player // 플레이어 기능 네임스페이스
 
         public void NotifyTeleported() // 순간이동·마차 이동 직후 추락 판정 기준을 새 위치로 초기화 (높이 변화를 추락으로 계산하지 않음)
         {
+            isClimbing = false; // 순간이동 시 사다리 상태 해제
             airbornePeakY = transform.position.y; // 공중 최고점을 새 위치로 초기화
             verticalVelocity = 0f; // 누적 낙하 속도 제거
             wasGrounded = true; // 첫 프레임을 새 착지로 판정하지 않음
+        }
+
+        public bool BeginClimb(Vector3 anchor, float bottomY, float topY, Vector3 faceDirection, Vector3 exitTop, Vector3 exitBottom) // 사다리 타기 시작 (F 상호작용에서 호출)
+        {
+            if (isClimbing || topY - bottomY < 0.5f) // 이미 타고 있거나 사다리가 너무 짧음
+            {
+                return false; // 시작 불가
+            }
+
+            if (health != null && health.IsDead) // 사망 상태 확인
+            {
+                return false; // 시작 불가
+            }
+
+            isClimbing = true; // 사다리 상태 진입
+            climbAnchor = anchor; // 중심선
+            climbBottomY = bottomY; // 아래 끝
+            climbTopY = topY; // 위 끝
+            climbExitTop = exitTop; // 위 내림 위치
+            climbExitBottom = exitBottom; // 아래 내림 위치
+            climbStartFrame = Time.frameCount; // 시작 프레임 기록
+            verticalVelocity = 0f; // 낙하 속도 제거
+            CurrentPlanarSpeed = 0f; // 수평 속도 초기화
+            IsSprinting = false; // 달리기 해제
+            IsGrounded = false; // 공중 상태
+            wasGrounded = true; // 착지 판정 방지
+            airbornePeakY = transform.position.y; // 추락 기준 초기화
+            Vector3 flatFace = new Vector3(faceDirection.x, 0f, faceDirection.z); // 수평 방향만 사용
+
+            if (flatFace.sqrMagnitude > 0.0001f) // 유효 방향 확인
+            {
+                transform.rotation = Quaternion.LookRotation(flatFace.normalized, Vector3.up); // 사다리를 바라보게 회전
+            }
+
+            return true; // 시작 성공
+        }
+
+        public void EndClimb() // 사다리에서 내리기 (외부 강제 종료용)
+        {
+            if (!isClimbing) // 상태 확인
+            {
+                return; // 종료
+            }
+
+            isClimbing = false; // 상태 해제
+            verticalVelocity = 0f; // 낙하 속도 제거
+            NotifyTeleported(); // 높이 변화를 추락으로 계산하지 않음
+        }
+
+        private void HandleClimb() // 사다리 전용 이동 (W/S로 오르내림, F·Space로 내리기)
+        {
+            bool canControl = health == null || !health.IsDead; // 조작 가능 여부
+
+            if (!canControl) // 사망 시
+            {
+                FinishClimb(climbExitBottom); // 아래로 내림
+                return; // 종료
+            }
+
+            bool dismountPressed = Time.frameCount > climbStartFrame && (inputReader.JumpPressed || inputReader.InteractPressed); // 내리기 입력 (탄 프레임은 제외)
+
+            if (dismountPressed) // 내리기 요청
+            {
+                FinishClimb(transform.position.y >= climbTopY - 0.6f ? climbExitTop : climbExitBottom); // 가까운 쪽으로 내림
+                return; // 종료
+            }
+
+            float vertical = Mathf.Clamp(inputReader.Move.y, -1f, 1f) * climbSpeed; // W/S 수직 속도
+            Vector3 position = transform.position; // 현재 위치
+
+            if (vertical > 0f && position.y >= climbTopY - 0.05f) // 위 끝 도달
+            {
+                FinishClimb(climbExitTop); // 위층으로 내림
+                return; // 종료
+            }
+
+            if (vertical < 0f && position.y <= climbBottomY + 0.05f) // 아래 끝 도달
+            {
+                FinishClimb(climbExitBottom); // 아래층으로 내림
+                return; // 종료
+            }
+
+            Vector3 lateralTarget = new Vector3(climbAnchor.x, position.y, climbAnchor.z); // 사다리 중심선
+            Vector3 lateral = Vector3.ClampMagnitude((lateralTarget - position) * climbSnapSpeed, climbSpeed * 2f); // 중심선으로 붙는 이동
+            characterController.Move((lateral + (Vector3.up * vertical)) * Time.deltaTime); // 사다리 이동 실행
+            float clampedY = Mathf.Clamp(transform.position.y, climbBottomY, climbTopY); // 사다리 범위 제한
+
+            if (!Mathf.Approximately(clampedY, transform.position.y)) // 범위를 벗어났는지
+            {
+                Vector3 corrected = transform.position; // 보정 위치
+                corrected.y = clampedY; // 높이 제한
+                TeleportTo(corrected); // 위치 보정
+            }
+
+            CurrentPlanarSpeed = 0f; // 수평 속도 없음
+            IsSprinting = false; // 달리기 없음
+            IsGrounded = false; // 공중 상태
+            wasGrounded = true; // 착지 판정 방지
+            airbornePeakY = transform.position.y; // 추락 기준 유지
+        }
+
+        private void FinishClimb(Vector3 exitPosition) // 사다리에서 내려 지정 위치로 이동
+        {
+            isClimbing = false; // 상태 해제
+            TeleportTo(exitPosition); // 내림 위치로 이동
+            verticalVelocity = 0f; // 낙하 속도 제거
+            NotifyTeleported(); // 높이 변화를 추락으로 계산하지 않음
+        }
+
+        private void TeleportTo(Vector3 position) // CharacterController를 끄고 위치 강제 이동
+        {
+            bool wasEnabled = characterController.enabled; // 기존 상태
+            characterController.enabled = false; // 이동 제한 해제
+            transform.position = position; // 위치 적용
+            characterController.enabled = wasEnabled; // 상태 복구
+            Physics.SyncTransforms(); // 충돌체 위치 동기화
         }
 
         public void SetExternalMovementModifier(float speedMultiplier, bool allowSprint) // 전투 등 외부 시스템의 이동 제한 적용
@@ -157,6 +291,8 @@ namespace ProjectI.Player // 플레이어 기능 네임스페이스
             backwardMultiplier = Mathf.Clamp(backwardMultiplier, 0.1f, 1f); // 후진 배율 범위 보정
             jumpHeight = Mathf.Max(0.1f, jumpHeight); // 점프 높이 최소값 보정
             gravity = Mathf.Min(-0.1f, gravity); // 중력 방향을 아래쪽으로 고정
+            climbSpeed = Mathf.Clamp(climbSpeed, 0.5f, 6f); // 사다리 속도 범위 보정
+            climbSnapSpeed = Mathf.Clamp(climbSnapSpeed, 1f, 20f); // 사다리 중심선 보정 속도 범위
             externalSpeedMultiplier = Mathf.Clamp(externalSpeedMultiplier, 0f, 1.5f); // 외부 이동 배율 안전 범위 보정
         }
     }

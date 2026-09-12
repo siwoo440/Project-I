@@ -3,7 +3,7 @@ using System.Collections.Generic; // 방·문 목록 기능 사용
 
 namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이스 (Unity 비의존 순수 C#)
 {
-    public enum GridDirection // 격자 방향
+    public enum GridDirection // 격자 수평 방향 (층 이동은 세로형 방이 담당)
     {
         North = 0, // +Y (월드 +Z)
         East = 1, // +X
@@ -14,7 +14,16 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
     public enum RoomKind // 방 형태
     {
         Room, // 일반 방
-        Corridor // 좁은 연결 복도
+        Corridor, // 좁은 연결 복도
+        Vertical // 두 층을 잇는 세로형 방 (계단통·사다리 방·수직 통로)
+    }
+
+    public enum VerticalKind // 세로형 방 종류
+    {
+        None, // 세로형 방 아님
+        Stairwell, // 계단통 — 걸어서 오르내림
+        Ladder, // 사다리 방 — F로 타고 W/S로 오르내림
+        Shaft // 좁은 수직 통로 — 사다리와 같은 방식, 복도 크기
     }
 
     [Flags]
@@ -27,32 +36,48 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
         Key = 8 // 열쇠 생성
     }
 
-    public readonly struct GridPoint : IEquatable<GridPoint> // 정수 격자 좌표
+    public readonly struct GridPoint : IEquatable<GridPoint> // 정수 격자 좌표 (층 포함)
     {
         public readonly int X; // 가로 칸
         public readonly int Y; // 세로 칸
+        public readonly int Floor; // 층 (0 = 메인 방이 있는 1층, 양수 = 위층, 음수 = 지하층)
 
-        public GridPoint(int x, int y) // 생성자
+        public GridPoint(int x, int y) : this(x, y, 0) // 1층 좌표
+        {
+        }
+
+        public GridPoint(int x, int y, int floor) // 층 포함 좌표
         {
             X = x; // 가로 저장
             Y = y; // 세로 저장
+            Floor = floor; // 층 저장
         }
 
-        public GridPoint Step(GridDirection direction) // 한 칸 이동한 좌표
+        public GridPoint Step(GridDirection direction) // 같은 층에서 한 칸 이동한 좌표
         {
             switch (direction) // 방향별 이동
             {
-                case GridDirection.North: return new GridPoint(X, Y + 1); // 북
-                case GridDirection.East: return new GridPoint(X + 1, Y); // 동
-                case GridDirection.South: return new GridPoint(X, Y - 1); // 남
-                default: return new GridPoint(X - 1, Y); // 서
+                case GridDirection.North: return new GridPoint(X, Y + 1, Floor); // 북
+                case GridDirection.East: return new GridPoint(X + 1, Y, Floor); // 동
+                case GridDirection.South: return new GridPoint(X, Y - 1, Floor); // 남
+                default: return new GridPoint(X - 1, Y, Floor); // 서
             }
         }
 
-        public bool Equals(GridPoint other) => X == other.X && Y == other.Y; // 값 비교
+        public GridPoint WithFloor(int floor) => new GridPoint(X, Y, floor); // 같은 칸의 다른 층
+        public GridPoint Above => new GridPoint(X, Y, Floor + 1); // 한 층 위
+        public GridPoint Below => new GridPoint(X, Y, Floor - 1); // 한 층 아래
+        public bool SameColumn(GridPoint other) => X == other.X && Y == other.Y; // 층을 무시한 같은 칸 여부
+
+        public bool Equals(GridPoint other) => X == other.X && Y == other.Y && Floor == other.Floor; // 값 비교
         public override bool Equals(object obj) => obj is GridPoint other && Equals(other); // 값 비교
-        public override int GetHashCode() => (X * 73856093) ^ (Y * 19349663); // 해시
-        public override string ToString() => $"({X},{Y})"; // 진단 문자열
+        public override int GetHashCode() => (X * 73856093) ^ (Y * 19349663) ^ (Floor * 83492791); // 해시
+        public override string ToString() => $"({X},{Y} {FloorName(Floor)})"; // 진단 문자열
+
+        public static string FloorName(int floor) // 사람이 읽는 층 이름
+        {
+            return floor >= 0 ? $"{floor + 1}F" : $"B{-floor}"; // 0 → 1F, 1 → 2F, -1 → B1
+        }
     }
 
     public static class GridDirections // 방향 도구
@@ -64,7 +89,7 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
             return (GridDirection)(((int)direction + 2) % 4); // 180도
         }
 
-        public static GridDirection Between(GridPoint from, GridPoint to) // 인접 두 칸 사이 방향
+        public static GridDirection Between(GridPoint from, GridPoint to) // 인접 두 칸 사이 방향 (같은 층)
         {
             if (to.X == from.X + 1) return GridDirection.East; // 동
             if (to.X == from.X - 1) return GridDirection.West; // 서
@@ -75,8 +100,12 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
     public sealed class RoomNode // 방 하나
     {
         public int Id; // 방 번호
-        public GridPoint Cell; // 격자 좌표
+        public GridPoint Cell; // 격자 좌표 (세로형 방은 아래층 칸)
         public RoomKind Kind; // 방 형태
+        public VerticalKind Vertical = VerticalKind.None; // 세로형 방 종류
+        public GridDirection LowerWall; // 세로형 방 아래층 출입 벽
+        public GridDirection UpperWall; // 세로형 방 위층 출입 벽
+        public GridDirection ClimbWall; // 세로형 방 계단·사다리 기준 벽
         public int Depth; // 시작 방으로부터 문 개수 거리
         public bool OnMainPath; // 주 경로 여부
         public int BranchId = -1; // 분기 번호 (주 경로는 -1)
@@ -84,6 +113,15 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
         public bool IsEntrance; // 시작 방·서브문 방 (콘텐츠 제외)
         public bool IsLockedSide; // 잠긴 문 너머 여부
         public RoomContent Content; // 생성 후보
+
+        public bool IsVertical => Kind == RoomKind.Vertical; // 세로형 방 여부
+        public int LowerFloor => Cell.Floor; // 아래층
+        public int UpperFloor => Kind == RoomKind.Vertical ? Cell.Floor + 1 : Cell.Floor; // 위층 (세로형 방만 다름)
+
+        public bool OccupiesFloor(int floor) // 해당 층을 차지하는지
+        {
+            return floor == LowerFloor || floor == UpperFloor; // 아래·위층 확인
+        }
     }
 
     public sealed class DoorEdge // 두 방을 잇는 문
@@ -91,6 +129,7 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
         public int A; // 방 A
         public int B; // 방 B
         public GridDirection FromA; // A 기준 문 방향
+        public int Floor; // 문이 놓인 층 (세로형 방은 아래층·위층 양쪽에 문을 가짐)
         public bool IsLoop; // 순환로 연결 여부
         public bool IsLocked; // 잠긴 문 여부
 
@@ -120,6 +159,38 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
 
         public RoomNode Room(int id) => Rooms[id]; // 방 조회
 
+        public int MinFloor // 가장 낮은 층
+        {
+            get
+            {
+                int min = 0; // 결과
+
+                foreach (RoomNode room in Rooms) // 방 순회
+                {
+                    min = Math.Min(min, room.LowerFloor); // 최저
+                }
+
+                return min; // 반환
+            }
+        }
+
+        public int MaxFloor // 가장 높은 층
+        {
+            get
+            {
+                int max = 0; // 결과
+
+                foreach (RoomNode room in Rooms) // 방 순회
+                {
+                    max = Math.Max(max, room.UpperFloor); // 최고
+                }
+
+                return max; // 반환
+            }
+        }
+
+        public int FloorCount => MaxFloor - MinFloor + 1; // 층 수
+
         public int MaxDepth // 최대 깊이
         {
             get
@@ -135,6 +206,43 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
             }
         }
 
+        public IEnumerable<RoomNode> RoomsOnFloor(int floor) // 해당 층을 차지하는 방
+        {
+            foreach (RoomNode room in Rooms) // 방 순회
+            {
+                if (room.OccupiesFloor(floor)) // 층 확인
+                {
+                    yield return room; // 반환
+                }
+            }
+        }
+
+        public IEnumerable<RoomNode> VerticalRooms // 세로형 방 목록
+        {
+            get
+            {
+                foreach (RoomNode room in Rooms) // 방 순회
+                {
+                    if (room.IsVertical) // 세로형 확인
+                    {
+                        yield return room; // 반환
+                    }
+                }
+            }
+        }
+
+        public int CountRoomsAnchoredOn(int floor) // 해당 층을 기준 층으로 삼는 방 수 (세로형 방은 아래층에서 1회)
+        {
+            int count = 0; // 결과
+
+            foreach (RoomNode room in Rooms) // 방 순회
+            {
+                count += room.Cell.Floor == floor ? 1 : 0; // 집계
+            }
+
+            return count; // 반환
+        }
+
         public IEnumerable<DoorEdge> DoorsOf(int roomId) // 방에 연결된 문
         {
             foreach (DoorEdge door in Doors) // 문 순회
@@ -146,11 +254,24 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
             }
         }
 
-        public bool HasDoorOnWall(int roomId, GridDirection wall) // 해당 벽에 방 문이 있는지
+        public bool HasDoorOnWall(int roomId, GridDirection wall) // 해당 벽에 방 문이 있는지 (층 구분 없음)
         {
             foreach (DoorEdge door in DoorsOf(roomId)) // 연결 문 순회
             {
                 if (door.DirectionFrom(roomId) == wall) // 방향 비교
+                {
+                    return true; // 있음
+                }
+            }
+
+            return false; // 없음
+        }
+
+        public bool HasDoorOnWall(int roomId, GridDirection wall, int floor) // 해당 층·벽에 방 문이 있는지
+        {
+            foreach (DoorEdge door in DoorsOf(roomId)) // 연결 문 순회
+            {
+                if (door.Floor == floor && door.DirectionFrom(roomId) == wall) // 층·방향 비교
                 {
                     return true; // 있음
                 }
@@ -218,12 +339,12 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
 
                 foreach (RoomNode room in Rooms) // 방
                 {
-                    hash = hash * 31 + room.Cell.GetHashCode() + (int)room.Kind; // 누적
+                    hash = hash * 31 + room.Cell.GetHashCode() + (int)room.Kind * 3 + (int)room.Vertical * 11; // 누적
                 }
 
                 foreach (DoorEdge door in Doors) // 문
                 {
-                    hash = hash * 31 + door.A * 7 + door.B * 13 + (door.IsLocked ? 1 : 0); // 누적
+                    hash = hash * 31 + door.A * 7 + door.B * 13 + door.Floor * 23 + (door.IsLocked ? 1 : 0); // 누적
                 }
 
                 foreach (SubDoorPlacement sub in SubDoors) // 서브문
@@ -231,7 +352,7 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
                     hash = hash * 31 + sub.RoomId * 5 + (int)sub.Wall; // 누적
                 }
 
-                return $"{Rooms.Count}R-{Doors.Count}D-{hash:X8}"; // 서명
+                return $"{Rooms.Count}R-{Doors.Count}D-{FloorCount}L-{hash:X8}"; // 서명
             }
         }
     }

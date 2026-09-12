@@ -17,43 +17,113 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
 
             int count = layout.Rooms.Count; // 방 수
 
-            if (count < config.MinRooms || count > config.MaxRooms) // 방 수 범위
+            if (layout.StartRoomId != 0 || count == 0 || !layout.Room(0).Cell.Equals(new GridPoint(0, 0, 0))) // 시작 방 위치
             {
-                errors.Add($"방 수 {count} (허용 {config.MinRooms}~{config.MaxRooms})"); // 오류
-            }
-
-            if (layout.StartRoomId != 0 || count == 0 || !layout.Room(0).Cell.Equals(new GridPoint(0, 0))) // 시작 방 위치
-            {
-                errors.Add("시작 방이 (0,0)에 없음"); // 오류
+                errors.Add("시작 방이 1층 (0,0)에 없음"); // 오류
                 return errors; // 이후 검사 불가
             }
 
+            ValidateFloors(layout, config, errors); // 층 구성·방 수
+            ValidateCells(layout, config, errors); // 칸 중복·격자 범위
+            int[] unlocked = ValidateDoorsAndConnectivity(layout, config, errors); // 문·연결성·잠긴 문
+            ValidateVerticalRooms(layout, config, errors); // 세로형 방 규칙
+            ValidateSubDoors(layout, config, unlocked, errors); // 서브문 규칙
+            ValidateCorridors(layout, config, errors); // 복도 규칙
+
+            foreach (RoomNode room in layout.Rooms) // 입구 방 콘텐츠 제외
+            {
+                if (room.IsEntrance && room.Content != RoomContent.None) // 입구 방 콘텐츠
+                {
+                    errors.Add($"입구 방 {room.Id}에 콘텐츠 {room.Content}"); // 오류
+                }
+            }
+
+            return errors; // 결과
+        }
+
+        private static void ValidateFloors(DungeonLayout layout, DungeonGenerationConfig config, List<string> errors) // 요청한 층이 모두 생성되고 층마다 방 수가 규칙 안인지
+        {
+            if (layout.MinFloor != -config.FloorsBelow || layout.MaxFloor != config.FloorsAbove) // 층 범위
+            {
+                errors.Add($"층 범위 {GridPoint.FloorName(layout.MinFloor)}~{GridPoint.FloorName(layout.MaxFloor)} (요청 {GridPoint.FloorName(-config.FloorsBelow)}~{GridPoint.FloorName(config.FloorsAbove)})"); // 오류
+            }
+
+            for (int floor = -config.FloorsBelow; floor <= config.FloorsAbove; floor++) // 층 순회
+            {
+                int rooms = 0; // 해당 층 일반 방 수
+
+                foreach (RoomNode room in layout.Rooms) // 방 순회
+                {
+                    rooms += !room.IsVertical && room.Cell.Floor == floor ? 1 : 0; // 집계
+                }
+
+                int min = floor == 0 ? config.MinRooms : config.MinOtherFloorRooms; // 최소
+                int max = floor == 0 ? config.MaxRooms : config.MaxOtherFloorRooms; // 최대
+
+                if (rooms < min || rooms > max) // 범위 확인
+                {
+                    errors.Add($"{GridPoint.FloorName(floor)} 방 수 {rooms} (허용 {min}~{max})"); // 오류
+                }
+            }
+        }
+
+        private static void ValidateCells(DungeonLayout layout, DungeonGenerationConfig config, List<string> errors) // 칸 중복·격자 범위 (세로형 방은 두 층을 차지)
+        {
             HashSet<GridPoint> cells = new HashSet<GridPoint>(); // 칸 중복 검사
 
             foreach (RoomNode room in layout.Rooms) // 방 순회
             {
-                if (!cells.Add(room.Cell)) // 중복 칸
+                if (!cells.Add(room.Cell)) // 아래층 칸 중복
                 {
                     errors.Add($"방 겹침 {room.Cell}"); // 오류
+                }
+
+                if (room.IsVertical && !cells.Add(room.Cell.Above)) // 위층 칸 중복
+                {
+                    errors.Add($"세로형 방 위층 겹침 {room.Cell.Above}"); // 오류
                 }
 
                 if (room.Cell.X < config.GridMinX || room.Cell.X > config.GridMaxX || room.Cell.Y < 0 || room.Cell.Y > config.GridMaxY) // 격자 범위
                 {
                     errors.Add($"격자 범위 밖 방 {room.Cell}"); // 오류
                 }
-            }
 
+                if (room.LowerFloor < -config.FloorsBelow || room.UpperFloor > config.FloorsAbove) // 층 범위
+                {
+                    errors.Add($"층 범위 밖 방 {room.Cell}"); // 오류
+                }
+
+                if (!room.IsVertical && room.Vertical != VerticalKind.None) // 일반 방 표시 불일치
+                {
+                    errors.Add($"일반 방 {room.Id}에 세로형 종류 {room.Vertical}"); // 오류
+                }
+            }
+        }
+
+        private static int[] ValidateDoorsAndConnectivity(DungeonLayout layout, DungeonGenerationConfig config, List<string> errors) // 문 인접·층·중복·연결성·막다른 방·잠긴 문
+        {
             HashSet<long> pairs = new HashSet<long>(); // 문 중복 검사
             int lockedCount = 0; // 잠긴 문 수
+            int count = layout.Rooms.Count; // 방 수
 
             foreach (DoorEdge door in layout.Doors) // 문 순회
             {
-                GridPoint a = layout.Room(door.A).Cell; // A 칸
-                GridPoint b = layout.Room(door.B).Cell; // B 칸
+                RoomNode a = layout.Room(door.A); // 방 A
+                RoomNode b = layout.Room(door.B); // 방 B
 
-                if (door.A == door.B || Math.Abs(a.X - b.X) + Math.Abs(a.Y - b.Y) != 1 || GridDirections.Between(a, b) != door.FromA) // 인접·방향 확인
+                if (door.A == door.B || Math.Abs(a.Cell.X - b.Cell.X) + Math.Abs(a.Cell.Y - b.Cell.Y) != 1 || GridDirections.Between(a.Cell, b.Cell) != door.FromA) // 인접·방향 확인
                 {
                     errors.Add($"잘못된 문 {door.A}-{door.B}"); // 오류
+                }
+
+                if (!a.OccupiesFloor(door.Floor) || !b.OccupiesFloor(door.Floor)) // 두 방이 같은 층에서 만나는지
+                {
+                    errors.Add($"문 {door.A}-{door.B}이 {GridPoint.FloorName(door.Floor)}에서 이어지지 않음"); // 오류
+                }
+
+                if (!a.IsVertical && !b.IsVertical && a.Cell.Floor != b.Cell.Floor) // 층이 다른 일반 방 직결 금지
+                {
+                    errors.Add($"세로형 방 없이 층이 다른 방 {door.A}-{door.B}이 직접 연결됨"); // 오류
                 }
 
                 long key = Math.Min(door.A, door.B) * 10000L + Math.Max(door.A, door.B); // 쌍 키
@@ -128,18 +198,72 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
                 errors.Add("잠긴 문 없음 상태 불일치"); // 오류
             }
 
-            ValidateSubDoors(layout, config, unlocked, errors); // 서브문 규칙
-            ValidateCorridors(layout, config, errors); // 복도 규칙
+            return unlocked; // 서브문 검사에서 재사용
+        }
 
-            foreach (RoomNode room in layout.Rooms) // 입구 방 콘텐츠 제외
+        private static void ValidateVerticalRooms(DungeonLayout layout, DungeonGenerationConfig config, List<string> errors) // 세로형 방(계단통·사다리 방·수직 통로) 규칙
+        {
+            HashSet<int> linkedPairs = new HashSet<int>(); // 연결된 층 쌍 (아래층 번호)
+
+            foreach (RoomNode room in layout.VerticalRooms) // 세로형 방 순회
             {
-                if (room.IsEntrance && room.Content != RoomContent.None) // 입구 방 콘텐츠
+                linkedPairs.Add(room.LowerFloor); // 층 쌍 기록
+
+                if (room.Vertical == VerticalKind.None) // 종류 확인
                 {
-                    errors.Add($"입구 방 {room.Id}에 콘텐츠 {room.Content}"); // 오류
+                    errors.Add($"세로형 방 {room.Id} 종류 없음"); // 오류
+                }
+
+                if (config.ForcedVerticalKind != VerticalKind.None && room.Vertical != config.ForcedVerticalKind) // 테스트용 고정 종류 확인
+                {
+                    errors.Add($"세로형 방 {room.Id} 종류 {room.Vertical} ≠ 고정 {config.ForcedVerticalKind}"); // 오류
+                }
+
+                if (layout.DegreeOf(room.Id) != 2) // 문 2개 고정
+                {
+                    errors.Add($"세로형 방 {room.Id} 문 {layout.DegreeOf(room.Id)}개 (2개 필요)"); // 오류
+                }
+
+                if (room.LowerWall == room.UpperWall) // 아래·위층 문이 같은 벽
+                {
+                    errors.Add($"세로형 방 {room.Id} 아래·위층 문이 같은 벽 {room.LowerWall}"); // 오류
+                }
+
+                if (!layout.HasDoorOnWall(room.Id, room.LowerWall, room.LowerFloor)) // 아래층 문
+                {
+                    errors.Add($"세로형 방 {room.Id} {GridPoint.FloorName(room.LowerFloor)} 문 누락"); // 오류
+                }
+
+                if (!layout.HasDoorOnWall(room.Id, room.UpperWall, room.UpperFloor)) // 위층 문
+                {
+                    errors.Add($"세로형 방 {room.Id} {GridPoint.FloorName(room.UpperFloor)} 문 누락"); // 오류
+                }
+
+                bool stair = room.Vertical == VerticalKind.Stairwell; // 계단통 여부
+
+                if (stair && room.ClimbWall != room.LowerWall) // 계단은 아래층 문 벽에서 올라감
+                {
+                    errors.Add($"계단통 {room.Id} 계단 시작 벽 {room.ClimbWall} ≠ 아래층 문 벽 {room.LowerWall}"); // 오류
+                }
+
+                if (!stair && (room.ClimbWall == room.LowerWall || room.ClimbWall == room.UpperWall)) // 사다리는 문이 없는 벽에
+                {
+                    errors.Add($"사다리 {room.Id}가 문이 있는 벽 {room.ClimbWall}에 있음"); // 오류
+                }
+
+                if (room.Content != RoomContent.None || room.IsEntrance) // 세로형 방에는 콘텐츠·출입구 없음
+                {
+                    errors.Add($"세로형 방 {room.Id}에 콘텐츠·출입구 표시"); // 오류
                 }
             }
 
-            return errors; // 결과
+            for (int lower = -config.FloorsBelow; lower < config.FloorsAbove; lower++) // 인접 층 쌍 순회
+            {
+                if (!linkedPairs.Contains(lower)) // 연결 누락
+                {
+                    errors.Add($"{GridPoint.FloorName(lower)} ↔ {GridPoint.FloorName(lower + 1)} 세로형 방 없음"); // 오류
+                }
+            }
         }
 
         private static void ValidateSubDoors(DungeonLayout layout, DungeonGenerationConfig config, int[] unlocked, List<string> errors) // 서브문 수·1:1·겹침·위치 규칙
@@ -164,6 +288,11 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
                     errors.Add($"서브문이 같은 방 {sub.RoomId}에 겹침"); // 오류
                 }
 
+                if (layout.Room(sub.RoomId).Cell.Floor != 0) // 외부와 이어지는 1층만
+                {
+                    errors.Add($"서브문 {sub.Index + 1}이 {GridPoint.FloorName(layout.Room(sub.RoomId).Cell.Floor)}에 있음 (1층 필요)"); // 오류
+                }
+
                 foreach (SubDoorPlacement other in layout.SubDoors) // 다른 서브문과 공간 거리
                 {
                     if (other != sub && DungeonLayoutGenerator.GridDistance(layout.Room(sub.RoomId).Cell, layout.Room(other.RoomId).Cell) < 2) // 옆 칸 금지
@@ -180,6 +309,11 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
                 if (sub.RoomId == layout.StartRoomId || sub.RoomId == layout.DeepestRoomId) // 시작 방·최심부 금지
                 {
                     errors.Add($"서브문 {sub.Index}이 시작 방 또는 최심부에 있음"); // 오류
+                }
+
+                if (layout.Room(sub.RoomId).IsVertical) // 세로형 방 금지
+                {
+                    errors.Add($"서브문 {sub.Index}이 세로형 방에 있음"); // 오류
                 }
 
                 if (unlocked[sub.RoomId] < 0) // 잠긴 문 너머 금지

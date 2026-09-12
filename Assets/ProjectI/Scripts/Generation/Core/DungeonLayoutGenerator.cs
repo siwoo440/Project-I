@@ -3,11 +3,11 @@ using System.Collections.Generic; // 목록·사전 기능 사용
 
 namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이스
 {
-    public static class DungeonLayoutGenerator // 시작 방 → 주 경로 → 분기 → 순환로 → 잠긴 문 → 서브문 → 콘텐츠 순서의 격자 그래프 생성기
+    public static class DungeonLayoutGenerator // 1층 → 세로형 방으로 위·아래 층 확장 → 순환로 → 잠긴 문 → 서브문 → 콘텐츠 순서의 격자 그래프 생성기
     {
         public static DungeonLayout Generate(DungeonGenerationConfig config, int seed) // 규칙 검증을 통과한 결과만 반환 (실패 시 null)
         {
-            if (config == null || config.SubDoorCount < 0) // 입력 확인
+            if (config == null || config.SubDoorCount < 0 || config.FloorsAbove < 0 || config.FloorsBelow < 0) // 입력 확인
             {
                 return null; // 생성 불가
             }
@@ -37,9 +37,9 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
         private static DungeonLayout TryBuild(DungeonGenerationConfig config, Random random) // 한 번의 생성 시도
         {
             DungeonLayout layout = new DungeonLayout(); // 결과
-            Dictionary<GridPoint, int> occupied = new Dictionary<GridPoint, int>(); // 칸 → 방 번호
-            int target = Math.Min(random.Next(config.MinRooms, config.MaxRooms + 1), config.GridCellCount); // 목표 방 수
-            layout.StartRoomId = AddRoom(layout, occupied, new GridPoint(0, 0), true, -1); // 시작 방 (메인문 방)
+            Dictionary<GridPoint, int> occupied = new Dictionary<GridPoint, int>(); // 칸 → 방 번호 (세로형 방은 두 칸 점유)
+            int target = Math.Min(random.Next(config.MinRooms, config.MaxRooms + 1), config.GridCellCount); // 1층 목표 방 수
+            layout.StartRoomId = AddRoom(layout, occupied, new GridPoint(0, 0, 0), true, -1); // 시작 방 (메인문 방)
 
             List<int> mainPath = new List<int> { layout.StartRoomId }; // 주 경로
             int mainLength = Math.Max(4, (int)Math.Round(target * config.MainPathRatio)); // 주 경로 길이
@@ -55,7 +55,7 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
                 }
 
                 int next = AddRoom(layout, occupied, layout.Room(current).Cell.Step(direction.Value), true, -1); // 주 경로 방 추가
-                Connect(layout, current, next, false); // 문 연결
+                Connect(layout, current, next, false, 0); // 문 연결
                 mainPath.Add(next); // 주 경로 기록
                 current = next; // 끝 갱신
             }
@@ -67,39 +67,26 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
                 if (side != null) // 빈 칸 확인
                 {
                     int branch = AddRoom(layout, occupied, layout.Room(layout.StartRoomId).Cell.Step(side.Value), false, 0); // 시작 방 분기
-                    Connect(layout, layout.StartRoomId, branch, false); // 연결
+                    Connect(layout, layout.StartRoomId, branch, false, 0); // 연결
                 }
             }
 
-            int branchId = 1; // 분기 번호
-            int guard = 0; // 무한 반복 방지
-
-            while (layout.Rooms.Count < target && guard++ < 300) // 목표 방 수까지 분기 성장
-            {
-                int anchor = random.NextDouble() < 0.7 ? mainPath[random.Next(mainPath.Count)] : random.Next(layout.Rooms.Count); // 분기 시작 방
-                int length = random.Next(1, 4); // 분기 길이 1~3
-                int tip = anchor; // 분기 끝
-
-                for (int step = 0; step < length && layout.Rooms.Count < target; step++) // 분기 성장
-                {
-                    GridDirection? direction = PickDirection(config, random, occupied, layout.Room(tip).Cell, false); // 방향 선택
-
-                    if (direction == null) // 막힘 확인
-                    {
-                        break; // 분기 종료
-                    }
-
-                    int next = AddRoom(layout, occupied, layout.Room(tip).Cell.Step(direction.Value), false, branchId); // 분기 방 추가
-                    Connect(layout, tip, next, false); // 연결
-                    tip = next; // 끝 갱신
-                }
-
-                branchId++; // 다음 분기
-            }
-
-            if (layout.Rooms.Count < config.MinRooms) // 최소 방 수 확인
+            if (!GrowFloor(layout, occupied, random, config, 0, target, mainPath)) // 1층 분기 성장
             {
                 return null; // 시도 실패
+            }
+
+            int[] order = config.FloorOrder(); // 생성 순서 (1층 → 위 → 아래)
+
+            for (int index = 1; index < order.Length; index++) // 추가 층
+            {
+                int targetFloor = order[index]; // 새 층
+                int sourceFloor = targetFloor > 0 ? targetFloor - 1 : targetFloor + 1; // 이어지는 기존 층
+
+                if (!BuildLinkedFloor(layout, occupied, random, config, sourceFloor, targetFloor)) // 세로형 방 + 새 층
+                {
+                    return null; // 시도 실패
+                }
             }
 
             RefreshDerived(layout); // 깊이·막다른 방 계산
@@ -111,14 +98,14 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
                 return null; // 시도 실패
             }
 
-            AssignCorridors(layout, mainPath, random, config); // 직선 통과 방을 복도로 지정
+            AssignCorridors(layout, random, config); // 직선 통과 방을 복도로 지정
 
             if (config.EnableLockedDoor) // 잠긴 문 사용 여부
             {
                 PlaceLockedDoorAndKey(layout, random); // 잠긴 문·열쇠 배치
             }
 
-            if (!PlaceSubDoors(layout, random, config)) // 서브문 배치 (외부 서브문 수와 동일)
+            if (!PlaceSubDoors(layout, random, config)) // 서브문 배치 (외부 서브문 수와 동일, 1층만)
             {
                 return null; // 시도 실패
             }
@@ -127,7 +114,133 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
             return layout; // 결과
         }
 
-        private static int AddRoom(DungeonLayout layout, Dictionary<GridPoint, int> occupied, GridPoint cell, bool onMainPath, int branchId) // 방 추가
+        private static bool GrowFloor(DungeonLayout layout, Dictionary<GridPoint, int> occupied, Random random, DungeonGenerationConfig config, int floor, int target, List<int> preferredAnchors) // 한 층의 방을 목표 수까지 분기 성장
+        {
+            List<int> floorRooms = new List<int>(); // 이 층의 일반 방
+
+            foreach (RoomNode room in layout.Rooms) // 현재 방 순회
+            {
+                if (!room.IsVertical && room.Cell.Floor == floor) // 같은 층 일반 방
+                {
+                    floorRooms.Add(room.Id); // 등록
+                }
+            }
+
+            int branchId = layout.Rooms.Count + 1; // 분기 번호 (층마다 겹치지 않게)
+            int guard = 0; // 무한 반복 방지
+
+            while (floorRooms.Count < target && guard++ < 400) // 목표 방 수까지 분기 성장
+            {
+                bool usePreferred = preferredAnchors != null && preferredAnchors.Count > 0 && random.NextDouble() < 0.7; // 주 경로 우선 여부
+                int anchor = usePreferred ? preferredAnchors[random.Next(preferredAnchors.Count)] : floorRooms[random.Next(floorRooms.Count)]; // 분기 시작 방
+                int length = random.Next(1, 4); // 분기 길이 1~3
+                int tip = anchor; // 분기 끝
+
+                for (int step = 0; step < length && floorRooms.Count < target; step++) // 분기 성장
+                {
+                    GridDirection? direction = PickDirection(config, random, occupied, layout.Room(tip).Cell, false); // 방향 선택
+
+                    if (direction == null) // 막힘 확인
+                    {
+                        break; // 분기 종료
+                    }
+
+                    int next = AddRoom(layout, occupied, layout.Room(tip).Cell.Step(direction.Value), false, branchId); // 분기 방 추가
+                    Connect(layout, tip, next, false, floor); // 연결
+                    floorRooms.Add(next); // 등록
+                    tip = next; // 끝 갱신
+                }
+
+                branchId++; // 다음 분기
+            }
+
+            return floorRooms.Count >= target; // 목표 달성 여부
+        }
+
+        private static bool BuildLinkedFloor(DungeonLayout layout, Dictionary<GridPoint, int> occupied, Random random, DungeonGenerationConfig config, int sourceFloor, int targetFloor) // 세로형 방 하나로 기존 층과 새 층을 연결하고 새 층을 성장
+        {
+            int lowerFloor = Math.Min(sourceFloor, targetFloor); // 세로형 방 기준 층 (아래쪽)
+            List<int> anchors = new List<int>(); // 세로형 방을 붙일 수 있는 기존 층 방
+
+            foreach (RoomNode room in layout.Rooms) // 방 순회
+            {
+                if (!room.IsVertical && room.Cell.Floor == sourceFloor) // 기존 층 일반 방
+                {
+                    anchors.Add(room.Id); // 후보 등록
+                }
+            }
+
+            Shuffle(anchors, random); // 무작위 순서
+
+            foreach (int anchorId in anchors) // 후보 순회
+            {
+                List<GridDirection> placements = new List<GridDirection>(); // 세로형 방을 놓을 방향
+
+                foreach (GridDirection direction in GridDirections.All) // 4방향
+                {
+                    GridPoint cell = layout.Room(anchorId).Cell.Step(direction); // 세로형 방 칸 (기존 층 기준)
+
+                    if (!InBounds(config, cell) || occupied.ContainsKey(cell)) // 범위·점유 확인
+                    {
+                        continue; // 제외
+                    }
+
+                    if (occupied.ContainsKey(cell.WithFloor(targetFloor))) // 새 층 같은 칸 점유 확인
+                    {
+                        continue; // 제외
+                    }
+
+                    placements.Add(direction); // 후보 등록
+                }
+
+                Shuffle(placements, random); // 무작위 순서
+
+                foreach (GridDirection direction in placements) // 배치 시도
+                {
+                    GridPoint column = layout.Room(anchorId).Cell.Step(direction); // 세로형 방 칸 (층 무시)
+                    GridDirection sourceWall = GridDirections.Opposite(direction); // 세로형 방에서 기존 층 문이 있는 벽
+                    List<GridDirection> exits = new List<GridDirection>(); // 새 층 출구 방향
+
+                    foreach (GridDirection exit in GridDirections.All) // 4방향
+                    {
+                        if (exit == sourceWall) // 아래·위층 문이 같은 벽이면 계단·사다리 구멍과 겹칠 수 있어 금지
+                        {
+                            continue; // 제외
+                        }
+
+                        GridPoint cell = column.WithFloor(targetFloor).Step(exit); // 새 층 첫 방 칸
+
+                        if (InBounds(config, cell) && !occupied.ContainsKey(cell)) // 범위·점유 확인
+                        {
+                            exits.Add(exit); // 후보 등록
+                        }
+                    }
+
+                    if (exits.Count == 0) // 새 층으로 나갈 수 없음
+                    {
+                        continue; // 다음 배치
+                    }
+
+                    GridDirection targetWall = exits[random.Next(exits.Count)]; // 새 층 출구 벽
+                    int verticalId = AddVerticalRoom(layout, occupied, column.WithFloor(lowerFloor), random, config, sourceFloor, sourceWall, targetWall); // 세로형 방 생성
+                    Connect(layout, anchorId, verticalId, false, sourceFloor); // 기존 층 문
+                    int firstId = AddRoom(layout, occupied, column.WithFloor(targetFloor).Step(targetWall), false, -1); // 새 층 첫 방
+                    Connect(layout, verticalId, firstId, false, targetFloor); // 새 층 문
+                    int floorTarget = Math.Min(random.Next(config.MinOtherFloorRooms, config.MaxOtherFloorRooms + 1), config.GridCellCount - 1); // 새 층 목표 방 수
+
+                    if (GrowFloor(layout, occupied, random, config, targetFloor, floorTarget, null)) // 새 층 성장
+                    {
+                        return true; // 성공
+                    }
+
+                    return false; // 새 층을 채우지 못함 → 시도 전체 재생성
+                }
+            }
+
+            return false; // 세로형 방을 놓을 자리가 없음
+        }
+
+        private static int AddRoom(DungeonLayout layout, Dictionary<GridPoint, int> occupied, GridPoint cell, bool onMainPath, int branchId) // 일반 방 추가
         {
             RoomNode room = new RoomNode { Id = layout.Rooms.Count, Cell = cell, OnMainPath = onMainPath, BranchId = branchId, Kind = RoomKind.Room }; // 새 방
             layout.Rooms.Add(room); // 목록 등록
@@ -135,9 +248,52 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
             return room.Id; // 번호 반환
         }
 
-        private static void Connect(DungeonLayout layout, int a, int b, bool isLoop) // 두 인접 방 사이 문 추가
+        private static int AddVerticalRoom(DungeonLayout layout, Dictionary<GridPoint, int> occupied, GridPoint lowerCell, Random random, DungeonGenerationConfig config, int sourceFloor, GridDirection sourceWall, GridDirection targetWall) // 두 층을 차지하는 세로형 방 추가
         {
-            layout.Doors.Add(new DoorEdge { A = a, B = b, FromA = GridDirections.Between(layout.Room(a).Cell, layout.Room(b).Cell), IsLoop = isLoop }); // 문 등록
+            bool sourceIsLower = sourceFloor == lowerCell.Floor; // 기존 층이 아래층인지
+            RoomNode room = new RoomNode // 세로형 방
+            {
+                Id = layout.Rooms.Count, // 번호
+                Cell = lowerCell, // 아래층 칸
+                Kind = RoomKind.Vertical, // 세로형
+                BranchId = -1, // 분기 없음
+                LowerWall = sourceIsLower ? sourceWall : targetWall, // 아래층 문 벽
+                UpperWall = sourceIsLower ? targetWall : sourceWall // 위층 문 벽
+            };
+
+            double roll = random.NextDouble(); // 종류 추첨
+            room.Vertical = roll < config.StairwellRatio ? VerticalKind.Stairwell : random.NextDouble() < config.ShaftRatio ? VerticalKind.Shaft : VerticalKind.Ladder; // 계단통 · 수직 통로 · 사다리 방
+
+            if (config.ForcedVerticalKind != VerticalKind.None) // 테스트용 종류 고정
+            {
+                room.Vertical = config.ForcedVerticalKind; // 고정 종류 적용
+            }
+
+            room.ClimbWall = room.Vertical == VerticalKind.Stairwell ? room.LowerWall : PickClimbWall(room, random); // 계단은 아래층 문 벽에서 시작, 사다리는 남은 벽
+            layout.Rooms.Add(room); // 목록 등록
+            occupied[lowerCell] = room.Id; // 아래층 칸 점유
+            occupied[lowerCell.Above] = room.Id; // 위층 칸 점유
+            return room.Id; // 번호 반환
+        }
+
+        private static GridDirection PickClimbWall(RoomNode room, Random random) // 사다리를 붙일 벽 (아래·위층 문이 없는 벽)
+        {
+            List<GridDirection> walls = new List<GridDirection>(); // 후보
+
+            foreach (GridDirection direction in GridDirections.All) // 4방향
+            {
+                if (direction != room.LowerWall && direction != room.UpperWall) // 문이 없는 벽
+                {
+                    walls.Add(direction); // 등록
+                }
+            }
+
+            return walls.Count == 0 ? GridDirections.Opposite(room.LowerWall) : walls[random.Next(walls.Count)]; // 선택
+        }
+
+        private static void Connect(DungeonLayout layout, int a, int b, bool isLoop, int floor) // 두 인접 방 사이 문 추가
+        {
+            layout.Doors.Add(new DoorEdge { A = a, B = b, FromA = GridDirections.Between(layout.Room(a).Cell, layout.Room(b).Cell), Floor = floor, IsLoop = isLoop }); // 문 등록
         }
 
         private static bool AreConnected(DungeonLayout layout, int a, int b) // 두 방 사이 문 존재 여부
@@ -153,12 +309,17 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
             return false; // 없음
         }
 
-        private static bool InBounds(DungeonGenerationConfig config, GridPoint cell) // 격자 범위 확인
+        private static bool InBounds(DungeonGenerationConfig config, GridPoint cell) // 격자·층 범위 확인
         {
+            if (cell.Floor > config.FloorsAbove || cell.Floor < -config.FloorsBelow) // 층 범위
+            {
+                return false; // 범위 밖
+            }
+
             return cell.X >= config.GridMinX && cell.X <= config.GridMaxX && cell.Y >= 0 && cell.Y <= config.GridMaxY; // 범위 안 여부
         }
 
-        private static GridDirection? PickDirection(DungeonGenerationConfig config, Random random, Dictionary<GridPoint, int> occupied, GridPoint from, bool forwardBias) // 빈 인접 칸 방향 가중 선택
+        private static GridDirection? PickDirection(DungeonGenerationConfig config, Random random, Dictionary<GridPoint, int> occupied, GridPoint from, bool forwardBias) // 같은 층 빈 인접 칸 방향 가중 선택
         {
             List<GridDirection> options = new List<GridDirection>(); // 후보 방향
             List<int> weights = new List<int>(); // 가중치
@@ -220,9 +381,9 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
             foreach (RoomNode room in layout.Rooms) // 방 순회
             {
                 room.Depth = Math.Max(0, distance[room.Id]); // 깊이
-                room.IsDeadEnd = room.Id != layout.StartRoomId && layout.DegreeOf(room.Id) == 1; // 막다른 방
+                room.IsDeadEnd = room.Id != layout.StartRoomId && !room.IsVertical && layout.DegreeOf(room.Id) == 1; // 막다른 방 (세로형 방 제외)
 
-                if (room.Depth > layout.Room(deepest).Depth) // 더 깊은 방
+                if (room.Depth > layout.Room(deepest).Depth && !room.IsVertical) // 더 깊은 일반 방
                 {
                     deepest = room.Id; // 갱신
                 }
@@ -231,15 +392,25 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
             layout.DeepestRoomId = deepest; // 기록
         }
 
-        private static void AddLoops(DungeonLayout layout, Dictionary<GridPoint, int> occupied, Random random, DungeonGenerationConfig config) // 깊이 차이가 큰 인접 방을 순환로로 연결
+        private static void AddLoops(DungeonLayout layout, Dictionary<GridPoint, int> occupied, Random random, DungeonGenerationConfig config) // 깊이 차이가 큰 같은 층 인접 방을 순환로로 연결
         {
             int count = layout.Rooms.Count; // 방 수 (루프 중 변하지 않음)
 
             for (int id = 0; id < count; id++) // 방 순회
             {
+                if (layout.Room(id).IsVertical) // 세로형 방은 문 2개 고정
+                {
+                    continue; // 제외
+                }
+
                 foreach (GridDirection direction in GridDirections.All) // 4방향
                 {
-                    if (!occupied.TryGetValue(layout.Room(id).Cell.Step(direction), out int other) || other <= id) // 인접 방·중복 확인
+                    if (!occupied.TryGetValue(layout.Room(id).Cell.Step(direction), out int other) || other <= id) // 같은 층 인접 방·중복 확인
+                    {
+                        continue; // 제외
+                    }
+
+                    if (layout.Room(other).IsVertical) // 세로형 방 제외
                     {
                         continue; // 제외
                     }
@@ -251,7 +422,7 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
 
                     if (random.NextDouble() < config.LoopChance) // 확률 판정
                     {
-                        Connect(layout, id, other, true); // 순환로 연결
+                        Connect(layout, id, other, true, layout.Room(id).Cell.Floor); // 순환로 연결
                     }
                 }
             }
@@ -287,12 +458,19 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
 
                     foreach (GridDirection direction in GridDirections.All) // 인접 방 탐색
                     {
-                        if (occupied.TryGetValue(layout.Room(id).Cell.Step(direction), out int other) && other != layout.StartRoomId && !AreConnected(layout, id, other)) // 연결 가능한 인접 방
+                        if (!occupied.TryGetValue(layout.Room(id).Cell.Step(direction), out int other)) // 같은 층 인접 방
                         {
-                            Connect(layout, id, other, true); // 순환로 연결
-                            connected = true; // 연결 완료
-                            break; // 다음 반복
+                            continue; // 없음
                         }
+
+                        if (other == layout.StartRoomId || layout.Room(other).IsVertical || AreConnected(layout, id, other)) // 제외 조건
+                        {
+                            continue; // 제외
+                        }
+
+                        Connect(layout, id, other, true, layout.Room(id).Cell.Floor); // 순환로 연결
+                        connected = true; // 연결 완료
+                        break; // 다음 반복
                     }
                 }
 
@@ -307,37 +485,87 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
             return false; // 보정 실패
         }
 
-        private static void AssignCorridors(DungeonLayout layout, List<int> mainPath, Random random, DungeonGenerationConfig config) // 주 경로의 직선 통과 방을 복도로 지정
+        private static void AssignCorridors(DungeonLayout layout, Random random, DungeonGenerationConfig config) // 직선 통과 방을 복도로 지정 (연속 수 제한 유지)
         {
-            int streak = 0; // 연속 복도 수
+            List<int> candidates = new List<int>(); // 후보
 
-            for (int i = 1; i < mainPath.Count - 1; i++) // 시작·끝 제외
+            foreach (RoomNode room in layout.Rooms) // 방 순회
             {
-                int id = mainPath[i]; // 대상 방
-                bool straight = false; // 직선 통과 여부
-
-                if (layout.DegreeOf(id) == 2) // 문 2개인지 확인
+                if (room.Id == layout.StartRoomId || room.IsVertical || room.Id == layout.DeepestRoomId) // 제외 조건
                 {
-                    List<GridDirection> walls = new List<GridDirection>(); // 문 방향
+                    continue; // 제외
+                }
 
-                    foreach (DoorEdge door in layout.DoorsOf(id)) // 문 순회
+                if (layout.DegreeOf(room.Id) != 2) // 문 2개만
+                {
+                    continue; // 제외
+                }
+
+                List<GridDirection> walls = new List<GridDirection>(); // 문 방향
+
+                foreach (DoorEdge door in layout.DoorsOf(room.Id)) // 문 순회
+                {
+                    walls.Add(door.DirectionFrom(room.Id)); // 방향 기록
+                }
+
+                if (walls[0] != GridDirections.Opposite(walls[1])) // 마주보는 방향만
+                {
+                    continue; // 제외
+                }
+
+                candidates.Add(room.Id); // 후보 등록
+            }
+
+            Shuffle(candidates, random); // 무작위 순서
+            int maxCorridors = Math.Max(1, layout.Rooms.Count / 4); // 전체 복도 상한
+            int assigned = 0; // 지정 수
+
+            foreach (int id in candidates) // 후보 순회
+            {
+                if (assigned >= maxCorridors || random.NextDouble() >= config.CorridorChance) // 상한·확률
+                {
+                    continue; // 제외
+                }
+
+                layout.Room(id).Kind = RoomKind.Corridor; // 임시 지정
+
+                if (CorridorChainLength(layout, id) > config.MaxStraightCorridors) // 연속 수 확인
+                {
+                    layout.Room(id).Kind = RoomKind.Room; // 되돌림
+                    continue; // 제외
+                }
+
+                assigned++; // 집계
+            }
+        }
+
+        private static int CorridorChainLength(DungeonLayout layout, int fromRoomId) // 연결된 복도 묶음 크기
+        {
+            HashSet<int> visited = new HashSet<int>(); // 방문
+            Stack<int> stack = new Stack<int>(); // 탐색
+            stack.Push(fromRoomId); // 시작
+
+            while (stack.Count > 0) // DFS
+            {
+                int current = stack.Pop(); // 현재
+
+                if (!visited.Add(current)) // 방문 확인
+                {
+                    continue; // 건너뜀
+                }
+
+                foreach (DoorEdge door in layout.DoorsOf(current)) // 이웃
+                {
+                    int next = door.Other(current); // 이웃 방
+
+                    if (layout.Room(next).Kind == RoomKind.Corridor) // 복도 연속
                     {
-                        walls.Add(door.DirectionFrom(id)); // 방향 기록
+                        stack.Push(next); // 탐색
                     }
-
-                    straight = walls[0] == GridDirections.Opposite(walls[1]); // 마주보는 방향
-                }
-
-                if (straight && streak < config.MaxStraightCorridors && random.NextDouble() < config.CorridorChance) // 복도 지정 조건
-                {
-                    layout.Room(id).Kind = RoomKind.Corridor; // 복도
-                    streak++; // 연속 증가
-                }
-                else
-                {
-                    streak = 0; // 연속 초기화
                 }
             }
+
+            return visited.Count; // 묶음 크기
         }
 
         private static void PlaceLockedDoorAndKey(DungeonLayout layout, Random random) // 다리(Bridge) 문 하나를 잠그고 열쇠를 도달 가능한 방에 배치
@@ -350,6 +578,11 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
                 DoorEdge door = layout.Doors[index]; // 대상 문
 
                 if (door.A == layout.StartRoomId || door.B == layout.StartRoomId) // 시작 방 문 제외
+                {
+                    continue; // 제외
+                }
+
+                if (layout.Room(door.A).IsVertical || layout.Room(door.B).IsVertical) // 세로형 방 문 제외 (층 전체가 잠기는 것을 막음)
                 {
                     continue; // 제외
                 }
@@ -427,7 +660,7 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
             layout.Room(layout.KeyRoomId).Content |= RoomContent.Key; // 열쇠 표시
         }
 
-        private static bool PlaceSubDoors(DungeonLayout layout, Random random, DungeonGenerationConfig config) // 외부 서브문 수와 같은 개수의 실내 서브문을 서로 떨어진 방에 배치
+        private static bool PlaceSubDoors(DungeonLayout layout, Random random, DungeonGenerationConfig config) // 외부 서브문 수와 같은 개수의 실내 서브문을 1층의 서로 떨어진 방에 배치
         {
             int needed = config.SubDoorCount; // 필요 개수
             layout.Room(layout.StartRoomId).IsEntrance = true; // 시작 방은 입구 방
@@ -456,6 +689,11 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
 
                     foreach (RoomNode room in layout.Rooms) // 방 순회
                     {
+                        if (room.Cell.Floor != 0 || room.IsVertical) // 서브문은 외부와 이어지는 1층에만 (세로형 방 제외)
+                        {
+                            continue; // 제외
+                        }
+
                         if (room.Id == layout.StartRoomId || room.Id == layout.DeepestRoomId || room.Id == layout.KeyRoomId || room.IsLockedSide || room.Kind != RoomKind.Room) // 제외 조건
                         {
                             continue; // 제외
@@ -512,9 +750,9 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
             return false; // 외부 서브문 수를 맞출 수 없음 → 재생성
         }
 
-        public static int GridDistance(GridPoint a, GridPoint b) // 격자 맨해튼 거리
+        public static int GridDistance(GridPoint a, GridPoint b) // 격자 거리 (층이 다르면 멀다고 계산)
         {
-            return Math.Abs(a.X - b.X) + Math.Abs(a.Y - b.Y); // 거리
+            return Math.Abs(a.X - b.X) + Math.Abs(a.Y - b.Y) + Math.Abs(a.Floor - b.Floor) * 2; // 거리
         }
 
         private static List<GridDirection> FreeWalls(DungeonLayout layout, int roomId) // 방 문·메인문이 없는 벽
@@ -539,14 +777,14 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
             return walls; // 반환
         }
 
-        private static void AssignContent(DungeonLayout layout, Random random, DungeonGenerationConfig config) // 회수품·함정·몬스터 후보 표시 (입구 방 제외)
+        private static void AssignContent(DungeonLayout layout, Random random, DungeonGenerationConfig config) // 회수품·함정·몬스터 후보 표시 (입구 방·세로형 방 제외)
         {
             List<int> candidates = new List<int>(); // 회수품 후보
             List<int> weights = new List<int>(); // 가중치
 
             foreach (RoomNode room in layout.Rooms) // 방 순회
             {
-                if (room.IsEntrance) // 입구 방 제외 (설계 문서 8.12)
+                if (room.IsEntrance || room.IsVertical) // 입구 방(설계 문서 8.12)·세로형 방 제외
                 {
                     continue; // 제외
                 }
@@ -598,12 +836,12 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
             }
         }
 
-        private static void Shuffle(List<int> list, Random random) // Fisher-Yates 섞기
+        private static void Shuffle<T>(List<T> list, Random random) // Fisher-Yates 섞기
         {
             for (int i = list.Count - 1; i > 0; i--) // 뒤에서부터
             {
                 int j = random.Next(i + 1); // 교환 대상
-                int temp = list[i]; // 임시
+                T temp = list[i]; // 임시
                 list[i] = list[j]; // 교환
                 list[j] = temp; // 교환
             }
