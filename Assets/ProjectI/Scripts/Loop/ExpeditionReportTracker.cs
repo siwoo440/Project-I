@@ -35,6 +35,18 @@ namespace ProjectI.Loop // 원정 루프 기능 네임스페이스
             expeditionActive = true; // 결과 추적 시작
         }
 
+        public void MarkFailed(int lostCount, int lostValue) // 원정 실패로 잃은 물건을 결과에 기록
+        {
+            if (LastReport == null) // 결과 없음 확인
+            {
+                LastReport = new ExpeditionReport(); // 빈 결과 생성
+            }
+
+            LastReport.Failed = true; // 실패 표시
+            LastReport.LostOnFailureCount = lostCount; // 잃은 물건 수
+            LastReport.LostOnFailureValue = lostValue; // 잃은 가치
+        }
+
         public void CompleteExpedition(Transform wagonRoot) // 던전 출발(귀환) 직전 원정 결과 계산
         {
             if (!expeditionActive) // 추적 중인 원정이 있는지 확인
@@ -158,5 +170,8 @@ namespace ProjectI.Loop // 원정 루프 기능 네임스페이스
         public int NewLootCount; // 새로 가져온 물건 수
         public int NewLootValue; // 새로 가져온 회수품 가치 합계
         public int LostBroughtCount; // 가져갔다가 두고 온 물건 수
+        public bool Failed; // 원정 실패(전원 사망) 여부
+        public int LostOnFailureCount; // 실패로 잃은 물건 수
+        public int LostOnFailureValue; // 실패로 잃은 회수품 가치 합계
     }
 }

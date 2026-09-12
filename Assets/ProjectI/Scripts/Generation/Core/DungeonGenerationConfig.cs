@@ -19,6 +19,10 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
         public float StairwellRatio = 0.5f; // 세로형 방이 계단통일 확률 (나머지는 사다리 계열)
         public float ShaftRatio = 0.4f; // 사다리 계열 중 좁은 수직 통로 비율
         public VerticalKind ForcedVerticalKind = VerticalKind.None; // None이 아니면 모든 세로형 방을 이 종류로 고정 (테스트용)
+        public float SingleRoomRatio = 0.68f; // 1칸 방 비율 (나머지는 2x1 · L자 · 2x2)
+        public bool EnableBossRoom = true; // 최심층 3x3 보스방 생성 여부
+        public bool EnableSecretRoom = true; // 부술 수 있는 벽 너머 비밀방 생성 여부
+        public int SecretRoomCount = 1; // 비밀방 개수
         public int SubDoorCount; // 실내 서브문 수 (외부 씬의 서브문 수와 같아야 함)
         public int MinSubDoorSpacing = 2; // 서브문 방끼리·시작 방과의 최소 문 거리
         public float SubDoorMaxDepthRatio = 0.7f; // 서브문은 전체 깊이의 앞·중간 구간에만 배치

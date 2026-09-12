@@ -62,6 +62,12 @@ namespace ProjectI.Player // 플레이어 기능 네임스페이스
             return healedAmount; // 실제 회복량 반환
         }
 
+        public void ReviveFull() // 사망 상태에서 최대 체력으로 되살림 (원정 실패 귀환·사무소 부활)
+        {
+            state = new HealthState(maxHealth); // 체력 상태를 최대치로 새로 생성
+            HealthChanged?.Invoke(state.CurrentHealth, state.MaxHealth); // 체력 변경 이벤트 발생
+        }
+
         private void OnValidate() // 인스펙터 값 검증
         {
             maxHealth = Mathf.Max(1f, maxHealth); // 최대 체력 최소값 보정

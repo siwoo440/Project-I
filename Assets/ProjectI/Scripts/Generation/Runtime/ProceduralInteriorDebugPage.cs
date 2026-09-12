@@ -42,6 +42,8 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
             builder.AppendLine($"Floors     : {GridPoint.FloorName(layout.MinFloor)} ~ {GridPoint.FloorName(layout.MaxFloor)} ({layout.FloorCount}개) / 층 높이 {generator.FloorStep:F1}m"); // 층
             builder.AppendLine($"Max Depth  : {layout.MaxDepth} / 최심부 방 {layout.DeepestRoomId}"); // 깊이
             builder.AppendLine($"Locked     : {(layout.LockedDoorIndex < 0 ? "없음" : $"문 {layout.LockedDoorIndex} / 열쇠 방 {layout.KeyRoomId} {layout.Room(layout.KeyRoomId).Cell}")}"); // 잠긴 문
+            int multiCell = layout.Rooms.FindAll(room => !room.IsVertical && room.IsMultiCell).Count; // 다칸 방 수
+            builder.AppendLine($"Special    : 보스방 {(layout.BossRoomId < 0 ? "없음" : $"방 {layout.BossRoomId} {layout.Room(layout.BossRoomId).Cell} 9칸")} / 비밀방 {layout.SecretRoomIds.Count} / 다칸 방 {multiCell} / 금 간 벽 {generator.BreakableWalls.Count}"); // 특수 방
             builder.AppendLine($"Loot       : {generator.SpawnedLoot.Count}개"); // 회수품
             builder.AppendLine($"Depth      : 생성물 최고 {generator.GeneratedMaxY:F1} / 한계 {generator.InteriorTopY:F1} / 외부 최저 {generator.ExteriorBottomY:F1}"); // 지하 깊이
             builder.AppendLine(); // 여백

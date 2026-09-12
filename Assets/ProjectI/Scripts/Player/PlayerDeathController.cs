@@ -28,6 +28,9 @@ namespace ProjectI.Player // 플레이어 기능 네임스페이스
         private float physicsElapsed; // 사망 후 래그돌 물리 경과 시간
         private float stillElapsed; // 저속 상태 연속 유지 시간
         private Vector3 deathPosition; // 실제 사망 위치 기록
+        private Vector3 cameraLocalPosition; // 생존 시 1인칭 카메라 로컬 위치 (부활 복구용)
+        private Quaternion cameraLocalRotation; // 생존 시 1인칭 카메라 로컬 회전 (부활 복구용)
+        private bool cameraPoseCaptured; // 카메라 기준 자세 저장 여부
 
         public bool IsDead => isDead; // 외부 원정 시스템용 사망 여부 공개
         public bool IsRagdollFrozen => isRagdollFrozen; // 진단용 물리 절전 여부 공개
@@ -134,6 +137,88 @@ namespace ProjectI.Player // 플레이어 기능 네임스페이스
             liveBehavioursToDisable = targetLiveBehaviours; // 사망 시 정지할 기존 기능 목록 저장
             CacheRagdollBodies(); // 새 래그돌 구조 기준 Rigidbody 목록 갱신
             PrepareAliveState(); // Edit Mode 구성 직후 래그돌 비활성 상태 보장
+        }
+
+        public bool Revive(Vector3 position, Quaternion rotation) // 사망 상태에서 지정 위치로 부활 (원정 실패 귀환·사무소 부활)
+        {
+            ResolveReferences(); // 참조 보정
+
+            if (!isDead) // 이미 살아 있는지 확인
+            {
+                return false; // 부활 불필요
+            }
+
+            if (ragdollRoot != null) // 래그돌 존재 확인
+            {
+                foreach (Rigidbody body in ragdollBodies ?? new Rigidbody[0]) // 물리 정지
+                {
+                    if (body != null) // 유효 확인
+                    {
+                        body.linearVelocity = Vector3.zero; // 속도 제거
+                        body.angularVelocity = Vector3.zero; // 회전 제거
+                        body.isKinematic = true; // 물리 정지
+                        body.detectCollisions = false; // 충돌 제거
+                    }
+                }
+
+                ragdollRoot.transform.localPosition = Vector3.zero; // 래그돌 기준 위치 복구
+                ragdollRoot.transform.localRotation = Quaternion.identity; // 래그돌 기준 회전 복구
+                ragdollRoot.SetActive(false); // 시체 숨김
+            }
+
+            bool controllerWasEnabled = characterController != null && characterController.enabled; // 기존 상태
+            Quaternion yawOnly = Quaternion.Euler(0f, rotation.eulerAngles.y, 0f); // 좌우 방향만 적용
+
+            if (characterController != null) // 이동 충돌체 확인
+            {
+                characterController.enabled = false; // 위치 강제 이동 중 충돌 보정 방지
+            }
+
+            transform.SetPositionAndRotation(position, yawOnly); // 부활 위치로 이동
+            Physics.SyncTransforms(); // 물리 위치 즉시 반영
+
+            if (characterController != null) // 이동 충돌체 확인
+            {
+                characterController.enabled = true; // 이동 기능 복구
+            }
+
+            if (viewCamera != null && cameraPoseCaptured) // 사망 카메라 연출 복구
+            {
+                viewCamera.transform.localPosition = cameraLocalPosition; // 1인칭 위치 복구
+                viewCamera.transform.localRotation = cameraLocalRotation; // 1인칭 회전 복구
+            }
+
+            EnableLiveControls(); // 이동·시점·전투·상호작용 기능 복구
+            isDead = false; // 생존 상태 기록
+            isRagdollFrozen = false; // 물리 절전 해제
+            isRecovered = false; // 시체 회수 상태 해제
+            recoveredArea = null; // 회수 마차 참조 해제
+            physicsElapsed = 0f; // 물리 시간 초기화
+            stillElapsed = 0f; // 정지 시간 초기화
+            health?.ReviveFull(); // 체력 최대치 복구
+
+            PlayerMovement movement = GetComponent<PlayerMovement>(); // 이동 컴포넌트
+            movement?.NotifyTeleported(); // 부활 위치 기준으로 추락 판정 초기화
+            Debug.Log($"[Project I] Player 부활 / {position}", this); // 부활 로그
+            return true; // 부활 완료
+        }
+
+        private void EnableLiveControls() // 생존 기능 복구
+        {
+            if (liveBehavioursToDisable == null) // 목록 확인
+            {
+                return; // 종료
+            }
+
+            foreach (MonoBehaviour behaviour in liveBehavioursToDisable) // 대상 순회
+            {
+                if (behaviour == null || behaviour == this) // 유효 확인
+                {
+                    continue; // 다음
+                }
+
+                behaviour.enabled = true; // 기능 복구
+            }
         }
 
         public void WakeRagdoll() // 향후 동료가 시체를 다시 이동할 때 물리 활성화
@@ -340,8 +425,21 @@ namespace ProjectI.Player // 플레이어 기능 네임스페이스
             isRagdollFrozen = false; // 현재 동적 물리 상태 기록
         }
 
+        private void CaptureCameraPose() // 생존 시 카메라 기준 자세 저장 (부활 복구용)
+        {
+            if (viewCamera == null || cameraPoseCaptured) // 저장 필요 여부 확인
+            {
+                return; // 종료
+            }
+
+            cameraLocalPosition = viewCamera.transform.localPosition; // 로컬 위치 저장
+            cameraLocalRotation = viewCamera.transform.localRotation; // 로컬 회전 저장
+            cameraPoseCaptured = true; // 저장 완료
+        }
+
         private void PrepareAliveState() // 플레이 시작 시 사망 전용 몸체를 숨김
         {
+            CaptureCameraPose(); // 부활 시 되돌릴 1인칭 카메라 자세 저장
             if (ragdollRoot != null && !isDead) // 생존 상태의 래그돌 루트 존재 확인
             {
                 ragdollRoot.SetActive(false); // 1인칭 생존 중 Primitive 몸체 숨김

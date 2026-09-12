@@ -27,6 +27,7 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
             ValidateCells(layout, config, errors); // 칸 중복·격자 범위
             int[] unlocked = ValidateDoorsAndConnectivity(layout, config, errors); // 문·연결성·잠긴 문
             ValidateVerticalRooms(layout, config, errors); // 세로형 방 규칙
+            ValidateSpecialRooms(layout, config, errors); // 보스방·비밀방·부술 수 있는 벽 규칙
             ValidateSubDoors(layout, config, unlocked, errors); // 서브문 규칙
             ValidateCorridors(layout, config, errors); // 복도 규칙
 
@@ -50,11 +51,11 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
 
             for (int floor = -config.FloorsBelow; floor <= config.FloorsAbove; floor++) // 층 순회
             {
-                int rooms = 0; // 해당 층 일반 방 수
+                int rooms = 0; // 해당 층 일반 방 수 (보스·비밀방 제외)
 
                 foreach (RoomNode room in layout.Rooms) // 방 순회
                 {
-                    rooms += !room.IsVertical && room.Cell.Floor == floor ? 1 : 0; // 집계
+                    rooms += !room.IsVertical && room.Role == RoomRole.Normal && room.Cell.Floor == floor ? 1 : 0; // 집계
                 }
 
                 int min = floor == 0 ? config.MinRooms : config.MinOtherFloorRooms; // 최소
@@ -73,29 +74,48 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
 
             foreach (RoomNode room in layout.Rooms) // 방 순회
             {
-                if (!cells.Add(room.Cell)) // 아래층 칸 중복
+                if (room.Cells.Count == 0 || !room.Cells[0].Equals(room.Cell)) // 기준 칸 확인
                 {
-                    errors.Add($"방 겹침 {room.Cell}"); // 오류
+                    errors.Add($"방 {room.Id} 칸 목록 불일치"); // 오류
+                    continue; // 이후 검사 불가
                 }
 
-                if (room.IsVertical && !cells.Add(room.Cell.Above)) // 위층 칸 중복
+                if (!room.IsVertical && room.Cells.Count != RoomShapes.CellCount(room.Shape)) // 모양과 칸 수 일치
                 {
-                    errors.Add($"세로형 방 위층 겹침 {room.Cell.Above}"); // 오류
+                    errors.Add($"방 {room.Id} 모양 {room.Shape}인데 칸 {room.Cells.Count}개"); // 오류
                 }
 
-                if (room.Cell.X < config.GridMinX || room.Cell.X > config.GridMaxX || room.Cell.Y < 0 || room.Cell.Y > config.GridMaxY) // 격자 범위
+                foreach (GridPoint cell in room.Cells) // 칸 순회
                 {
-                    errors.Add($"격자 범위 밖 방 {room.Cell}"); // 오류
+                    if (!cells.Add(cell)) // 칸 중복
+                    {
+                        errors.Add($"방 겹침 {cell}"); // 오류
+                    }
+
+                    if (cell.X < config.GridMinX || cell.X > config.GridMaxX || cell.Y < 0 || cell.Y > config.GridMaxY) // 격자 범위
+                    {
+                        errors.Add($"격자 범위 밖 방 {cell}"); // 오류
+                    }
+
+                    if (cell.Floor < -config.FloorsBelow || cell.Floor > config.FloorsAbove) // 층 범위
+                    {
+                        errors.Add($"층 범위 밖 방 {cell}"); // 오류
+                    }
                 }
 
-                if (room.LowerFloor < -config.FloorsBelow || room.UpperFloor > config.FloorsAbove) // 층 범위
+                if (!room.IsVertical && !IsConnectedShape(room)) // 칸이 서로 붙어 있는지
                 {
-                    errors.Add($"층 범위 밖 방 {room.Cell}"); // 오류
+                    errors.Add($"방 {room.Id} 칸이 끊어져 있음"); // 오류
                 }
 
                 if (!room.IsVertical && room.Vertical != VerticalKind.None) // 일반 방 표시 불일치
                 {
                     errors.Add($"일반 방 {room.Id}에 세로형 종류 {room.Vertical}"); // 오류
+                }
+
+                if (room.Kind == RoomKind.Corridor && room.IsMultiCell) // 복도는 1칸만
+                {
+                    errors.Add($"복도 {room.Id}가 여러 칸 방"); // 오류
                 }
             }
         }
@@ -111,9 +131,12 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
                 RoomNode a = layout.Room(door.A); // 방 A
                 RoomNode b = layout.Room(door.B); // 방 B
 
-                if (door.A == door.B || Math.Abs(a.Cell.X - b.Cell.X) + Math.Abs(a.Cell.Y - b.Cell.Y) != 1 || GridDirections.Between(a.Cell, b.Cell) != door.FromA) // 인접·방향 확인
+                bool cellsValid = a.OccupiesCell(door.CellA) && b.OccupiesCell(door.CellB); // 문 칸이 각 방에 속하는지
+                bool adjacent = Math.Abs(door.CellA.X - door.CellB.X) + Math.Abs(door.CellA.Y - door.CellB.Y) == 1; // 맞닿은 칸인지
+
+                if (door.A == door.B || !cellsValid || !adjacent || GridDirections.Between(door.CellA, door.CellB) != door.FromA) // 인접·방향 확인
                 {
-                    errors.Add($"잘못된 문 {door.A}-{door.B}"); // 오류
+                    errors.Add($"잘못된 문 {door.A}-{door.B} ({door.CellA}→{door.CellB})"); // 오류
                 }
 
                 if (!a.OccupiesFloor(door.Floor) || !b.OccupiesFloor(door.Floor)) // 두 방이 같은 층에서 만나는지
@@ -121,7 +144,7 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
                     errors.Add($"문 {door.A}-{door.B}이 {GridPoint.FloorName(door.Floor)}에서 이어지지 않음"); // 오류
                 }
 
-                if (!a.IsVertical && !b.IsVertical && a.Cell.Floor != b.Cell.Floor) // 층이 다른 일반 방 직결 금지
+                if (!a.IsVertical && !b.IsVertical && door.CellA.Floor != door.CellB.Floor) // 층이 다른 일반 방 직결 금지
                 {
                     errors.Add($"세로형 방 없이 층이 다른 방 {door.A}-{door.B}이 직접 연결됨"); // 오류
                 }
@@ -159,9 +182,9 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
 
             int deadEnds = 0; // 막다른 방 수
 
-            foreach (RoomNode room in layout.Rooms) // 막다른 방 집계
+            foreach (RoomNode room in layout.Rooms) // 막다른 방 집계 (보스·비밀방은 의도된 막다른 방이라 제외)
             {
-                deadEnds += room.Id != layout.StartRoomId && layout.DegreeOf(room.Id) == 1 ? 1 : 0; // 집계
+                deadEnds += room.Id != layout.StartRoomId && room.Role == RoomRole.Normal && layout.DegreeOf(room.Id) == 1 ? 1 : 0; // 집계
             }
 
             if (count > 1 && deadEnds > Math.Floor((count - 1) * config.MaxDeadEndRatio)) // 비율 확인
@@ -266,6 +289,116 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
             }
         }
 
+        private static bool IsConnectedShape(RoomNode room) // 방의 칸이 서로 맞닿아 하나로 이어지는지
+        {
+            if (room.Cells.Count <= 1) // 1칸 확인
+            {
+                return true; // 통과
+            }
+
+            HashSet<GridPoint> remaining = new HashSet<GridPoint>(room.Cells); // 남은 칸
+            Stack<GridPoint> stack = new Stack<GridPoint>(); // 탐색
+            stack.Push(room.Cells[0]); // 시작
+            remaining.Remove(room.Cells[0]); // 방문 처리
+
+            while (stack.Count > 0) // 깊이 탐색
+            {
+                GridPoint current = stack.Pop(); // 현재 칸
+
+                foreach (GridDirection direction in GridDirections.All) // 4방향
+                {
+                    GridPoint next = current.Step(direction); // 이웃 칸
+
+                    if (remaining.Remove(next)) // 같은 방 칸인지
+                    {
+                        stack.Push(next); // 탐색
+                    }
+                }
+            }
+
+            return remaining.Count == 0; // 모두 이어졌는지
+        }
+
+        private static void ValidateSpecialRooms(DungeonLayout layout, DungeonGenerationConfig config, List<string> errors) // 보스방·비밀방·부술 수 있는 벽 규칙
+        {
+            int bossCount = 0; // 보스방 수
+            int secretCount = 0; // 비밀방 수
+
+            foreach (RoomNode room in layout.Rooms) // 방 순회
+            {
+                if (room.IsBoss) // 보스방
+                {
+                    bossCount++; // 집계
+
+                    if (room.Cells.Count != 9 || room.Shape != RoomShape.Boss) // 3x3 확인
+                    {
+                        errors.Add($"보스방 {room.Id} 칸 {room.Cells.Count}개 (3x3 = 9칸 필요)"); // 오류
+                    }
+
+                    if (layout.DegreeOf(room.Id) != 1) // 입구 1개
+                    {
+                        errors.Add($"보스방 {room.Id} 입구 {layout.DegreeOf(room.Id)}개 (1개 필요)"); // 오류
+                    }
+
+                    if (room.Cell.Floor != -config.FloorsBelow) // 최심층 확인
+                    {
+                        errors.Add($"보스방 {room.Id}이 {GridPoint.FloorName(room.Cell.Floor)}에 있음 (최심층 필요)"); // 오류
+                    }
+
+                    if (room.Id == layout.KeyRoomId || room.Kind == RoomKind.Corridor) // 열쇠·복도 금지
+                    {
+                        errors.Add($"보스방 {room.Id}에 열쇠 또는 복도 표시"); // 오류
+                    }
+                }
+
+                if (room.IsSecret) // 비밀방
+                {
+                    secretCount++; // 집계
+
+                    if (layout.DegreeOf(room.Id) != 1) // 입구 1개
+                    {
+                        errors.Add($"비밀방 {room.Id} 입구 {layout.DegreeOf(room.Id)}개 (1개 필요)"); // 오류
+                    }
+
+                    foreach (DoorEdge door in layout.DoorsOf(room.Id)) // 연결 문
+                    {
+                        if (!door.IsBreakable) // 부술 수 있는 벽 확인
+                        {
+                            errors.Add($"비밀방 {room.Id} 입구가 부술 수 있는 벽이 아님"); // 오류
+                        }
+                    }
+                }
+            }
+
+            if (config.EnableBossRoom && bossCount != 1) // 보스방 개수
+            {
+                errors.Add($"보스방 {bossCount}개 (1개 필요)"); // 오류
+            }
+
+            if (!config.EnableBossRoom && bossCount != 0) // 비활성인데 생성됨
+            {
+                errors.Add($"보스방 사용 안 함인데 {bossCount}개 생성"); // 오류
+            }
+
+            if (config.EnableSecretRoom && secretCount != config.SecretRoomCount) // 비밀방 개수
+            {
+                errors.Add($"비밀방 {secretCount}개 (요청 {config.SecretRoomCount}개)"); // 오류
+            }
+
+            foreach (DoorEdge door in layout.Doors) // 부술 수 있는 벽은 비밀방 전용
+            {
+                if (door.IsBreakable && !layout.Room(door.A).IsSecret && !layout.Room(door.B).IsSecret) // 비밀방과 연결되지 않은 파괴 벽
+                {
+                    errors.Add($"부술 수 있는 벽 {door.A}-{door.B}이 비밀방과 연결되지 않음"); // 오류
+                }
+
+                if (door.IsBreakable && door.IsLocked) // 잠긴 문과 중복 금지
+                {
+                    errors.Add($"부술 수 있는 벽 {door.A}-{door.B}이 잠긴 문으로 지정됨"); // 오류
+                }
+            }
+        }
+
         private static void ValidateSubDoors(DungeonLayout layout, DungeonGenerationConfig config, int[] unlocked, List<string> errors) // 서브문 수·1:1·겹침·위치 규칙
         {
             if (layout.SubDoors.Count != config.SubDoorCount) // 외부 서브문 수와 동일
@@ -295,13 +428,13 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
 
                 foreach (SubDoorPlacement other in layout.SubDoors) // 다른 서브문과 공간 거리
                 {
-                    if (other != sub && DungeonLayoutGenerator.GridDistance(layout.Room(sub.RoomId).Cell, layout.Room(other.RoomId).Cell) < 2) // 옆 칸 금지
+                    if (other != sub && DungeonLayoutGenerator.GridDistance(layout.Room(sub.RoomId), layout.Room(other.RoomId)) < 2) // 옆 칸 금지
                     {
                         errors.Add($"서브문 {sub.Index + 1}·{other.Index + 1}이 옆 칸 방에 있어 벽을 사이에 두고 겹칠 수 있음"); // 오류
                     }
                 }
 
-                if (DungeonLayoutGenerator.GridDistance(layout.Room(sub.RoomId).Cell, layout.Room(layout.StartRoomId).Cell) < 2) // 정문 방과 옆 칸 금지
+                if (DungeonLayoutGenerator.GridDistance(layout.Room(sub.RoomId), layout.Room(layout.StartRoomId)) < 2) // 정문 방과 옆 칸 금지
                 {
                     errors.Add($"서브문 {sub.Index + 1}이 정문 방 바로 옆 칸에 있음"); // 오류
                 }
@@ -321,9 +454,19 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
                     errors.Add($"서브문 {sub.Index}이 잠긴 문 너머에 있음"); // 오류
                 }
 
-                if (layout.HasDoorOnWall(sub.RoomId, sub.Wall)) // 방 문과 같은 벽 금지
+                if (!layout.Room(sub.RoomId).OccupiesCell(sub.Cell)) // 서브문 칸이 방에 속하는지
+                {
+                    errors.Add($"서브문 {sub.Index + 1} 칸 {sub.Cell}이 방 {sub.RoomId}에 속하지 않음"); // 오류
+                }
+
+                if (layout.HasDoorOnCellWall(sub.RoomId, sub.Cell, sub.Wall)) // 방 문과 같은 칸·벽 금지
                 {
                     errors.Add($"서브문 {sub.Index}이 방 문과 같은 벽에 있음"); // 오류
+                }
+
+                if (layout.Room(sub.RoomId).Role != RoomRole.Normal) // 보스·비밀방 금지
+                {
+                    errors.Add($"서브문 {sub.Index + 1}이 {layout.Room(sub.RoomId).Role} 방에 있음"); // 오류
                 }
 
                 if (!layout.Room(sub.RoomId).IsEntrance) // 입구 방 표시

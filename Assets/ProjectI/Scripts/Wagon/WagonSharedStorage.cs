@@ -15,6 +15,8 @@ namespace ProjectI.Wagon // 마차 시스템 네임스페이스
         public InteractionType InteractionType => InteractionType.Press; // F 한 번 누르기 방식 사용
         public float HoldDuration => 0f; // 길게 누르기 시간 불필요
         public int StoredCount => storedItems.Count; // 현재 보관 아이템 개수 공개
+        public Transform StorageRoot => storageRoot; // 공동 보관 루트 공개 (원정 실패 시 유지 대상 판정용)
+        public IReadOnlyList<WorldItem> StoredItems => storedItems; // 공동 보관 아이템 목록 공개
         public int Capacity => capacity; // 보관함 최대 개수 공개
 
         private void Awake() // 공동 보관함 초기화

@@ -1130,6 +1130,9 @@ MonoBehaviour:
   gridMaxX: 3
   gridMaxY: 5
   enableLockedDoor: 1
+  enableBossRoom: 1
+  enableSecretRoom: 1
+  secretRoomCount: 1
   seedOverride: 0
   floorsAbove: 2
   floorsBelow: 2
@@ -1140,14 +1143,15 @@ MonoBehaviour:
   roomSize: 7
   corridorSize: 3.5
   roomHeight: 4
-  wallThickness: 0.4
-  doorWidth: 2.2
+  wallThickness: 0.25
+  doorWidth: 2.4
   doorHeight: 2.8
   surfaceClearance: 12
   gridOriginXZ: {x: 0, y: -38}
   stairWidth: 2.6
   stairStepHeight: 0.3
   stairEntryInset: 0.9
+  stairTopLanding: 1.2
   stairRampThickness: 0.4
   ladderHoleWidth: 1.6
   ladderHoleDepth: 1.3
@@ -1158,6 +1162,8 @@ MonoBehaviour:
   lockedDoorMaterial: {fileID: 2100000, guid: bd9ef98b6039f3e4186a274d20c94691, type: 2}
   stairMaterial: {fileID: 2100000, guid: 9c58f6891d4c12c4e9b663920f099294, type: 2}
   ladderMaterial: {fileID: 2100000, guid: 9f9fcf08e292f714890f9a6d87032463, type: 2}
+  breakableWallMaterial: {fileID: 2100000, guid: 793168dcc986a894ea2ed266ba28d40e, type: 2}
+  breakableWallHealth: 120
   keyDefinition: {fileID: 11400000, guid: 2b8a6a6fcf292d6479f27f03cd088430, type: 2}
   lootTable:
   - definition: {fileID: 11400000, guid: 930a9175b54340a408b28e938fff9da3, type: 2}

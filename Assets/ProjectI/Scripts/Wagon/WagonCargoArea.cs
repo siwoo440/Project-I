@@ -15,6 +15,7 @@ namespace ProjectI.Wagon // 마차 시스템 네임스페이스
         private readonly List<PlayerDeathController> playerCleanupBuffer = new List<PlayerDeathController>(); // 죽은 플레이어 회수 해제용 임시 목록
 
         public int SecuredCount => securedItems.Count; // 현재 확보된 회수품 개수 공개
+        public IEnumerable<WorldItem> SecuredItems => securedItems; // 현재 확보된 회수품 목록 공개 (원정 실패 상실 처리용)
         public int RecoveredPlayerCount => recoveredPlayers.Count; // 같은 영역에 회수된 죽은 플레이어 개수 공개
 
         private void Awake() // 공통 창고 영역 초기화

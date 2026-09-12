@@ -161,6 +161,104 @@ namespace ProjectI.Generation.Tests // 절차적 던전 생성 테스트 네임�
         }
 
         [Test]
+        public void BossRoomIsThreeByThreeOnDeepestFloorWithOneEntrance() // 보스방은 최심층 3x3 · 입구 1개
+        {
+            DungeonGenerationConfig config = CreateConfig(2); // 기본 규칙
+
+            for (int seed = 0; seed < 150; seed++) // 시드 순회
+            {
+                DungeonLayout layout = DungeonLayoutGenerator.Generate(config, (seed * 9176) + 31); // 생성
+                Assert.That(layout, Is.Not.Null, $"seed={seed}"); // 생성 성공
+                Assert.That(layout.BossRoomId, Is.GreaterThanOrEqualTo(0), $"seed={seed} 보스방 없음"); // 보스방 존재
+                RoomNode boss = layout.Room(layout.BossRoomId); // 보스방
+                Assert.That(boss.Shape, Is.EqualTo(RoomShape.Boss), $"seed={seed}"); // 3x3 모양
+                Assert.That(boss.Cells.Count, Is.EqualTo(9), $"seed={seed}"); // 9칸
+                Assert.That(layout.DegreeOf(boss.Id), Is.EqualTo(1), $"seed={seed} 입구 수"); // 입구 1개
+                Assert.That(boss.Cell.Floor, Is.EqualTo(-config.FloorsBelow), $"seed={seed} 최심층"); // 최심층
+                Assert.That(boss.Kind, Is.Not.EqualTo(RoomKind.Corridor), $"seed={seed}"); // 복도 아님
+
+                foreach (SubDoorPlacement sub in layout.SubDoors) // 서브문 순회
+                {
+                    Assert.That(sub.RoomId, Is.Not.EqualTo(boss.Id), $"seed={seed} 보스방 서브문"); // 보스방에는 서브문 없음
+                }
+            }
+        }
+
+        [Test]
+        public void SecretRoomsAreOnlyReachableThroughBreakableWalls() // 비밀방은 부술 수 있는 벽으로만 연결
+        {
+            DungeonGenerationConfig config = CreateConfig(2); // 기본 규칙
+
+            for (int seed = 0; seed < 150; seed++) // 시드 순회
+            {
+                DungeonLayout layout = DungeonLayoutGenerator.Generate(config, (seed * 7717) + 5); // 생성
+                Assert.That(layout, Is.Not.Null, $"seed={seed}"); // 생성 성공
+                Assert.That(layout.SecretRoomIds.Count, Is.EqualTo(config.SecretRoomCount), $"seed={seed}"); // 개수
+
+                foreach (int secretId in layout.SecretRoomIds) // 비밀방 순회
+                {
+                    RoomNode secret = layout.Room(secretId); // 비밀방
+                    Assert.That(secret.Role, Is.EqualTo(RoomRole.Secret), $"seed={seed}"); // 역할
+                    Assert.That(layout.DegreeOf(secretId), Is.EqualTo(1), $"seed={seed} 입구 수"); // 입구 1개
+
+                    foreach (DoorEdge door in layout.DoorsOf(secretId)) // 연결 문
+                    {
+                        Assert.That(door.IsBreakable, Is.True, $"seed={seed} 부술 수 있는 벽 아님"); // 파괴 벽
+                        Assert.That(door.IsLocked, Is.False, $"seed={seed} 잠긴 문과 중복"); // 잠금 아님
+                    }
+                }
+
+                foreach (DoorEdge door in layout.Doors) // 파괴 벽은 비밀방 전용
+                {
+                    if (door.IsBreakable) // 파괴 벽
+                    {
+                        Assert.That(layout.Room(door.A).IsSecret || layout.Room(door.B).IsSecret, Is.True, $"seed={seed}"); // 비밀방 연결
+                    }
+                }
+            }
+        }
+
+        [Test]
+        public void MultiCellRoomsAreConnectedAndNeverOverlap() // 여러 칸 방은 칸이 이어지고 서로 겹치지 않음
+        {
+            DungeonGenerationConfig config = CreateConfig(2); // 기본 규칙
+            int multiCellSeen = 0; // 다칸 방 수
+
+            for (int seed = 0; seed < 150; seed++) // 시드 순회
+            {
+                DungeonLayout layout = DungeonLayoutGenerator.Generate(config, (seed * 3571) + 17); // 생성
+                Assert.That(layout, Is.Not.Null, $"seed={seed}"); // 생성 성공
+                HashSet<GridPoint> cells = new HashSet<GridPoint>(); // 전체 칸
+
+                foreach (RoomNode room in layout.Rooms) // 방 순회
+                {
+                    Assert.That(room.Cells.Count, Is.GreaterThan(0), $"seed={seed} 방 {room.Id}"); // 칸 존재
+                    Assert.That(room.Cells[0], Is.EqualTo(room.Cell), $"seed={seed} 방 {room.Id}"); // 기준 칸
+
+                    if (!room.IsVertical) // 일반 방
+                    {
+                        Assert.That(room.Cells.Count, Is.EqualTo(RoomShapes.CellCount(room.Shape)), $"seed={seed} 방 {room.Id}"); // 모양과 칸 수
+                        multiCellSeen += room.IsMultiCell ? 1 : 0; // 집계
+                    }
+
+                    foreach (GridPoint cell in room.Cells) // 칸 순회
+                    {
+                        Assert.That(cells.Add(cell), Is.True, $"seed={seed} 칸 겹침 {cell}"); // 중복 없음
+                    }
+                }
+
+                foreach (DoorEdge door in layout.Doors) // 문 칸 정합
+                {
+                    Assert.That(layout.Room(door.A).OccupiesCell(door.CellA), Is.True, $"seed={seed} 문 {door.A}-{door.B}"); // A 칸
+                    Assert.That(layout.Room(door.B).OccupiesCell(door.CellB), Is.True, $"seed={seed} 문 {door.A}-{door.B}"); // B 칸
+                    Assert.That(System.Math.Abs(door.CellA.X - door.CellB.X) + System.Math.Abs(door.CellA.Y - door.CellB.Y), Is.EqualTo(1), $"seed={seed} 문 {door.A}-{door.B}"); // 맞닿은 칸
+                }
+            }
+
+            Assert.That(multiCellSeen, Is.GreaterThan(100), "여러 칸 방이 거의 생성되지 않음"); // 실제로 다양한 모양이 나오는지
+        }
+
+        [Test]
         public void RoomCellsNeverOverlapAcrossFloors() // 세로형 방이 차지하는 두 칸을 포함해 칸이 겹치지 않음
         {
             DungeonGenerationConfig config = CreateConfig(2); // 기본 규칙

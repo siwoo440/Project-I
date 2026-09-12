@@ -1,5 +1,7 @@
 using System; // 복구 결과 콜백 사용
 using System.Collections; // Coroutine 이동 절차 사용
+using System.Collections.Generic; // 실패 상실 목록 기능 참조
+using ProjectI.Economy; // 회수품 가치 참조
 using ProjectI.Items; // 플레이어 운반 기능 참조
 using ProjectI.Persistence; // 사무소 안전 체크포인트 저장 서비스 참조
 using ProjectI.Player; // 플레이어 이동 추락 판정 초기화 참조
@@ -24,9 +26,16 @@ namespace ProjectI.Loop // 원정 루프 기능 네임스페이스
         [SerializeField] private float arrivalDuration = 2.25f; // 마차 진입 이동 시간
         [SerializeField] private TravelDestination initialDestination = TravelDestination.Office; // 최초 환경 목적지
         [SerializeField] private float boardingMargin = 0.4f; // 탑승 판정 시 적재칸 박스 바깥 허용 여유
+        [SerializeField] private float expeditionFailureDelay = 3f; // 전원 사망 후 실패 귀환까지 보여주는 시간
+        [SerializeField] private float rideWalkSpeed = 2.6f; // 마차 진입 연출 동안 적재칸 안에서 걷는 속도
+        [SerializeField] private float ridePadding = 0.55f; // 적재칸 가장자리에서 띄울 여유
         private OfficeWorldItemKeeper officeItemKeeper; // Office 언로드 동안 사무소 WorldItem 보관 관리자
         private ExpeditionReportTracker reportTracker; // 원정 출발·귀환 물건 비교 기록기
         private WagonTravelBellInteractable travelBell; // 현재 마차 이동 종
+        private WagonTravelCover travelCover; // 이동 중 바깥을 가리는 마차 천막
+        private bool playerAttachedToWagon; // 이동 중 Player를 마차에 붙였는지 여부
+        private bool failureInProgress; // 원정 실패 귀환 진행 여부
+        private float officeReviveElapsed; // 사무소 사망 후 부활 대기 시간
         private TravelDestination currentDestination; // 현재 로드된 환경 목적지
         private bool isTransitioning; // 환경 교체 진행 여부
 
@@ -36,6 +45,9 @@ namespace ProjectI.Loop // 원정 루프 기능 네임스페이스
         public WagonCargoPersistence CargoPersistence => cargoPersistence; // Cargo 보존 관리자 공개
         public OfficeWorldItemKeeper OfficeItemKeeper => officeItemKeeper; // 사무소 아이템 보관 관리자 공개
         public ExpeditionReportTracker ReportTracker => reportTracker; // 원정 결과 기록기 공개
+        public WagonTravelCover TravelCover => travelCover; // 마차 천막 공개
+        public bool IsPlayerAttachedToWagon => playerAttachedToWagon; // 이동 중 마차 동승 상태 공개
+        public bool IsExpeditionFailing => failureInProgress; // 원정 실패 귀환 진행 여부 공개
 
         private void Awake() // Persistent 로더 초기화
         {
@@ -329,7 +341,163 @@ namespace ProjectI.Loop // 원정 루프 기능 네임스페이스
             StartCoroutine(TravelRoutine(targetDestination)); // 환경 교체 절차 시작
         }
 
-        private IEnumerator TravelRoutine(TravelDestination targetDestination) // 실제 Office↔Dungeon 이동 절차
+        private void Update() // 원정 실패(전원 사망) 감지
+        {
+            CheckExpeditionFailure(); // 던전에서 사망했는지 확인
+        }
+
+        private void CheckExpeditionFailure() // 던전 체류 중 전원 사망 확인 · 사무소 사망은 비용 없이 부활
+        {
+            if (failureInProgress || isTransitioning) // 이미 처리 중인지 확인
+            {
+                return; // 확인 불필요
+            }
+
+            if (playerRoot == null) // 참조 확인
+            {
+                BindPersistentReferences(); // 참조 보정
+            }
+
+            PlayerDeathController death = playerRoot == null ? null : playerRoot.GetComponentInChildren<PlayerDeathController>(true); // 사망 상태 조회
+
+            if (death == null || !death.IsDead) // 생존 확인
+            {
+                officeReviveElapsed = 0f; // 사무소 부활 대기 초기화
+                return; // 처리 불필요
+            }
+
+            if (currentDestination != TravelDestination.Office) // 던전에서 사망한 경우
+            {
+                BeginExpeditionFailure(); // 원정 실패 처리 시작
+                return; // 종료
+            }
+
+            officeReviveElapsed += Time.deltaTime; // 사무소 사망 대기 누적
+
+            if (officeReviveElapsed < Mathf.Max(0f, expeditionFailureDelay)) // 대기 확인
+            {
+                return; // 더 기다림
+            }
+
+            officeReviveElapsed = 0f; // 대기 초기화
+            ReviveAtWagon(); // 설계 문서 3.13 — 사무소에서는 비용 없이 마차에서 부활
+        }
+
+        public bool BeginExpeditionFailure() // 원정 실패 귀환 시작 (설계 문서 6.13)
+        {
+            if (failureInProgress || isTransitioning || currentDestination == TravelDestination.Office) // 시작 가능 여부 확인
+            {
+                return false; // 거부
+            }
+
+            StartCoroutine(ExpeditionFailureRoutine()); // 실패 귀환 절차 시작
+            return true; // 수락
+        }
+
+        private IEnumerator ExpeditionFailureRoutine() // 전원 사망 → 소지품·적재 상실 → 사무소 강제 귀환 → 부활
+        {
+            failureInProgress = true; // 중복 처리 차단
+            Debug.LogWarning("[Project I] 원정 실패 — 전원 사망으로 원정을 종료합니다.", this); // 실패 안내
+            float elapsed = 0f; // 대기 시간
+
+            while (elapsed < Mathf.Max(0f, expeditionFailureDelay)) // 쓰러진 모습을 잠시 보여줌
+            {
+                elapsed += Time.deltaTime; // 시간 누적
+                yield return null; // 다음 프레임
+            }
+
+            yield return TravelRoutine(TravelDestination.Office, true); // 실패 귀환 이동
+            failureInProgress = false; // 처리 완료
+        }
+
+        private int DiscardExpeditionBelongings(out int lostValue) // 실패 시 소지품·마차 적재를 모두 잃음 (공동 보관함은 유지)
+        {
+            lostValue = 0; // 잃은 가치 합계
+            int lostCount = 0; // 잃은 물건 수
+            WagonSharedStorage sharedStorage = wagonRoot == null ? null : wagonRoot.GetComponentInChildren<WagonSharedStorage>(true); // 공동 보관함 조회
+            Transform keepRoot = sharedStorage == null ? null : sharedStorage.StorageRoot; // 유지 대상 루트
+            PlayerInventory inventory = playerRoot == null ? null : playerRoot.GetComponentInChildren<PlayerInventory>(true); // 플레이어 인벤토리
+            List<WorldItem> doomed = new List<WorldItem>(); // 제거 대상
+
+            if (inventory != null) // 소지품 상실
+            {
+                for (int slot = 0; slot < inventory.SlotCount; slot++) // 슬롯 순회
+                {
+                    WorldItem item = inventory.GetItem(slot); // 슬롯 아이템
+
+                    if (item != null && !doomed.Contains(item)) // 유효·중복 확인
+                    {
+                        doomed.Add(item); // 제거 대상 등록
+                    }
+                }
+            }
+
+            foreach (WorldItem item in UnityEngine.Object.FindObjectsByType<WorldItem>(FindObjectsInactive.Include, FindObjectsSortMode.None)) // 마차·던전 물건 상실
+            {
+                if (item == null || doomed.Contains(item)) // 유효·중복 확인
+                {
+                    continue; // 다음
+                }
+
+                if (keepRoot != null && item.transform.IsChildOf(keepRoot)) // 공동 보관함 물건은 유지
+                {
+                    continue; // 다음
+                }
+
+                if (playerRoot != null && item.transform.IsChildOf(playerRoot)) // 손에 든 물건·사망 시 떨어뜨린 물건
+                {
+                    doomed.Add(item); // 제거 대상 등록
+                    continue; // 다음
+                }
+
+                if (wagonRoot != null && item.transform.IsChildOf(wagonRoot)) // 마차에 실린 물건
+                {
+                    doomed.Add(item); // 제거 대상 등록
+                    continue; // 다음
+                }
+
+                if (item.gameObject.scene != gameObject.scene) // 던전 환경 씬에 남은 물건 (사무소 물건은 Persistent에 보관 중)
+                {
+                    doomed.Add(item); // 제거 대상 등록
+                }
+            }
+
+            foreach (WorldItem item in doomed) // 제거 실행
+            {
+                if (item == null) // 유효 확인
+                {
+                    continue; // 다음
+                }
+
+                RecoverableValue recoverable = item.GetComponent<RecoverableValue>(); // 회수 가치
+                lostValue += recoverable != null ? recoverable.Value : 0; // 가치 합계
+                lostCount++; // 개수 집계
+                Destroy(item.gameObject); // 실제 제거
+            }
+
+            Debug.LogWarning($"[Project I] 원정 실패 상실 / 물건 {lostCount}개 · 가치 {lostValue} (공동 보관함 {(sharedStorage == null ? 0 : sharedStorage.StoredCount)}개 유지)", this); // 상실 기록
+            return lostCount; // 잃은 물건 수 반환
+        }
+
+        private void ReviveAtWagon() // 마차 적재칸 안에서 플레이어 부활
+        {
+            PlayerDeathController death = playerRoot == null ? null : playerRoot.GetComponentInChildren<PlayerDeathController>(true); // 사망 상태 조회
+
+            if (death == null || !death.IsDead) // 부활 필요 여부 확인
+            {
+                return; // 종료
+            }
+
+            WagonCargoArea cargoArea = wagonRoot == null ? null : wagonRoot.GetComponentInChildren<WagonCargoArea>(true); // 적재칸 조회
+            BoxCollider box = cargoArea == null ? null : cargoArea.GetComponent<BoxCollider>(); // 적재칸 박스
+            Vector3 position = box != null // 부활 위치 계산
+                ? box.transform.TransformPoint(box.center) - (Vector3.up * (box.size.y * Mathf.Abs(box.transform.lossyScale.y) * 0.5f)) + (Vector3.up * 0.25f) // 적재칸 바닥 위
+                : wagonRoot.position + (Vector3.up * 1.2f); // 폴백 위치
+            Quaternion rotation = wagonRoot == null ? Quaternion.identity : Quaternion.Euler(0f, wagonRoot.eulerAngles.y, 0f); // 마차 방향
+            death.Revive(position, rotation); // 부활
+        }
+
+        private IEnumerator TravelRoutine(TravelDestination targetDestination, bool failureReturn = false) // 실제 Office↔Dungeon 이동 절차
         {
             if (currentDestination == TravelDestination.Office && targetDestination == TravelDestination.TestDungeon) // 새 원정을 시작하는 순간인지 확인
             {
@@ -343,8 +511,23 @@ namespace ProjectI.Loop // 원정 루프 기능 네임스페이스
             }
 
             isTransitioning = true; // 실제 환경 교체 잠금 시작
-            yield return FadeTo(1f, fadeDuration); // 화면 완전 암전
             BindPersistentReferences(); // 최신 Persistent 참조 확보
+            int lostCount = 0; // 실패로 잃은 물건 수
+            int lostValue = 0; // 실패로 잃은 가치
+
+            if (!failureReturn) // 정상 이동인지 확인
+            {
+                AttachPlayerToWagon(); // 이동 중에도 마차 안에서 자유롭게 움직이도록 마차에 태움
+                yield return CloseTravelCover(); // 천막을 쳐서 바깥이 보이지 않게 함
+            }
+
+            yield return FadeTo(1f, fadeDuration); // 화면 완전 암전
+
+            if (failureReturn) // 원정 실패 귀환인지 확인
+            {
+                lostCount = DiscardExpeditionBelongings(out lostValue); // 소지품·마차 적재 상실 (공동 보관함 유지)
+            }
+
             CaptureRuntimeOfficeState(); // Office를 떠나기 전 경제 상태 보존
 
             if (currentDestination == TravelDestination.Office) // 원정 출발인지 확인
@@ -370,7 +553,9 @@ namespace ProjectI.Loop // 원정 루프 기능 네임스페이스
                 {
                     Debug.LogError($"[Project I] 목적지 맵 로드 실패 / Scene={targetSceneName}", this); // 실패 로그
                     cargoPersistence?.ReleaseCargoAfterTravel(); // 잠근 Cargo 물리 원상 복구
+                    DetachPlayerFromWagon(); // 마차 동승 해제
                     yield return FadeTo(0f, fadeDuration); // 기존 화면 복원
+                    yield return OpenTravelCover(); // 천막 걷기
                     isTransitioning = false; // 이동 잠금 해제
                     yield break; // 기존 환경 유지
                 }
@@ -386,7 +571,9 @@ namespace ProjectI.Loop // 원정 루프 기능 네임스페이스
             {
                 Debug.LogError($"[Project I] 목적지 Wagon Entry/Stop 지점 누락 / Scene={targetSceneName}", this); // 구성 오류 로그
                 cargoPersistence?.ReleaseCargoAfterTravel(); // Cargo 물리 복구
+                DetachPlayerFromWagon(); // 마차 동승 해제
                 yield return FadeTo(0f, fadeDuration); // 화면 복원
+                yield return OpenTravelCover(); // 천막 걷기
                 isTransitioning = false; // 이동 잠금 해제
                 yield break; // 환경 교체 중단
             }
@@ -432,8 +619,18 @@ namespace ProjectI.Loop // 원정 루프 기능 네임스페이스
             }
 
             RestoreRuntimeOfficeState(); // Office 도착이면 경제 상태 복원
+
+            if (failureReturn) // 원정 실패 귀환인지 확인
+            {
+                ReviveAtWagon(); // 마차 안에서 부활 (사무소 진입 연출을 함께 탐)
+                AttachPlayerToWagon(); // 진입 연출 동안 마차와 함께 이동
+                reportTracker?.MarkFailed(lostCount, lostValue); // 원정 결과에 실패 기록
+            }
+
             yield return MovePersistentGroup(targetAnchor); // Entry에서 Stop까지 실제 마차 진입 연출
             BindBell(); // 이동 종 참조 재연결
+            DetachPlayerFromWagon(); // 도착 후 플레이어를 다시 독립 루트로 복귀
+            yield return OpenTravelCover(); // 도착했으므로 천막을 걷어 바깥이 보이게 함
             isTransitioning = false; // 전체 이동 완료
 
             if (currentDestination == TravelDestination.Office) // 원정에서 안전 구역으로 귀환했는지 확인
@@ -458,13 +655,27 @@ namespace ProjectI.Loop // 원정 루프 기능 네임스페이스
             Vector3 endPosition = anchor.StopPoint.position; // 정차 위치 저장
             Quaternion endRotation = anchor.StopPoint.rotation; // 정차 회전 저장
             bool playerIsWagonChild = playerRoot != null && playerRoot.IsChildOf(wagonRoot); // Player가 Wagon 자식인지 확인
-            Vector3 playerLocalPosition = Vector3.zero; // 별도 Player의 Wagon 상대 위치
-            Quaternion playerLocalRotation = Quaternion.identity; // 별도 Player의 Wagon 상대 회전
+            bool ridePlayer = playerRoot != null && !playerIsWagonChild; // 마차 진입 연출 동안 탑승 이동 사용 여부
+            Quaternion previousWagonRotation = wagonRoot.rotation; // 직전 프레임 마차 회전
+            Vector3 rideLocalPosition = ridePlayer ? wagonRoot.InverseTransformPoint(playerRoot.position) : Vector3.zero; // 마차 기준 탑승 위치
+            PlayerMovement rideMovement = ridePlayer ? playerRoot.GetComponentInChildren<PlayerMovement>() : null; // 이동 컴포넌트
+            CharacterController rideController = ridePlayer ? playerRoot.GetComponentInChildren<CharacterController>() : null; // 이동 충돌체
+            bool movementWasEnabled = rideMovement != null && rideMovement.enabled; // 원래 상태
+            bool controllerWasEnabled = rideController != null && rideController.enabled; // 원래 상태
 
-            if (playerRoot != null && !playerIsWagonChild) // Player가 별도 Persistent 루트인지 확인
+            if (ridePlayer) // 탑승 이동 시작 (지형·구조물 충돌을 무시하고 적재칸 안에서만 움직임)
             {
-                playerLocalPosition = wagonRoot.InverseTransformPoint(playerRoot.position); // Wagon 상대 위치 저장
-                playerLocalRotation = Quaternion.Inverse(wagonRoot.rotation) * playerRoot.rotation; // Wagon 상대 회전 저장
+                rideLocalPosition = ClampToCargo(rideLocalPosition); // 적재칸 안으로 보정
+
+                if (rideMovement != null) // 이동 컴포넌트
+                {
+                    rideMovement.enabled = false; // 중력·충돌 이동 정지 (시점은 그대로 자유)
+                }
+
+                if (rideController != null) // 충돌체
+                {
+                    rideController.enabled = false; // 사무소 입구 구조물에 걸리지 않도록 해제
+                }
             }
 
             float duration = Mathf.Max(0.1f, arrivalDuration); // 안전한 이동 시간 계산
@@ -477,13 +688,16 @@ namespace ProjectI.Loop // 원정 루프 기능 네임스페이스
                 float eased = Mathf.SmoothStep(0f, 1f, normalized); // 부드러운 가감속 적용
                 wagonRoot.SetPositionAndRotation(Vector3.Lerp(startPosition, endPosition, eased), Quaternion.Slerp(startRotation, endRotation, eased)); // Wagon 이동
 
-                if (playerRoot != null && !playerIsWagonChild) // 별도 Player 루트 이동 필요 여부 확인
+                if (ridePlayer) // 탑승 이동
                 {
-                    playerRoot.SetPositionAndRotation(wagonRoot.TransformPoint(playerLocalPosition), wagonRoot.rotation * playerLocalRotation); // Player를 Wagon과 함께 이동
-                    NotifyPlayerTeleported(); // 마차 진입 중 높이 변화를 추락으로 계산하지 않음
+                    rideLocalPosition = StepRidePosition(rideLocalPosition, Time.deltaTime); // 입력만큼 마차 안에서 이동
+                    playerRoot.position = wagonRoot.TransformPoint(rideLocalPosition); // 마차와 함께 이동
+                    playerRoot.rotation = (wagonRoot.rotation * Quaternion.Inverse(previousWagonRotation)) * playerRoot.rotation; // 마차가 돈 만큼만 몸도 돌림 (시점은 자유)
                 }
 
+                previousWagonRotation = wagonRoot.rotation; // 다음 프레임 기준 갱신
                 cargoPersistence?.SyncCapturedCargoToWagon(); // 실제 Cargo GameObject 위치 동기화
+                Physics.SyncTransforms(); // autoSyncTransforms가 꺼져 있어 이동한 충돌체 위치를 매 프레임 반영
 
                 if (fadeGroup != null) // Fade UI 존재 여부 확인
                 {
@@ -495,13 +709,26 @@ namespace ProjectI.Loop // 원정 루프 기능 네임스페이스
 
             wagonRoot.SetPositionAndRotation(endPosition, endRotation); // 최종 정차 Transform 확정
 
-            if (playerRoot != null && !playerIsWagonChild) // 별도 Player 루트 최종 정렬
+            if (ridePlayer) // 탑승 이동 종료
             {
-                playerRoot.SetPositionAndRotation(wagonRoot.TransformPoint(playerLocalPosition), wagonRoot.rotation * playerLocalRotation); // Player 최종 위치 확정
+                playerRoot.position = wagonRoot.TransformPoint(rideLocalPosition); // 최종 위치 확정
+
+                if (rideController != null) // 충돌체 복구
+                {
+                    rideController.enabled = controllerWasEnabled; // 원래 상태
+                }
+
+                if (rideMovement != null) // 이동 컴포넌트 복구
+                {
+                    rideMovement.enabled = movementWasEnabled; // 원래 상태
+                }
+
+                Physics.SyncTransforms(); // 위치 물리 반영
                 NotifyPlayerTeleported(); // 도착 위치 기준으로 추락 판정 초기화
             }
 
             cargoPersistence?.SyncCapturedCargoToWagon(); // Cargo 최종 위치 확정
+            Physics.SyncTransforms(); // 최종 위치 물리 반영
             cargoPersistence?.ReleaseCargoAfterTravel(); // Cargo Rigidbody 상태 원복
             SetFadeImmediate(0f); // 화면 완전히 표시
         }
@@ -531,9 +758,10 @@ namespace ProjectI.Loop // 원정 루프 기능 네임스페이스
             if (playerRoot != null && !playerIsWagonChild) // 별도 Player 루트 동기화
             {
                 playerRoot.SetPositionAndRotation(wagonRoot.TransformPoint(playerLocalPosition), wagonRoot.rotation * playerLocalRotation); // Player 즉시 이동
-                NotifyPlayerTeleported(); // 맵 간 높이 차이를 추락 피해로 계산하지 않도록 초기화
             }
 
+            Physics.SyncTransforms(); // 마차와 함께 움직인 충돌체 위치 즉시 반영
+            NotifyPlayerTeleported(); // 맵 간 높이 차이를 추락 피해로 계산하지 않도록 초기화 (마차 자식일 때 포함)
             cargoPersistence?.SyncCapturedCargoToWagon(); // 이동 중 고정 Cargo 동기화
         }
 
@@ -572,6 +800,87 @@ namespace ProjectI.Loop // 원정 루프 기능 네임스페이스
             fadeGroup.blocksRaycasts = fadeGroup.alpha > 0.01f; // 암전 상태 입력 차단
         }
 
+        private void AttachPlayerToWagon() // 이동 중 플레이어를 마차와 함께 옮기는 상태로 전환 (시점·이동은 자유)
+        {
+            playerAttachedToWagon = playerRoot != null && wagonRoot != null; // 동승 상태 기록 (계층은 바꾸지 않음)
+        }
+
+        private void DetachPlayerFromWagon() // 도착 후 동승 상태 해제
+        {
+            playerAttachedToWagon = false; // 상태 해제
+        }
+
+        private Vector3 ClampToCargo(Vector3 wagonLocalPosition) // 탑승 이동 범위를 적재칸 안으로 제한
+        {
+            WagonCargoArea cargoArea = wagonRoot == null ? null : wagonRoot.GetComponentInChildren<WagonCargoArea>(true); // 적재칸
+            BoxCollider box = cargoArea == null ? null : cargoArea.GetComponent<BoxCollider>(); // 판정 박스
+
+            if (box == null) // 구성 누락
+            {
+                return wagonLocalPosition; // 제한 없음
+            }
+
+            Vector3 center = wagonRoot.InverseTransformPoint(box.transform.TransformPoint(box.center)); // 마차 기준 중심
+            Vector3 size = wagonRoot.InverseTransformVector(box.transform.TransformVector(box.size)); // 마차 기준 크기
+            float marginX = Mathf.Max(0.1f, (Mathf.Abs(size.x) * 0.5f) - ridePadding); // 좌우 여유
+            float marginZ = Mathf.Max(0.1f, (Mathf.Abs(size.z) * 0.5f) - ridePadding); // 앞뒤 여유
+            Vector3 clamped = wagonLocalPosition; // 결과
+            clamped.x = Mathf.Clamp(clamped.x, center.x - marginX, center.x + marginX); // 좌우 제한
+            clamped.z = Mathf.Clamp(clamped.z, center.z - marginZ, center.z + marginZ); // 앞뒤 제한
+            return clamped; // 반환
+        }
+
+        private Vector3 StepRidePosition(Vector3 wagonLocalPosition, float deltaTime) // 마차 안에서 입력만큼 걸어 다니기 (구조물 충돌 무시)
+        {
+            PlayerInputReader reader = playerRoot == null ? null : playerRoot.GetComponentInChildren<PlayerInputReader>(); // 입력
+            PlayerHealth health = playerRoot == null ? null : playerRoot.GetComponentInChildren<PlayerHealth>(); // 체력
+
+            if (reader == null || wagonRoot == null || (health != null && health.IsDead)) // 조작 불가
+            {
+                return ClampToCargo(wagonLocalPosition); // 위치 유지
+            }
+
+            Vector2 input = reader.Move; // 이동 입력
+            Vector3 localInput = new Vector3(input.x, 0f, input.y); // 로컬 이동 벡터
+
+            if (localInput.sqrMagnitude > 1f) // 대각선 보정
+            {
+                localInput.Normalize(); // 정규화
+            }
+
+            if (localInput.sqrMagnitude < 0.0001f) // 입력 없음
+            {
+                return ClampToCargo(wagonLocalPosition); // 위치 유지
+            }
+
+            Vector3 worldDirection = playerRoot.rotation * localInput; // 보는 방향 기준
+            Vector3 wagonDirection = Quaternion.Inverse(wagonRoot.rotation) * worldDirection; // 마차 기준 방향
+            wagonDirection.y = 0f; // 수평 이동만
+            return ClampToCargo(wagonLocalPosition + (wagonDirection * (rideWalkSpeed * deltaTime))); // 제한 적용
+        }
+
+        private IEnumerator CloseTravelCover() // 출발 전 천막 치기
+        {
+            BindPersistentReferences(); // 최신 참조 확보
+
+            if (travelCover == null) // 천막 누락 확인
+            {
+                yield break; // 연출 없이 진행
+            }
+
+            yield return travelCover.CloseRoutine(); // 닫힘 완료까지 대기
+        }
+
+        private IEnumerator OpenTravelCover() // 도착 후 천막 걷기
+        {
+            if (travelCover == null) // 천막 누락 확인
+            {
+                yield break; // 연출 없이 진행
+            }
+
+            yield return travelCover.OpenRoutine(); // 열림 완료까지 대기
+        }
+
         private void BindPersistentReferences() // Player/Wagon/Cargo 참조 자동 연결
         {
             if (wagonRoot == null) // Wagon 루트 누락 확인
@@ -587,6 +896,11 @@ namespace ProjectI.Loop // 원정 루프 기능 네임스페이스
             if (cargoPersistence == null && wagonRoot != null) // Cargo 보존 관리자 누락 확인
             {
                 cargoPersistence = wagonRoot.GetComponentInChildren<WagonCargoPersistence>(true); // Wagon 계층에서 조회
+            }
+
+            if (travelCover == null && wagonRoot != null) // 마차 천막 누락 확인
+            {
+                travelCover = wagonRoot.GetComponentInChildren<WagonTravelCover>(true); // Wagon 계층에서 조회
             }
 
             if (playerRoot == null) // Player 루트 누락 확인

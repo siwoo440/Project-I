@@ -18,6 +18,22 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
         Vertical // 두 층을 잇는 세로형 방 (계단통·사다리 방·수직 통로)
     }
 
+    public enum RoomRole // 방 역할
+    {
+        Normal, // 일반 방
+        Boss, // 보스방 (최심부 3x3, 입구 1개)
+        Secret // 비밀방 (부술 수 있는 벽으로만 연결)
+    }
+
+    public enum RoomShape // 방이 차지하는 칸 모양
+    {
+        Single, // 1x1
+        Wide, // 2x1
+        Hall, // 2x2
+        Ell, // L자 3칸
+        Boss // 3x3
+    }
+
     public enum VerticalKind // 세로형 방 종류
     {
         None, // 세로형 방 아님
@@ -80,6 +96,82 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
         }
     }
 
+    public static class RoomShapes // 방 모양 → 칸 목록 (회전 포함)
+    {
+        public static readonly RoomShape[] All = { RoomShape.Single, RoomShape.Wide, RoomShape.Hall, RoomShape.Ell, RoomShape.Boss }; // 전체 모양
+
+        public static int CellCount(RoomShape shape) // 모양이 차지하는 칸 수
+        {
+            switch (shape) // 모양별
+            {
+                case RoomShape.Wide: return 2; // 2x1
+                case RoomShape.Hall: return 4; // 2x2
+                case RoomShape.Ell: return 3; // L자
+                case RoomShape.Boss: return 9; // 3x3
+                default: return 1; // 1x1
+            }
+        }
+
+        public static int RotationCount(RoomShape shape) // 서로 다른 회전 수
+        {
+            switch (shape) // 모양별
+            {
+                case RoomShape.Wide: return 2; // 가로·세로
+                case RoomShape.Ell: return 4; // 네 방향
+                default: return 1; // 회전해도 같음
+            }
+        }
+
+        public static List<GridPoint> Offsets(RoomShape shape, int rotation) // 기준 칸(0,0)에서의 상대 칸 목록
+        {
+            List<GridPoint> cells = new List<GridPoint>(); // 결과
+
+            switch (shape) // 모양별 기본 배치
+            {
+                case RoomShape.Wide: // 2x1
+                    cells.Add(new GridPoint(0, 0));
+                    cells.Add(new GridPoint(1, 0));
+                    break;
+                case RoomShape.Hall: // 2x2
+                    cells.Add(new GridPoint(0, 0));
+                    cells.Add(new GridPoint(1, 0));
+                    cells.Add(new GridPoint(0, 1));
+                    cells.Add(new GridPoint(1, 1));
+                    break;
+                case RoomShape.Ell: // L자
+                    cells.Add(new GridPoint(0, 0));
+                    cells.Add(new GridPoint(1, 0));
+                    cells.Add(new GridPoint(0, 1));
+                    break;
+                case RoomShape.Boss: // 3x3
+                    for (int x = 0; x < 3; x++) // 가로
+                    {
+                        for (int y = 0; y < 3; y++) // 세로
+                        {
+                            cells.Add(new GridPoint(x, y)); // 칸 등록
+                        }
+                    }
+
+                    break;
+                default: // 1x1
+                    cells.Add(new GridPoint(0, 0));
+                    break;
+            }
+
+            int steps = ((rotation % 4) + 4) % 4; // 0~3 회전
+
+            for (int step = 0; step < steps; step++) // 90도씩 회전
+            {
+                for (int index = 0; index < cells.Count; index++) // 칸 순회
+                {
+                    cells[index] = new GridPoint(cells[index].Y, -cells[index].X); // 시계 방향 회전
+                }
+            }
+
+            return cells; // 결과
+        }
+    }
+
     public static class GridDirections // 방향 도구
     {
         public static readonly GridDirection[] All = { GridDirection.North, GridDirection.East, GridDirection.South, GridDirection.West }; // 전체 방향
@@ -100,7 +192,10 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
     public sealed class RoomNode // 방 하나
     {
         public int Id; // 방 번호
-        public GridPoint Cell; // 격자 좌표 (세로형 방은 아래층 칸)
+        public GridPoint Cell; // 기준 격자 좌표 (세로형 방은 아래층 칸, 다칸 방은 Cells[0])
+        public readonly List<GridPoint> Cells = new List<GridPoint>(); // 이 방이 차지하는 모든 칸 (같은 층)
+        public RoomShape Shape = RoomShape.Single; // 방 모양
+        public RoomRole Role = RoomRole.Normal; // 방 역할 (일반·보스·비밀)
         public RoomKind Kind; // 방 형태
         public VerticalKind Vertical = VerticalKind.None; // 세로형 방 종류
         public GridDirection LowerWall; // 세로형 방 아래층 출입 벽
@@ -115,6 +210,22 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
         public RoomContent Content; // 생성 후보
 
         public bool IsVertical => Kind == RoomKind.Vertical; // 세로형 방 여부
+        public bool IsBoss => Role == RoomRole.Boss; // 보스방 여부
+        public bool IsSecret => Role == RoomRole.Secret; // 비밀방 여부
+        public bool IsMultiCell => Cells.Count > 1; // 여러 칸 방 여부
+
+        public bool OccupiesCell(GridPoint cell) // 해당 칸을 차지하는지
+        {
+            foreach (GridPoint own in Cells) // 칸 순회
+            {
+                if (own.Equals(cell)) // 일치 확인
+                {
+                    return true; // 차지함
+                }
+            }
+
+            return false; // 아님
+        }
         public int LowerFloor => Cell.Floor; // 아래층
         public int UpperFloor => Kind == RoomKind.Vertical ? Cell.Floor + 1 : Cell.Floor; // 위층 (세로형 방만 다름)
 
@@ -128,10 +239,15 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
     {
         public int A; // 방 A
         public int B; // 방 B
+        public GridPoint CellA; // A 쪽 맞닿은 칸
+        public GridPoint CellB; // B 쪽 맞닿은 칸
         public GridDirection FromA; // A 기준 문 방향
         public int Floor; // 문이 놓인 층 (세로형 방은 아래층·위층 양쪽에 문을 가짐)
         public bool IsLoop; // 순환로 연결 여부
         public bool IsLocked; // 잠긴 문 여부
+        public bool IsBreakable; // 부술 수 있는 벽 (비밀방 연결)
+
+        public GridPoint CellOf(int roomId) => roomId == A ? CellA : CellB; // 해당 방 쪽 칸
 
         public int Other(int roomId) => roomId == A ? B : A; // 반대편 방
         public GridDirection DirectionFrom(int roomId) => roomId == A ? FromA : GridDirections.Opposite(FromA); // 해당 방 기준 방향
@@ -141,6 +257,7 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
     {
         public int Index; // 외부 서브문과 짝이 되는 번호 (0부터)
         public int RoomId; // 배치 방
+        public GridPoint Cell; // 배치 칸 (다칸 방 대비)
         public GridDirection Wall; // 배치 벽
     }
 
@@ -156,6 +273,8 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
         public int DeepestRoomId = -1; // 가장 깊은 방
         public int KeyRoomId = -1; // 열쇠 방 (-1: 잠긴 문 없음)
         public int LockedDoorIndex = -1; // 잠긴 문 번호 (-1: 없음)
+        public int BossRoomId = -1; // 보스방 (-1: 없음)
+        public readonly List<int> SecretRoomIds = new List<int>(); // 비밀방 목록
 
         public RoomNode Room(int id) => Rooms[id]; // 방 조회
 
@@ -267,6 +386,19 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
             return false; // 없음
         }
 
+        public bool HasDoorOnCellWall(int roomId, GridPoint cell, GridDirection wall) // 해당 칸의 벽에 문이 있는지
+        {
+            foreach (DoorEdge door in DoorsOf(roomId)) // 연결 문 순회
+            {
+                if (door.CellOf(roomId).Equals(cell) && door.DirectionFrom(roomId) == wall) // 칸·방향 비교
+                {
+                    return true; // 있음
+                }
+            }
+
+            return false; // 없음
+        }
+
         public bool HasDoorOnWall(int roomId, GridDirection wall, int floor) // 해당 층·벽에 방 문이 있는지
         {
             foreach (DoorEdge door in DoorsOf(roomId)) // 연결 문 순회
@@ -339,7 +471,7 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
 
                 foreach (RoomNode room in Rooms) // 방
                 {
-                    hash = hash * 31 + room.Cell.GetHashCode() + (int)room.Kind * 3 + (int)room.Vertical * 11; // 누적
+                    hash = hash * 31 + room.Cell.GetHashCode() + (int)room.Kind * 3 + (int)room.Vertical * 11 + (int)room.Shape * 17 + (int)room.Role * 29 + room.Cells.Count * 7; // 누적
                 }
 
                 foreach (DoorEdge door in Doors) // 문

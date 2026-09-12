@@ -33,6 +33,9 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
         [SerializeField] private int gridMaxX = 3; // 격자 최대 X
         [SerializeField] private int gridMaxY = 5; // 격자 최대 Y
         [SerializeField] private bool enableLockedDoor = true; // 잠긴 문 사용
+        [SerializeField] private bool enableBossRoom = true; // 최심층 3x3 보스방 사용
+        [SerializeField] private bool enableSecretRoom = true; // 부술 수 있는 벽 너머 비밀방 사용
+        [SerializeField] private int secretRoomCount = 1; // 비밀방 개수
         [SerializeField] private int seedOverride; // 0이 아니면 고정 시드 (테스트용)
 
         [Header("층 (메인 방 = 1층)")]
@@ -47,7 +50,7 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
         [SerializeField] private float roomSize = 7f; // 방 내부 크기
         [SerializeField] private float corridorSize = 3.5f; // 복도 내부 크기
         [SerializeField] private float roomHeight = 4f; // 방 높이
-        [SerializeField] private float wallThickness = 0.4f; // 벽·바닥·천장 두께
+        [SerializeField] private float wallThickness = 0.25f; // 벽·바닥·천장 두께 (29일차에 0.4 → 0.25로 줄여 통로를 넓힘)
         [SerializeField] private float doorWidth = 2.2f; // 방 문 폭
         [SerializeField] private float doorHeight = 2.8f; // 방 문 높이
         [SerializeField] private float surfaceClearance = 12f; // 최상층 천장부터 외부 씬 최저 지형까지 여유 깊이
@@ -56,7 +59,8 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
         [Header("계단·사다리")]
         [SerializeField] private float stairWidth = 2.6f; // 계단 폭
         [SerializeField] private float stairStepHeight = 0.3f; // 계단 한 칸 높이
-        [SerializeField] private float stairEntryInset = 0.9f; // 계단 앞 평지 길이
+        [SerializeField] private float stairEntryInset = 0.9f; // 계단 앞 평지 길이 (아래층 문에서 들어설 공간)
+        [SerializeField] private float stairTopLanding = 1.2f; // 계단 꼭대기 착지 공간 (29일차: 벽에 막혀 위층에 못 올라서던 문제 해결)
         [SerializeField] private float stairRampThickness = 0.4f; // 계단 경사 충돌체 두께
         [SerializeField] private float ladderHoleWidth = 1.6f; // 사다리 구멍 폭
         [SerializeField] private float ladderHoleDepth = 1.3f; // 사다리 구멍 깊이
@@ -69,6 +73,8 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
         [SerializeField] private Material lockedDoorMaterial; // 잠긴 문
         [SerializeField] private Material stairMaterial; // 계단 (없으면 바닥 재질)
         [SerializeField] private Material ladderMaterial; // 사다리 (없으면 출입문 재질)
+        [SerializeField] private Material breakableWallMaterial; // 금 간 벽 (없으면 벽 재질)
+        [SerializeField] private float breakableWallHealth = 120f; // 금 간 벽 내구도
 
         [Header("아이템")]
         [SerializeField] private ItemDefinition keyDefinition; // 열쇠 정의
@@ -78,6 +84,7 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
         private readonly List<DungeonTeleportDoor> interiorDoors = new List<DungeonTeleportDoor>(); // 실내 문
         private readonly List<WorldItem> spawnedLoot = new List<WorldItem>(); // 생성 회수품
         private readonly List<DungeonLadder> ladders = new List<DungeonLadder>(); // 생성 사다리
+        private readonly List<BreakableWall> breakableWalls = new List<BreakableWall>(); // 생성 금 간 벽
         private Transform generatedRoot; // 생성물 루트
         private int baseFloor; // 생성물 루트 높이에 해당하는 층 (= 최저 층)
 
@@ -92,6 +99,7 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
         public IReadOnlyList<DungeonTeleportDoor> InteriorDoors => interiorDoors; // 실내 문 공개
         public IReadOnlyList<WorldItem> SpawnedLoot => spawnedLoot; // 생성 회수품 공개
         public IReadOnlyList<DungeonLadder> Ladders => ladders; // 사다리 공개
+        public IReadOnlyList<BreakableWall> BreakableWalls => breakableWalls; // 금 간 벽 공개
         public Transform GeneratedRoot => generatedRoot; // 생성물 루트 공개
         public float CellSize => cellSize; // 격자 크기 공개
         public float RoomHeight => roomHeight; // 방 높이 공개
@@ -158,11 +166,31 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
             ladderMaterial = ladder; // 사다리
         }
 
+        public void ConfigureBreakableMaterial(Material breakable) // 에디터 구성 (금 간 벽 재질)
+        {
+            breakableWallMaterial = breakable; // 금 간 벽
+        }
+
         public void ConfigureTestOverrides(int seed, VerticalKind forcedKind) // 테스트용 고정 시드·세로형 방 종류 지정 (0·None이면 해제)
         {
             seedOverride = seed; // 고정 시드
             forcedVerticalKind = forcedKind; // 고정 종류
         }
+
+        public void ConfigureGeometry(float wallThicknessValue, float doorWidthValue) // 벽 두께·문 폭 지정 (에디터 구성)
+        {
+            wallThickness = Mathf.Clamp(wallThicknessValue, 0.1f, 1f); // 벽 두께
+            doorWidth = Mathf.Clamp(doorWidthValue, 1.2f, Mathf.Min(roomSize, corridorSize) - 0.4f); // 문 폭 (복도 벽이 남도록 제한)
+        }
+
+        public void ConfigureStairs(float entryInset, float topLanding) // 계단 앞 평지·꼭대기 착지 공간 지정 (에디터 구성)
+        {
+            stairEntryInset = Mathf.Clamp(entryInset, 0f, 2f); // 계단 앞 평지
+            stairTopLanding = Mathf.Clamp(topLanding, 0f, 2.5f); // 꼭대기 착지 공간
+        }
+
+        public float WallThickness => wallThickness; // 벽 두께 공개
+        public float DoorWidth => doorWidth; // 문 폭 공개
 
         public void ConfigureFloorRange(int above, int below) // 테스트용 층 수 지정
         {
@@ -181,6 +209,9 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
                 FloorsAbove = Mathf.Max(0, floorsAbove), // 위층 수
                 FloorsBelow = Mathf.Max(0, floorsBelow), // 지하층 수
                 ForcedVerticalKind = forcedVerticalKind, // 테스트용 세로형 방 종류 고정
+                EnableBossRoom = enableBossRoom, // 최심층 보스방
+                EnableSecretRoom = enableSecretRoom, // 비밀방
+                SecretRoomCount = Mathf.Max(0, secretRoomCount), // 비밀방 개수
                 GridMinX = gridMinX, // 격자
                 GridMaxX = gridMaxX, // 격자
                 GridMaxY = gridMaxY, // 격자
@@ -239,11 +270,12 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
                 BuildPassage(Layout.Doors[index]); // 통로·잠긴 문
             }
 
-            BuildInteriorDoor(Layout.Room(Layout.StartRoomId), Layout.MainDoorWall, DungeonDoorKind.Main, 0); // 실내 정문
+            RoomNode startRoom = Layout.Room(Layout.StartRoomId); // 시작 방
+            BuildInteriorDoor(startRoom, startRoom.Cell, Layout.MainDoorWall, DungeonDoorKind.Main, 0); // 실내 정문
 
             foreach (SubDoorPlacement sub in Layout.SubDoors) // 실내 서브문
             {
-                BuildInteriorDoor(Layout.Room(sub.RoomId), sub.Wall, DungeonDoorKind.Sub, sub.Index); // 번호별 생성
+                BuildInteriorDoor(Layout.Room(sub.RoomId), sub.Cell, sub.Wall, DungeonDoorKind.Sub, sub.Index); // 번호별 생성
             }
 
             SpawnContent(random); // 회수품·열쇠
@@ -256,7 +288,7 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
             }
 
             IsGenerated = true; // 성공
-            Debug.Log($"[Project I] 실내 던전 생성 / Seed={seed} / 시도 {Layout.Attempt + 1} / 방 {Layout.Rooms.Count} / 층 {GridPoint.FloorName(Layout.MinFloor)}~{GridPoint.FloorName(Layout.MaxFloor)} / 세로형 방 {CountVerticalRooms()} / 서브문 {Layout.SubDoors.Count} (외부 {subDoorCount}) / 회수품 {spawnedLoot.Count} / 최고 높이 {GeneratedMaxY:F1} < 외부 최저 {ExteriorBottomY:F1}", this); // 결과
+            Debug.Log($"[Project I] 실내 던전 생성 / Seed={seed} / 시도 {Layout.Attempt + 1} / 방 {Layout.Rooms.Count} / 층 {GridPoint.FloorName(Layout.MinFloor)}~{GridPoint.FloorName(Layout.MaxFloor)} / 세로형 방 {CountVerticalRooms()} / 보스방 {(Layout.BossRoomId >= 0 ? "있음" : "없음")} / 비밀방 {Layout.SecretRoomIds.Count} / 서브문 {Layout.SubDoors.Count} (외부 {subDoorCount}) / 회수품 {spawnedLoot.Count} / 최고 높이 {GeneratedMaxY:F1} < 외부 최저 {ExteriorBottomY:F1}", this); // 결과
             return true; // 성공
         }
 
@@ -268,6 +300,7 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
             interiorDoors.Clear(); // 실내 문 목록
             spawnedLoot.Clear(); // 회수품 목록
             ladders.Clear(); // 사다리 목록
+            breakableWalls.Clear(); // 금 간 벽 목록
 
             for (int index = transform.childCount - 1; index >= 0; index--) // 기존 루트 제거
             {
@@ -336,9 +369,31 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
             return generatedRoot == null ? 0f : generatedRoot.position.y + FloorLocalY(floor); // 변환
         }
 
-        public Vector3 RoomCenterWorld(RoomNode room) // 방 중심 월드 위치 (방 기준 층 바닥 높이)
+        public Vector3 RoomCenterWorld(RoomNode room) // 방 중심 월드 위치 (여러 칸 방은 칸 평균, 방 기준 층 바닥 높이)
         {
-            return generatedRoot == null ? Vector3.zero : generatedRoot.TransformPoint(CellCenter(room.Cell)); // 변환
+            if (generatedRoot == null) // 생성 확인
+            {
+                return Vector3.zero; // 없음
+            }
+
+            float sumX = 0f; // X 합계
+            float sumZ = 0f; // Z 합계
+            int count = 0; // 기준 층 칸 수
+
+            foreach (GridPoint cell in room.Cells) // 칸 순회
+            {
+                if (cell.Floor != room.Cell.Floor) // 기준 층만 (세로형 방 위층 제외)
+                {
+                    continue; // 다음
+                }
+
+                sumX += cell.X * cellSize; // 누적
+                sumZ += cell.Y * cellSize; // 누적
+                count++; // 집계
+            }
+
+            count = Mathf.Max(1, count); // 0 나눗셈 방지
+            return generatedRoot.TransformPoint(new Vector3(sumX / count, FloorLocalY(room.Cell.Floor), sumZ / count)); // 변환
         }
 
         public RoomNode FindRoomAt(Vector3 worldPosition) // 월드 위치가 속한 방 (없으면 null)
@@ -360,11 +415,12 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
 
             int cellX = Mathf.RoundToInt(local.x / cellSize); // 칸 X
             int cellY = Mathf.RoundToInt(local.z / cellSize); // 칸 Y
+            GridPoint probe = new GridPoint(cellX, cellY, floor); // 조회 칸
             RoomNode found = null; // 결과
 
             foreach (RoomNode room in Layout.Rooms) // 방 순회
             {
-                if (room.Cell.X == cellX && room.Cell.Y == cellY && room.OccupiesFloor(floor)) // 칸·층 확인
+                if (room.OccupiesCell(probe)) // 칸 점유 확인
                 {
                     found = room; // 발견
                     break; // 종료
@@ -376,10 +432,11 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
                 return null; // 없음
             }
 
-            float half = HalfSize(found) + 0.5f; // 방 반크기 + 여유
-            float centerX = found.Cell.X * cellSize; // 방 중심 X
-            float centerZ = found.Cell.Y * cellSize; // 방 중심 Z
-            return Mathf.Abs(local.x - centerX) <= half && Mathf.Abs(local.z - centerZ) <= half ? found : null; // 방 내부 여부
+            float halfX = Mathf.Max(CellExtent(found, probe, GridDirection.East), CellExtent(found, probe, GridDirection.West)) + 0.5f; // X 허용 범위
+            float halfZ = Mathf.Max(CellExtent(found, probe, GridDirection.North), CellExtent(found, probe, GridDirection.South)) + 0.5f; // Z 허용 범위
+            float centerX = cellX * cellSize; // 칸 중심 X
+            float centerZ = cellY * cellSize; // 칸 중심 Z
+            return Mathf.Abs(local.x - centerX) <= halfX && Mathf.Abs(local.z - centerZ) <= halfZ ? found : null; // 방 내부 여부
         }
 
         private void CollectExteriorDoors() // 같은 씬의 외부 문 수집 (생성물 제외)
@@ -533,95 +590,144 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
 
         private static string RoomObjectName(RoomNode room) // 방 GameObject 이름
         {
-            string kind = room.IsVertical ? room.Vertical.ToString() : room.Kind.ToString(); // 종류 이름
-            return $"Room_{room.Id:00}_{room.Cell.X}_{room.Cell.Y}_{GridPoint.FloorName(room.Cell.Floor)}_{kind}"; // 이름
+            string kind = room.IsVertical ? room.Vertical.ToString() : room.Role != RoomRole.Normal ? room.Role.ToString() : room.Kind.ToString(); // 종류 이름
+            string shape = room.IsMultiCell && !room.IsVertical ? $"_{room.Shape}" : string.Empty; // 다칸 방 모양
+            return $"Room_{room.Id:00}_{room.Cell.X}_{room.Cell.Y}_{GridPoint.FloorName(room.Cell.Floor)}_{kind}{shape}"; // 이름
         }
 
-        private void BuildRoom(RoomNode room) // 일반 방·복도 바닥·천장·벽·조명
+        private float CellExtent(RoomNode room, GridPoint cell, GridDirection direction) // 칸에서 해당 방향으로의 내부 반크기 (같은 방과 맞닿으면 칸 경계까지)
         {
-            Transform roomRoot = new GameObject(RoomObjectName(room)).transform; // 방 루트
-            roomRoot.SetParent(generatedRoot, false); // 생성물 루트 아래
-            roomRoot.localPosition = CellCenter(room.Cell); // 방 중심 (층 높이 포함)
-            float half = HalfSize(room); // 반크기
+            return room.OccupiesCell(cell.Step(direction)) ? cellSize * 0.5f : HalfSize(room); // 내부 경계는 이어 붙임
+        }
+
+        private Vector3 CellOffset(RoomNode room, GridPoint cell) // 방 기준 칸 위치 (방 루트 로컬)
+        {
+            return new Vector3((cell.X - room.Cell.X) * cellSize, 0f, (cell.Y - room.Cell.Y) * cellSize); // 칸 간격
+        }
+
+        private Transform CreateModuleRoot(RoomNode room) // 방 모듈 루트 (모듈 하나 = 방 하나)
+        {
+            Transform module = new GameObject(RoomObjectName(room)).transform; // 모듈 루트
+            module.SetParent(generatedRoot, false); // 생성물 루트 아래
+            module.localPosition = CellCenter(room.Cell); // 기준 칸 중심 (층 바닥 높이)
+            module.localRotation = Quaternion.identity; // 격자 방향
+            return module; // 반환
+        }
+
+        private void BuildRoom(RoomNode room) // 일반 방·복도·보스방·비밀방 모듈 (여러 칸 지원)
+        {
+            Transform module = CreateModuleRoot(room); // 모듈 루트
             float t = wallThickness; // 두께
-            float span = (half * 2f) + (t * 2f); // 벽 포함 전체 폭
-            CreateBox(roomRoot, "Floor", new Vector3(0f, -t * 0.5f, 0f), new Vector3(span, t, span), floorMaterial); // 바닥
-            CreateBox(roomRoot, "Ceiling", new Vector3(0f, roomHeight + (t * 0.5f), 0f), new Vector3(span, t, span), wallMaterial); // 천장
-            BuildWalls(roomRoot, room, half, roomHeight); // 4면 벽
-            AddRoomLight(roomRoot, roomHeight - 0.6f, half, room.Kind == RoomKind.Corridor ? 2.4f : 3.2f); // 방 조명
+            float half = HalfSize(room); // 칸 반크기
+            float intensity = room.Kind == RoomKind.Corridor ? 2.4f : room.IsBoss ? 2.2f : 3.2f; // 방 밝기
+            Color lightColor = room.IsBoss ? new Color(1f, 0.45f, 0.32f) : room.IsSecret ? new Color(0.72f, 0.55f, 1f) : new Color(1f, 0.72f, 0.45f); // 보스는 붉은빛·비밀방은 보랏빛
+
+            foreach (GridPoint cell in room.Cells) // 칸 순회
+            {
+                Vector3 offset = CellOffset(room, cell); // 칸 위치
+                float north = CellExtent(room, cell, GridDirection.North); // 북쪽 반크기
+                float south = CellExtent(room, cell, GridDirection.South); // 남쪽 반크기
+                float east = CellExtent(room, cell, GridDirection.East); // 동쪽 반크기
+                float west = CellExtent(room, cell, GridDirection.West); // 서쪽 반크기
+                Vector3 center = offset + new Vector3((east - west) * 0.5f, 0f, (north - south) * 0.5f); // 바닥 중심
+                Vector3 size = new Vector3(east + west + (t * 2f), t, north + south + (t * 2f)); // 바닥 크기
+                CreateBox(module, $"Floor_{cell.X}_{cell.Y}", center + new Vector3(0f, -t * 0.5f, 0f), size, floorMaterial); // 바닥
+                CreateBox(module, $"Ceiling_{cell.X}_{cell.Y}", center + new Vector3(0f, roomHeight + (t * 0.5f), 0f), size, wallMaterial); // 천장
+
+                foreach (GridDirection direction in GridDirections.All) // 네 면
+                {
+                    if (room.OccupiesCell(cell.Step(direction))) // 같은 모듈의 칸끼리 맞닿은 면
+                    {
+                        continue; // 벽 없이 이어 붙임
+                    }
+
+                    BuildWallFace(module, room, cell, direction, roomHeight, Layout.HasDoorOnCellWall(room.Id, cell, direction) ? SingleOpening(0f) : null); // 바깥 면
+                }
+
+                AddRoomLight(module, offset + new Vector3(0f, roomHeight - 0.6f, 0f), half, intensity, lightColor); // 칸 조명
+            }
         }
 
-        private void BuildVerticalRoom(RoomNode room) // 두 층을 잇는 세로형 방 (계단통·사다리 방·수직 통로)
+        private void BuildVerticalRoom(RoomNode room) // 두 층을 잇는 세로형 방 모듈 (계단통·사다리 방·수직 통로)
         {
-            Transform roomRoot = new GameObject(RoomObjectName(room)).transform; // 방 루트
-            roomRoot.SetParent(generatedRoot, false); // 생성물 루트 아래
-            roomRoot.localPosition = CellCenter(room.Cell); // 아래층 바닥 기준
+            Transform module = CreateModuleRoot(room); // 모듈 루트
             float half = HalfSize(room); // 반크기
             float t = wallThickness; // 두께
             float span = (half * 2f) + (t * 2f); // 벽 포함 전체 폭
             float totalHeight = FloorStep + roomHeight; // 두 층 높이
-            CreateBox(roomRoot, "Floor", new Vector3(0f, -t * 0.5f, 0f), new Vector3(span, t, span), floorMaterial); // 아래층 바닥
-            CreateBox(roomRoot, "Ceiling", new Vector3(0f, totalHeight + (t * 0.5f), 0f), new Vector3(span, t, span), wallMaterial); // 위층 천장
-            BuildWalls(roomRoot, room, half, totalHeight); // 아래·위층 문 구멍이 있는 벽
+            CreateBox(module, "Floor", new Vector3(0f, -t * 0.5f, 0f), new Vector3(span, t, span), floorMaterial); // 아래층 바닥
+            CreateBox(module, "Ceiling", new Vector3(0f, totalHeight + (t * 0.5f), 0f), new Vector3(span, t, span), wallMaterial); // 위층 천장
 
-            if (room.Vertical == VerticalKind.Stairwell) // 계단통
-            {
-                BuildStairwell(roomRoot, room, half); // 계단 + 경사 충돌체 + 위층 바닥
-            }
-            else // 사다리 방·수직 통로
-            {
-                BuildLadderWell(roomRoot, room, half); // 사다리 + 구멍이 있는 위층 바닥
-            }
-
-            AddRoomLight(roomRoot, FloorStep - 0.7f, half, 2.6f); // 아래층 조명
-            AddRoomLight(roomRoot, totalHeight - 0.7f, half, 2.6f); // 위층 조명
-        }
-
-        private void BuildWalls(Transform roomRoot, RoomNode room, float half, float totalHeight) // 4면 벽 (문 구멍 높이 목록 기준)
-        {
-            foreach (GridDirection direction in GridDirections.All) // 4방향
+            foreach (GridDirection direction in GridDirections.All) // 네 면
             {
                 List<float> openings = new List<float>(); // 문 구멍 바닥 높이
 
-                if (room.IsVertical) // 세로형 방
+                if (direction == room.LowerWall) // 아래층 문
                 {
-                    if (direction == room.LowerWall) // 아래층 문
-                    {
-                        openings.Add(0f); // 아래층 높이
-                    }
-
-                    if (direction == room.UpperWall) // 위층 문
-                    {
-                        openings.Add(FloorStep); // 위층 높이
-                    }
-                }
-                else if (Layout.HasDoorOnWall(room.Id, direction)) // 일반 방 문
-                {
-                    openings.Add(0f); // 바닥 높이
+                    openings.Add(0f); // 아래층 높이
                 }
 
-                BuildWall(roomRoot, direction, half, totalHeight, openings); // 벽 생성
+                if (direction == room.UpperWall) // 위층 문
+                {
+                    openings.Add(FloorStep); // 위층 높이
+                }
+
+                BuildWallFace(module, room, room.Cell, direction, totalHeight, openings.Count == 0 ? null : openings); // 바깥 면
             }
+
+            Transform frame = new GameObject("ClimbFrame").transform; // 오르내림 기준 틀
+            frame.SetParent(module, false); // 모듈 아래
+            frame.localPosition = Vector3.zero; // 방 중심
+            frame.localRotation = Quaternion.LookRotation(DirectionVector(room.ClimbWall), Vector3.up); // 로컬 +Z = 계단·사다리가 붙는 벽 방향, +X = 옆 방향
+
+            if (room.Vertical == VerticalKind.Stairwell) // 계단통
+            {
+                BuildStairwell(frame, room, half); // 계단 + 경사 충돌체 + 위층 바닥
+            }
+            else // 사다리 방·수직 통로
+            {
+                BuildLadderWell(frame, room, half); // 사다리 + 구멍이 있는 위층 바닥
+            }
+
+            AddRoomLight(module, FloorStep - 0.7f, half, 2.6f); // 아래층 조명
+            AddRoomLight(module, totalHeight - 0.7f, half, 2.6f); // 위층 조명
         }
 
-        private void BuildWall(Transform roomRoot, GridDirection direction, float half, float totalHeight, List<float> openings) // 방 한 면 벽 (구멍 0~2개)
+        private static List<float> SingleOpening(float baseY) // 구멍 하나짜리 목록
+        {
+            return new List<float> { baseY }; // 목록
+        }
+
+        private void BuildWallFace(Transform module, RoomNode room, GridPoint cell, GridDirection direction, float totalHeight, List<float> openings) // 모듈 바깥 면 한 장 (면 자체 좌표계에서만 계산하므로 방향에 따라 축이 뒤바뀌지 않음)
         {
             float t = wallThickness; // 두께
-            float length = (half * 2f) + (t * 2f); // 벽 길이 (모서리 포함)
-            Vector3 normal = DirectionVector(direction); // 벽 바깥 방향
-            Vector3 along = new Vector3(Mathf.Abs(normal.z), 0f, Mathf.Abs(normal.x)); // 벽 길이 방향
-            Vector3 wallBase = normal * (half + (t * 0.5f)); // 벽 중심 (바닥 기준)
+            GridDirection alongPositive = (GridDirection)(((int)direction + 1) % 4); // 면 로컬 +X에 해당하는 격자 방향
+            float right = CellExtent(room, cell, alongPositive) + t; // 면 로컬 +X 길이
+            float left = CellExtent(room, cell, GridDirections.Opposite(alongPositive)) + t; // 면 로컬 -X 길이
+            Transform face = new GameObject($"Wall_{cell.X}_{cell.Y}_{direction}").transform; // 면 루트
+            face.SetParent(module, false); // 모듈 아래
+            face.localPosition = CellOffset(room, cell) + (DirectionVector(direction) * CellExtent(room, cell, direction)); // 칸 안쪽 면 (바닥 높이)
+            face.localRotation = Quaternion.LookRotation(DirectionVector(direction), Vector3.up); // 로컬 +Z = 모듈 바깥, +X = 면 길이, +Y = 위
+            float length = right + left; // 면 전체 길이
+            float centerX = (right - left) * 0.5f; // 면 중심
+            float halfDoor = doorWidth * 0.5f; // 문 반폭
 
-            if (openings == null || openings.Count == 0) // 막힌 벽
+            if (openings == null || openings.Count == 0) // 막힌 면
             {
-                CreateBox(roomRoot, $"Wall_{direction}", wallBase + (Vector3.up * (totalHeight * 0.5f)), WallSize(along, length, totalHeight, t), wallMaterial); // 한 판
+                CreateBox(face, "Panel", new Vector3(centerX, totalHeight * 0.5f, t * 0.5f), new Vector3(length, totalHeight, t), wallMaterial); // 한 판
                 return; // 종료
             }
 
-            float segment = (length - doorWidth) * 0.5f; // 문 양옆 벽 길이
-            float offset = (doorWidth * 0.5f) + (segment * 0.5f); // 옆 벽 중심 거리
-            CreateBox(roomRoot, $"Wall_{direction}_L", wallBase + (along * offset) + (Vector3.up * (totalHeight * 0.5f)), WallSize(along, segment, totalHeight, t), wallMaterial); // 왼쪽
-            CreateBox(roomRoot, $"Wall_{direction}_R", wallBase - (along * offset) + (Vector3.up * (totalHeight * 0.5f)), WallSize(along, segment, totalHeight, t), wallMaterial); // 오른쪽
+            if (right - halfDoor > 0.01f) // 문 +X쪽
+            {
+                CreateBox(face, "Panel_R", new Vector3((halfDoor + right) * 0.5f, totalHeight * 0.5f, t * 0.5f), new Vector3(right - halfDoor, totalHeight, t), wallMaterial); // 생성
+            }
+
+            if (left - halfDoor > 0.01f) // 문 -X쪽
+            {
+                CreateBox(face, "Panel_L", new Vector3(-(halfDoor + left) * 0.5f, totalHeight * 0.5f, t * 0.5f), new Vector3(left - halfDoor, totalHeight, t), wallMaterial); // 생성
+            }
+
             openings.Sort(); // 낮은 구멍부터
             float cursor = 0f; // 채울 시작 높이
 
@@ -632,7 +738,7 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
                 if (openingBase - cursor > 0.01f) // 채울 구간 존재
                 {
                     float fillHeight = openingBase - cursor; // 높이
-                    CreateBox(roomRoot, $"Wall_{direction}_Fill{index}", wallBase + (Vector3.up * (cursor + (fillHeight * 0.5f))), WallSize(along, doorWidth, fillHeight, t), wallMaterial); // 문 사이 벽
+                    CreateBox(face, $"Panel_Fill{index}", new Vector3(0f, cursor + (fillHeight * 0.5f), t * 0.5f), new Vector3(doorWidth, fillHeight, t), wallMaterial); // 문 사이 벽
                 }
 
                 cursor = openingBase + doorHeight; // 다음 시작
@@ -641,30 +747,25 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
             if (totalHeight - cursor > 0.01f) // 문 위 벽
             {
                 float topHeight = totalHeight - cursor; // 높이
-                CreateBox(roomRoot, $"Wall_{direction}_Top", wallBase + (Vector3.up * (cursor + (topHeight * 0.5f))), WallSize(along, doorWidth, topHeight, t), wallMaterial); // 문 위
+                CreateBox(face, "Panel_Top", new Vector3(0f, cursor + (topHeight * 0.5f), t * 0.5f), new Vector3(doorWidth, topHeight, t), wallMaterial); // 문 위
             }
         }
 
-        private static Vector3 WallSize(Vector3 along, float length, float height, float thickness) // 방향별 벽 크기
+        private void AddRoomLight(Transform roomRoot, float localY, float half, float intensity) // 방 점광원 (세로형 방용)
         {
-            return along.x > 0.5f ? new Vector3(length, height, thickness) : new Vector3(thickness, height, length); // X 방향 또는 Z 방향
+            AddRoomLight(roomRoot, new Vector3(0f, localY, 0f), half, intensity, new Color(1f, 0.72f, 0.45f)); // 기본 횃불색
         }
 
-        private static Vector3 PlaneSize(Vector3 axis, float axisLength, float crossLength, float height) // 축 방향 길이 · 직각 방향 길이로 상자 크기 계산
-        {
-            return Mathf.Abs(axis.x) > 0.5f ? new Vector3(axisLength, height, crossLength) : new Vector3(crossLength, height, axisLength); // 축이 X인지 Z인지
-        }
-
-        private void AddRoomLight(Transform roomRoot, float localY, float half, float intensity) // 방 점광원
+        private void AddRoomLight(Transform roomRoot, Vector3 localPosition, float half, float intensity, Color color) // 방 점광원 (위치·색 지정)
         {
             GameObject lightObject = new GameObject("RoomLight"); // 조명
             lightObject.transform.SetParent(roomRoot, false); // 방 아래
-            lightObject.transform.localPosition = new Vector3(0f, localY, 0f); // 천장 아래
+            lightObject.transform.localPosition = localPosition; // 천장 아래
             Light light = lightObject.AddComponent<Light>(); // 점광원
             light.type = LightType.Point; // 점광원
             light.range = half * 3.2f; // 범위
             light.intensity = intensity; // 밝기
-            light.color = new Color(1f, 0.72f, 0.45f); // 따뜻한 횃불색
+            light.color = color; // 색
             light.shadows = LightShadows.None; // 성능용 그림자 없음
         }
 
@@ -686,38 +787,37 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
             return room.Id % 2 == 0 ? perpendicularA : perpendicularB; // 결정적 선택
         }
 
-        private void BuildStairwell(Transform roomRoot, RoomNode room, float half) // 계단통: 한쪽에 계단, 나머지에 위층 바닥
+        private void BuildStairwell(Transform frame, RoomNode room, float half) // 계단통: 기준 틀 안에서 한쪽에 계단, 나머지에 위층 바닥
         {
-            Vector3 runAxis = DirectionVector(room.ClimbWall); // 계단 아래쪽 벽 방향
-            Vector3 sideAxis = DirectionVector(PickStairSide(room)); // 계단이 붙는 측면
+            float sideSign = PickStairSide(room) == (GridDirection)(((int)room.ClimbWall + 1) % 4) ? 1f : -1f; // 계단이 붙는 쪽 (+X / -X)
             float t = wallThickness; // 두께
             float span = (half * 2f) + (t * 2f); // 벽 포함 전체 폭
             float rise = FloorStep; // 올라가는 높이
             float width = Mathf.Min(stairWidth, (half * 2f) - 2f); // 계단 폭 (위층 통로 확보)
+            float landing = Mathf.Clamp(stairTopLanding, 0f, (half * 2f) - stairEntryInset - 2.5f); // 꼭대기 착지 공간 (경사가 너무 가팔라지지 않게 제한)
             float startU = half - stairEntryInset; // 계단 시작 (아래층 문 쪽)
-            float endU = -half; // 계단 끝 (반대 벽)
+            float endU = -half + landing; // 계단 끝 (착지 공간 앞)
             float runLength = startU - endU; // 수평 길이
             int steps = Mathf.Max(2, Mathf.CeilToInt(rise / Mathf.Max(0.1f, stairStepHeight))); // 계단 수
             float stepRise = rise / steps; // 한 칸 높이
             float tread = runLength / steps; // 한 칸 깊이
             Material stair = stairMaterial != null ? stairMaterial : floorMaterial; // 계단 재질
             Transform stairRoot = new GameObject("Stairs").transform; // 계단 루트
-            stairRoot.SetParent(roomRoot, false); // 방 아래
-            stairRoot.localPosition = Vector3.zero; // 방 중심 기준
-            float sideCenter = half - (width * 0.5f); // 계단 중심 (측면 쪽)
+            stairRoot.SetParent(frame, false); // 기준 틀 아래
+            stairRoot.localPosition = Vector3.zero; // 기준 틀 중심
+            stairRoot.localRotation = Quaternion.identity; // 기준 틀 방향 그대로
+            float sideCenter = sideSign * (half - (width * 0.5f)); // 계단 중심 (옆 방향)
 
             for (int index = 0; index < steps; index++) // 디딤판 (보이는 부분, 충돌체 없음)
             {
                 float centerU = startU - (tread * (index + 0.5f)); // 디딤판 중심
                 float height = stepRise * (index + 1); // 디딤판 높이 (바닥부터)
-                Vector3 center = (runAxis * centerU) + (sideAxis * sideCenter) + (Vector3.up * (height * 0.5f)); // 중심
-                CreateBox(stairRoot, $"Step_{index:00}", center, PlaneSize(runAxis, tread, width, height), stair, false); // 계단 한 칸
+                CreateBox(stairRoot, $"Step_{index:00}", new Vector3(sideCenter, height * 0.5f, centerU), new Vector3(width, height, tread), stair, false); // 계단 한 칸
             }
 
-            Vector3 ascend = ((-runAxis * runLength) + (Vector3.up * rise)).normalized; // 올라가는 방향
-            Quaternion rampRotation = Quaternion.LookRotation(ascend, Vector3.up); // 경사 회전
+            Quaternion rampRotation = Quaternion.LookRotation(new Vector3(0f, rise, -runLength).normalized, Vector3.up); // 경사 회전 (올라가는 방향)
             float rampLength = Mathf.Sqrt((rise * rise) + (runLength * runLength)); // 경사 길이
-            Vector3 surfaceMid = (runAxis * ((startU + endU) * 0.5f)) + (sideAxis * sideCenter) + (Vector3.up * (rise * 0.5f)); // 경사면 중심
+            Vector3 surfaceMid = new Vector3(sideCenter, rise * 0.5f, (startU + endU) * 0.5f); // 경사면 중심
             GameObject ramp = new GameObject("StairRamp"); // 경사 충돌체 (보이지 않음, 걸림 없이 오르기)
             ramp.transform.SetParent(stairRoot, false); // 계단 아래
             ramp.transform.localRotation = rampRotation; // 회전
@@ -728,45 +828,47 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
 
             if (slabWidth > 0.5f) // 위층 바닥 생성 가능
             {
-                Vector3 slabCenter = (sideAxis * (-width * 0.5f)) + (Vector3.up * (FloorStep - (t * 0.5f))); // 위층 바닥 중심
-                CreateBox(roomRoot, "UpperFloor", slabCenter, PlaneSize(runAxis, span, slabWidth, t), floorMaterial); // 위층 바닥
-                float railLength = (half * 2f) - 2f; // 난간 길이 (계단 위쪽 내림 구간 제외)
+                CreateBox(frame, "UpperFloor", new Vector3(-sideSign * width * 0.5f, FloorStep - (t * 0.5f), 0f), new Vector3(slabWidth, t, span), floorMaterial); // 위층 바닥
+
+                if (landing > 0.1f) // 계단 꼭대기 착지 바닥 (앞으로만 걸어도 위층에 올라서게 함)
+                {
+                    CreateBox(frame, "UpperLanding", new Vector3(sideCenter, FloorStep - (t * 0.5f), (endU + (-half - t)) * 0.5f), new Vector3(width, t, landing + t), floorMaterial); // 착지 바닥
+                }
+
+                float railLength = half - endU; // 난간 길이 (계단이 뚫린 구간만)
 
                 if (railLength > 0.5f) // 난간 생성 가능
                 {
-                    Vector3 railCenter = (runAxis * (half - (railLength * 0.5f))) + (sideAxis * (half - width - 0.1f)) + (Vector3.up * (FloorStep + 0.3f)); // 난간 중심
-                    CreateBox(roomRoot, "UpperRail", railCenter, PlaneSize(runAxis, railLength, 0.2f, 0.6f), wallMaterial); // 추락 방지 난간
+                    CreateBox(frame, "UpperRail", new Vector3(sideSign * (half - width - 0.1f), FloorStep + 0.3f, (half + endU) * 0.5f), new Vector3(0.2f, 0.6f, railLength), wallMaterial); // 추락 방지 난간
                 }
             }
         }
 
-        private void BuildLadderWell(Transform roomRoot, RoomNode room, float half) // 사다리 방·수직 통로: 사다리와 구멍이 있는 위층 바닥
+        private void BuildLadderWell(Transform frame, RoomNode room, float half) // 사다리 방·수직 통로: 기준 틀 안에서 사다리와 구멍이 있는 위층 바닥
         {
-            Vector3 wallAxis = DirectionVector(room.ClimbWall); // 사다리가 붙는 벽 방향
-            Vector3 sideAxis = DirectionVector((GridDirection)(((int)room.ClimbWall + 1) % 4)); // 직각 방향
             float t = wallThickness; // 두께
             float holeWidth = Mathf.Min(ladderHoleWidth, (half * 2f) - 1.2f); // 구멍 폭
             float holeDepth = Mathf.Min(ladderHoleDepth, half * 0.8f); // 구멍 깊이
             float mainLength = (half * 2f) + t - holeDepth; // 구멍 뒤쪽 전체 바닥 길이
             float mainCenterU = (-t - holeDepth) * 0.5f; // 구멍 뒤쪽 바닥 중심
             float slabY = FloorStep - (t * 0.5f); // 위층 바닥 높이
-            CreateBox(roomRoot, "UpperFloor_Main", (wallAxis * mainCenterU) + (Vector3.up * slabY), PlaneSize(wallAxis, mainLength, (half * 2f) + (t * 2f), t), floorMaterial); // 구멍 뒤쪽 바닥
+            CreateBox(frame, "UpperFloor_Main", new Vector3(0f, slabY, mainCenterU), new Vector3((half * 2f) + (t * 2f), t, mainLength), floorMaterial); // 구멍 뒤쪽 바닥
             float sideLength = holeDepth + t; // 구멍 옆 바닥 길이
             float sideCenterU = half + ((t - holeDepth) * 0.5f); // 구멍 옆 바닥 중심
             float sideWidth = half + t - (holeWidth * 0.5f); // 구멍 옆 바닥 폭
-            float sideCenterV = ((holeWidth * 0.5f) + half + t) * 0.5f; // 구멍 옆 바닥 중심 (직각 방향)
+            float sideCenterV = ((holeWidth * 0.5f) + half + t) * 0.5f; // 구멍 옆 바닥 중심 (옆 방향)
 
             if (sideWidth > 0.1f) // 구멍 옆 바닥 생성 가능
             {
-                CreateBox(roomRoot, "UpperFloor_SideA", (wallAxis * sideCenterU) + (sideAxis * sideCenterV) + (Vector3.up * slabY), PlaneSize(wallAxis, sideLength, sideWidth, t), floorMaterial); // 한쪽
-                CreateBox(roomRoot, "UpperFloor_SideB", (wallAxis * sideCenterU) - (sideAxis * sideCenterV) + (Vector3.up * slabY), PlaneSize(wallAxis, sideLength, sideWidth, t), floorMaterial); // 반대쪽
+                CreateBox(frame, "UpperFloor_SideA", new Vector3(sideCenterV, slabY, sideCenterU), new Vector3(sideWidth, t, sideLength), floorMaterial); // 한쪽
+                CreateBox(frame, "UpperFloor_SideB", new Vector3(-sideCenterV, slabY, sideCenterU), new Vector3(sideWidth, t, sideLength), floorMaterial); // 반대쪽
             }
 
             Material ladderMat = ladderMaterial != null ? ladderMaterial : doorMaterial; // 사다리 재질
             Transform ladderRoot = new GameObject("Ladder").transform; // 사다리 루트
-            ladderRoot.SetParent(roomRoot, false); // 방 아래
-            ladderRoot.localPosition = wallAxis * (half - 0.08f); // 벽 안쪽 면
-            ladderRoot.localRotation = Quaternion.LookRotation(-wallAxis, Vector3.up); // 앞(+Z)이 방 안쪽
+            ladderRoot.SetParent(frame, false); // 기준 틀 아래
+            ladderRoot.localPosition = new Vector3(0f, 0f, half - 0.08f); // 벽 안쪽 면
+            ladderRoot.localRotation = Quaternion.LookRotation(Vector3.back, Vector3.up); // 앞(+Z)이 방 안쪽
             float ladderHeight = FloorStep + ladderTopOverhang; // 사다리 전체 길이 (위층 바닥보다 길게)
             CreateBox(ladderRoot, "Rail_L", new Vector3(-0.35f, ladderHeight * 0.5f, 0.09f), new Vector3(0.1f, ladderHeight, 0.1f), ladderMat); // 왼쪽 기둥
             CreateBox(ladderRoot, "Rail_R", new Vector3(0.35f, ladderHeight * 0.5f, 0.09f), new Vector3(0.1f, ladderHeight, 0.1f), ladderMat); // 오른쪽 기둥
@@ -807,10 +909,10 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
             RoomNode b = Layout.Room(door.B); // 방 B
             Vector3 direction = DirectionVector(door.FromA); // A → B
             float t = wallThickness; // 두께
-            Vector3 start = CellCenterAtFloor(a.Cell, door.Floor) + (direction * (HalfSize(a) + t)); // A 벽 바깥면
-            Vector3 end = CellCenterAtFloor(b.Cell, door.Floor) - (direction * (HalfSize(b) + t)); // B 벽 바깥면
+            Vector3 start = CellCenterAtFloor(door.CellA, door.Floor) + (direction * (CellExtent(a, door.CellA, door.FromA) + t)); // A 벽 바깥면
+            Vector3 end = CellCenterAtFloor(door.CellB, door.Floor) - (direction * (CellExtent(b, door.CellB, GridDirections.Opposite(door.FromA)) + t)); // B 벽 바깥면
             float length = Vector3.Distance(start, end); // 통로 길이
-            Transform passage = new GameObject($"Passage_{door.A:00}_{door.B:00}_{GridPoint.FloorName(door.Floor)}{(door.IsLocked ? "_Locked" : string.Empty)}").transform; // 통로 루트
+            Transform passage = new GameObject($"Passage_{door.A:00}_{door.B:00}_{GridPoint.FloorName(door.Floor)}{(door.IsLocked ? "_Locked" : door.IsBreakable ? "_Breakable" : string.Empty)}").transform; // 통로 루트
             passage.SetParent(generatedRoot, false); // 생성물 루트 아래
             passage.localPosition = (start + end) * 0.5f; // 중간
             passage.localRotation = Quaternion.LookRotation(direction); // 통로 방향 = 로컬 +Z
@@ -819,6 +921,16 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
             CreateBox(passage, "Ceiling", new Vector3(0f, doorHeight + (t * 0.5f), 0f), new Vector3(doorWidth + (t * 2f), t, length + overlap), wallMaterial); // 천장
             CreateBox(passage, "Side_L", new Vector3(-(doorWidth + t) * 0.5f, doorHeight * 0.5f, 0f), new Vector3(t, doorHeight, length + overlap), wallMaterial); // 왼쪽 벽
             CreateBox(passage, "Side_R", new Vector3((doorWidth + t) * 0.5f, doorHeight * 0.5f, 0f), new Vector3(t, doorHeight, length + overlap), wallMaterial); // 오른쪽 벽
+
+            if (door.IsBreakable) // 비밀방으로 가는 금 간 벽
+            {
+                GameObject cracked = CreateBox(passage, "BreakableWall", new Vector3(0f, doorHeight * 0.5f, 0f), new Vector3(doorWidth, doorHeight, 0.3f), breakableWallMaterial != null ? breakableWallMaterial : wallMaterial); // 통로를 막는 금 간 벽
+                cracked.AddComponent<ProjectI.Combat.CombatHealth>(); // 공통 체력
+                BreakableWall breakable = cracked.AddComponent<BreakableWall>(); // 파괴 기능
+                breakable.Configure(breakableWallHealth); // 내구도
+                breakableWalls.Add(breakable); // 등록
+                return; // 통로 종료
+            }
 
             if (!door.IsLocked) // 잠긴 문 여부
             {
@@ -830,14 +942,14 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
             locked.Configure(keyDefinition == null ? "key.basic" : keyDefinition.ItemId); // 열쇠 ID
         }
 
-        private void BuildInteriorDoor(RoomNode room, GridDirection wall, DungeonDoorKind kind, int subIndex) // 실내 정문·서브문 (벽 안쪽 면)
+        private void BuildInteriorDoor(RoomNode room, GridPoint cell, GridDirection wall, DungeonDoorKind kind, int subIndex) // 실내 정문·서브문 (지정 칸의 벽 안쪽 면)
         {
             Transform roomRoot = generatedRoot.Find(RoomObjectName(room)); // 방 루트
             Vector3 normal = DirectionVector(wall); // 벽 바깥 방향
-            float half = HalfSize(room); // 방 반크기
+            float extent = CellExtent(room, cell, wall); // 해당 칸의 벽까지 거리
             Transform doorRoot = new GameObject(kind == DungeonDoorKind.Main ? "InteriorMainDoor" : $"InteriorSubDoor_{subIndex + 1}").transform; // 문 루트
             doorRoot.SetParent(roomRoot, false); // 방 아래
-            doorRoot.localPosition = normal * (half - 0.07f); // 벽 안쪽 면 바로 앞
+            doorRoot.localPosition = CellOffset(room, cell) + (normal * (extent - 0.07f)); // 벽 안쪽 면 바로 앞
             doorRoot.localRotation = Quaternion.LookRotation(-normal); // 방 안쪽을 바라봄
             GameObject panel = CreateBox(doorRoot, "DoorPanel", new Vector3(0f, 1.2f, 0f), new Vector3(1.6f, 2.4f, 0.12f), doorMaterial); // 문짝
             CreateBox(doorRoot, "Frame_L", new Vector3(-0.9f, 1.3f, 0.02f), new Vector3(0.18f, 2.6f, 0.2f), wallMaterial); // 문틀
@@ -931,7 +1043,8 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
             }
 
             float range = Mathf.Max(0f, HalfSize(room) - 1.2f); // 벽에서 떨어진 범위
-            Vector3 local = CellCenter(room.Cell) + new Vector3(((float)random.NextDouble() * 2f - 1f) * range, 0.6f, ((float)random.NextDouble() * 2f - 1f) * range); // 방 안 위치
+            GridPoint cell = room.Cells[random.Next(room.Cells.Count)]; // 여러 칸 방은 무작위 칸
+            Vector3 local = CellCenter(cell) + new Vector3(((float)random.NextDouble() * 2f - 1f) * range, 0.6f, ((float)random.NextDouble() * 2f - 1f) * range); // 방 안 위치
             Vector3 world = generatedRoot.TransformPoint(local); // 월드 위치
             GameObject instance = Instantiate(definition.RecoveryPrefab, world, Quaternion.Euler(0f, (float)random.NextDouble() * 360f, 0f)); // 위치 지정 생성 (Rigidbody 보간 문제 방지)
             instance.transform.SetParent(generatedRoot, true); // 환경 씬 소속
