@@ -181,6 +181,12 @@ namespace ProjectI.Generation // 절차적 던전 생성 핵심 네임스페이�
             return (GridDirection)(((int)direction + 2) % 4); // 180도
         }
 
+        public static GridDirection Rotate(GridDirection direction, int quarterTurns) // 90° 단위 회전 (반시계, CellPoint.Rotated와 같은 방향)
+        {
+            int turns = ((quarterTurns % 4) + 4) % 4; // 0~3 보정
+            return (GridDirection)(((int)direction + (turns * 3)) % 4); // 북→서→남→동 순서
+        }
+
         public static GridDirection Between(GridPoint from, GridPoint to) // 인접 두 칸 사이 방향 (같은 층)
         {
             if (to.X == from.X + 1) return GridDirection.East; // 동

@@ -47,7 +47,19 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
 
         public void Interact(PlayerInteractor interactor) // 짝이 되는 문으로 순간이동
         {
-            ProceduralInteriorGenerator generator = ProceduralInteriorGenerator.FindInScene(gameObject.scene); // 같은 씬 생성기
+            ModuleDungeonGenerator moduleGenerator = ModuleDungeonGenerator.FindInScene(gameObject.scene); // 모듈 생성기 (30일차 소켓 방식)
+
+            if (moduleGenerator != null) // 모듈 방식 우선
+            {
+                if (!moduleGenerator.UseDoor(this)) // 이동 실패 확인
+                {
+                    Debug.Log($"[Project I] 출입문 사용 불가 / {BuildPrompt()}", this); // 안내
+                }
+
+                return; // 종료
+            }
+
+            ProceduralInteriorGenerator generator = ProceduralInteriorGenerator.FindInScene(gameObject.scene); // 같은 씬 생성기 (이전 격자 방식)
 
             if (generator == null || !generator.UseDoor(this)) // 이동 실패 확인
             {
@@ -57,6 +69,19 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
 
         private string BuildPrompt() // 문 종류별 안내
         {
+            ModuleDungeonGenerator moduleGenerator = ModuleDungeonGenerator.FindInScene(gameObject.scene); // 모듈 생성기
+
+            if (moduleGenerator != null) // 모듈 방식 우선
+            {
+                if (!moduleGenerator.IsGenerated) // 실내 생성 여부
+                {
+                    return "입구가 무너져 막혀 있다"; // 생성 실패 문구
+                }
+
+                string moduleName = kind == DungeonDoorKind.Main ? "정문" : $"보조 출입구 {subIndex + 1}"; // 문 이름
+                return side == DungeonDoorSide.Exterior ? $"{moduleName} — 지하로 들어가기" : $"{moduleName} — 밖으로 나가기"; // 방향별 문구
+            }
+
             ProceduralInteriorGenerator generator = ProceduralInteriorGenerator.FindInScene(gameObject.scene); // 같은 씬 생성기
 
             if (generator == null || !generator.IsGenerated) // 실내 생성 여부

@@ -1099,7 +1099,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &381024362
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6705,6 +6705,90 @@ Terrain:
   m_EnableTreesAndDetailsRayTracing: 0
   m_EnableHeightmapLODFrustumCulling: 1
   m_TreeMotionVectorModeOverride: 3
+--- !u!1 &1810902230
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1810902232}
+  - component: {fileID: 1810902231}
+  m_Layer: 0
+  m_Name: Day30_ModuleDungeon
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1810902231
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1810902230}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: afc9af767a43e514da91abf0f65e276c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectI.Dungeon.ModuleDungeonGenerator
+  library: {fileID: 11400000, guid: 8bd13b9c8a8ba7247a64755c0c4d0235, type: 2}
+  seedOverride: 0
+  targetModules: 26
+  minModules: 18
+  exteriorDoorCount: 2
+  enableBoss: 1
+  secretRoomCount: 1
+  gridRadius: 90
+  floorsAbove: 2
+  floorsBelow: 2
+  keyDefinition: {fileID: 11400000, guid: 2b8a6a6fcf292d6479f27f03cd088430, type: 2}
+  lootTable:
+  - definition: {fileID: 11400000, guid: 930a9175b54340a408b28e938fff9da3, type: 2}
+    minValue: 200
+    maxValue: 450
+    minDepthRatio: 0
+    maxDepthRatio: 0.55
+    weight: 3
+  - definition: {fileID: 11400000, guid: 6b2e25ac616b68c42a23f64de3c04800, type: 2}
+    minValue: 550
+    maxValue: 950
+    minDepthRatio: 0.2
+    maxDepthRatio: 0.85
+    weight: 3
+  - definition: {fileID: 11400000, guid: 5904b4c51b8d06448b424ec6f627365f, type: 2}
+    minValue: 1200
+    maxValue: 1700
+    minDepthRatio: 0.5
+    maxDepthRatio: 1
+    weight: 2
+  - definition: {fileID: 11400000, guid: aea5e2e91df61c74cb27152782146601, type: 2}
+    minValue: 2000
+    maxValue: 2600
+    minDepthRatio: 0.7
+    maxDepthRatio: 1
+    weight: 1
+  lootChancePerRoom: 0.72
+  originXZ: {x: 0, y: -38}
+  surfaceClearance: 12
+  exteriorReference: {fileID: 1810902232}
+--- !u!4 &1810902232
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1810902230}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1815242575
 GameObject:
   m_ObjectHideFlags: 0
@@ -7344,3 +7428,4 @@ SceneRoots:
   - {fileID: 1657312777}
   - {fileID: 484602451}
   - {fileID: 381024364}
+  - {fileID: 1810902232}

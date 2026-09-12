@@ -105,6 +105,8 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
         public float RoomHeight => roomHeight; // 방 높이 공개
         public float FloorStep => roomHeight + (wallThickness * 2f); // 한 층 높이 (바닥 위 → 위층 바닥 위)
         public int SeedOverride => seedOverride; // 고정 시드 공개 (0이면 캠페인·일차 기준)
+        public ItemDefinition KeyDefinition => keyDefinition; // 열쇠 정의 공개
+        public InteriorLootEntry[] LootTable => lootTable; // 회수품 표 공개
         public VerticalKind ForcedVerticalKind => forcedVerticalKind; // 고정 세로형 방 종류 공개
         public int FloorsAboveSetting => floorsAbove; // 위층 수 공개
         public int FloorsBelowSetting => floorsBelow; // 지하층 수 공개
