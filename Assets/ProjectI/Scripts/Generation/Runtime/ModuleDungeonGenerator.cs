@@ -16,6 +16,7 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
         [SerializeField] private int seedOverride; // 0이 아니면 고정 시드
 
         [Header("규모")]
+        [SerializeField] private int targetRoomCount = 22; // 목표 방 수 (0이면 모듈 수 기준)
         [SerializeField] private int targetModules = 26; // 목표 모듈 수
         [SerializeField] private int minModules = 18; // 최소 모듈 수
         [SerializeField] private int exteriorDoorCount = 2; // 외부 씬 서브문 수 (외부 씬 배치 수를 읽어 넣음)
@@ -29,6 +30,16 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
         [SerializeField] private ItemDefinition keyDefinition; // 열쇠 정의
         [SerializeField] private InteriorLootEntry[] lootTable = System.Array.Empty<InteriorLootEntry>(); // 회수품 표
         [SerializeField] private float lootChancePerRoom = 0.72f; // 일반 방에 회수품이 놓일 확률
+
+        [Header("전력")]
+        [SerializeField] private bool enablePower = true; // 발전실·배전반 사용
+        [SerializeField] private int powerZoneCount = 3; // 배전 구역 수
+        [SerializeField] private int zonesPoweredAtStart = 1; // 처음부터 차단기가 올라가 있는 구역 수 (입구 쪽부터)
+        [SerializeField] private Color emergencyLightColor = new Color(1f, 0.3f, 0.25f); // 비상등 색
+        [SerializeField] private float emergencyLightIntensity = 0.55f; // 비상등 밝기
+
+        [Header("이동 경로")]
+        [SerializeField] private bool buildNavMesh = true; // 생성 후 NavMesh 굽기
 
         [Header("배치")]
         [SerializeField] private Vector2 originXZ = new Vector2(0f, -38f); // 던전 중심 월드 XZ
@@ -45,6 +56,12 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
         private readonly List<GameObject> spawnedPlugs = new List<GameObject>(); // 연결되지 않은 출입구를 막은 벽
         private int openPassageCount; // 문 없이 뚫린 연결 수
         private readonly List<WorldItem> spawnedLoot = new List<WorldItem>(); // 생성한 회수품·열쇠
+        private DungeonPowerGrid powerGrid; // 전력망
+        private DungeonNavMeshBuilder navMesh; // 이동 경로
+        private readonly List<Unity.AI.Navigation.NavMeshLink> navLinks = new List<Unity.AI.Navigation.NavMeshLink>(); // 사다리·승강기 연결
+        private DungeonPowerPlant powerPlant; // 발전기
+        private readonly List<DungeonBreaker> breakers = new List<DungeonBreaker>(); // 배전반
+        private readonly List<DungeonElevator> elevators = new List<DungeonElevator>(); // 전력 승강기
         private Transform generatedRoot; // 생성물 루트
 
         public bool IsGenerated { get; private set; } // 생성 완료 여부
@@ -60,6 +77,12 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
         public IReadOnlyList<GameObject> SpawnedPlugs => spawnedPlugs; // 막음 벽 공개
         public int OpenPassageCount => openPassageCount; // 뚫린 연결 수 공개 (문 있음 / 문 없음 / 벽으로 막힘 세 상태)
         public IReadOnlyList<WorldItem> SpawnedLoot => spawnedLoot; // 회수품 공개
+        public DungeonPowerGrid PowerGrid => powerGrid; // 전력망 공개
+        public DungeonNavMeshBuilder NavMesh => navMesh; // 이동 경로 공개
+        public IReadOnlyList<Unity.AI.Navigation.NavMeshLink> NavLinks => navLinks; // 연결 공개
+        public DungeonPowerPlant PowerPlant => powerPlant; // 발전기 공개
+        public IReadOnlyList<DungeonBreaker> Breakers => breakers; // 배전반 공개
+        public IReadOnlyList<DungeonElevator> Elevators => elevators; // 승강기 공개
         public DungeonModuleLibrary Library => library; // 모듈 목록 공개
         public float InteriorTopY { get; private set; } // 실내 최고 높이 한계
         public float GeneratedMaxY { get; private set; } // 실제 생성물 최고 높이
@@ -74,6 +97,16 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
         {
             library = value; // 모듈 목록
             exteriorReference = reference != null ? reference : transform; // 지형 기준
+        }
+
+        public void ConfigureCatacombPreset() // 지하묘지 프리셋 (방 20~24개)
+        {
+            targetRoomCount = 22; // 목표 방 수
+            targetModules = 60; // 여유 있는 상한
+            minModules = 24; // 최소 모듈 수
+            gridRadius = 120; // 넓은 배치 범위
+            enablePower = true; // 전력 계통
+            powerZoneCount = 3; // 배전 구역
         }
 
         public void ConfigureScale(int target, int minimum, int exteriorDoors, bool boss, int secrets) // 규모 지정 (에디터 구성)
@@ -124,7 +157,9 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
             generatedRoot.rotation = Quaternion.identity; // 격자 방향
             SpawnModules(); // 모듈 배치
             SpawnFills(); // 문·금 간 벽·외부 문
+            BuildPower(); // 전력망·구역·조명 연결
             SpawnContent(new System.Random(unchecked(seed ^ 0x5EED1234))); // 회수품·열쇠
+            BuildNavMesh(); // 이동 경로
             GeneratedMaxY = ComputeMaxY(); // 최고 높이
 
             if (GeneratedMaxY > InteriorTopY + 0.01f) // 지형 관통 위험
@@ -136,7 +171,7 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
             }
 
             IsGenerated = true; // 성공
-            Debug.Log($"[Project I] 모듈 던전 생성 / Seed={seed} / 시도 {Plan.Attempt + 1} / 모듈 {Plan.Modules.Count} (방 {Plan.CountOfRole(ModuleRole.Room)} · 복도 {Plan.CountOfRole(ModuleRole.Corridor)}) / 층 {WorldCell.FloorName(Plan.MinFloor)}~{WorldCell.FloorName(Plan.MaxFloor)} · 세로형 {Plan.CountOfRole(ModuleRole.Vertical)} / 보스방 {(Plan.BossIndex >= 0 ? "있음" : "없음")} / 비밀방 {Plan.SecretIndices.Count} / 문 있음 {spawnedDoors.Count} · 문 없음 {openPassageCount} · 벽으로 막힘 {spawnedPlugs.Count} / 회수품 {spawnedLoot.Count} / 외부 연결 문 {interiorDoors.Count} / 최고 높이 {GeneratedMaxY:F1} < 외부 최저 {bottomY:F1}", this); // 결과
+            Debug.Log($"[Project I] 모듈 던전 생성 / Seed={seed} / 시도 {Plan.Attempt + 1} / 모듈 {Plan.Modules.Count} (방 {Plan.CountOfRole(ModuleRole.Room)} · 복도 {Plan.CountOfRole(ModuleRole.Corridor)}) / 층 {WorldCell.FloorName(Plan.MinFloor)}~{WorldCell.FloorName(Plan.MaxFloor)} · 세로형 {Plan.CountOfRole(ModuleRole.Vertical)} / 보스방 {(Plan.BossIndex >= 0 ? "있음" : "없음")} / 비밀방 {Plan.SecretIndices.Count} / 문 있음 {spawnedDoors.Count} · 문 없음 {openPassageCount} · 벽으로 막힘 {spawnedPlugs.Count} / 회수품 {spawnedLoot.Count} / 전력 구역 {(powerGrid == null ? 0 : powerGrid.Zones.Count)} (켜짐 {(powerGrid == null ? 0 : powerGrid.PoweredZoneCount)}) · 발전기 {(powerPlant == null ? "없음" : powerPlant.IsRunning ? "가동" : "정지")} · 승강기 {elevators.Count} / NavMesh {(navMesh != null && navMesh.IsBuilt ? "생성" : "없음")} / 외부 연결 문 {interiorDoors.Count} / 최고 높이 {GeneratedMaxY:F1} < 외부 최저 {bottomY:F1}", this); // 결과
             return true; // 성공
         }
 
@@ -152,6 +187,18 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
             spawnedPlugs.Clear(); // 목록 비우기
             openPassageCount = 0; // 집계 초기화
             spawnedLoot.Clear(); // 목록 비우기
+            breakers.Clear(); // 목록 비우기
+            elevators.Clear(); // 목록 비우기
+            navLinks.Clear(); // 목록 비우기
+            powerGrid = null; // 초기화
+
+            if (navMesh != null) // 이동 경로 제거
+            {
+                navMesh.Clear(); // 제거
+                navMesh = null; // 초기화
+            }
+
+            powerPlant = null; // 초기화
 
             if (generatedRoot != null) // 생성물 존재
             {
@@ -174,12 +221,15 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
         {
             return new ModulePlanConfig
             {
+                TargetRoomCount = targetRoomCount, // 목표 방 수
                 TargetModules = targetModules, // 목표
                 MinModules = minModules, // 최소
                 ExteriorDoorCount = exteriorDoorCount, // 서브문
                 EnableBoss = enableBoss, // 보스방
                 SecretCount = secretRoomCount, // 비밀방
                 GridRadius = gridRadius, // 반경
+                EnablePower = enablePower, // 전력 계통
+                PowerZoneCount = powerZoneCount, // 구역 수
                 FloorsAbove = floorsAbove, // 위층 수
                 FloorsBelow = floorsBelow, // 아래층 수
             }; // 반환
@@ -335,6 +385,181 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
                     RegisterFill(fill, socket.Fill); // 등록
                 }
             }
+        }
+
+        private void BuildNavMesh() // 생성된 형상 위에 이동 경로를 굽는다
+        {
+            if (!buildNavMesh) // 미사용
+            {
+                return; // 종료
+            }
+
+            Physics.SyncTransforms(); // 충돌체 최신화
+            navMesh = gameObject.GetComponent<DungeonNavMeshBuilder>(); // 기존
+
+            if (navMesh == null) // 없으면 추가
+            {
+                navMesh = gameObject.AddComponent<DungeonNavMeshBuilder>(); // 추가
+            }
+
+            navMesh.Build(generatedRoot); // 굽기
+            BuildNavLinks(); // 사다리·승강기 연결
+        }
+
+        private void BuildNavLinks() // 걸어서 갈 수 없는 이동 수단을 NavMesh 연결로 이어 준다
+        {
+            Transform linkRoot = new GameObject("NavLinks").transform; // 연결 루트
+            linkRoot.SetParent(generatedRoot, false); // 생성물 아래
+
+            for (int index = 0; index < Plan.Modules.Count; index++) // 모듈 순회
+            {
+                DungeonModule instance = index < spawnedModules.Count ? spawnedModules[index] : null; // 오브젝트
+
+                if (instance == null) // 없음
+                {
+                    continue; // 다음
+                }
+
+                foreach (DungeonLadder ladder in instance.GetComponentsInChildren<DungeonLadder>(true)) // 사다리
+                {
+                    navLinks.Add(navMesh.AddLink(linkRoot, $"Link_Ladder_{index:00}", ladder.ExitBottomPosition, ladder.ExitTopPosition, 1.2f)); // 아래↔위
+                }
+
+                foreach (DungeonElevator elevator in instance.GetComponentsInChildren<DungeonElevator>(true)) // 승강기
+                {
+                    PlacedModule placed = Plan.Modules[index]; // 배치
+
+                    for (int stop = 0; stop + 1 < elevator.StopCount; stop++) // 이웃한 층끼리 연결
+                    {
+                        Vector3 lower = ElevatorStopWorld(placed, instance, stop); // 아래 층 문 앞
+                        Vector3 upper = ElevatorStopWorld(placed, instance, stop + 1); // 위 층 문 앞
+                        navLinks.Add(navMesh.AddLink(linkRoot, $"Link_Elevator_{index:00}_{stop}", lower, upper, 1.6f)); // 연결
+                    }
+                }
+            }
+        }
+
+        private Vector3 ElevatorStopWorld(PlacedModule placed, DungeonModule instance, int stop) // 승강기 층별 문 앞 위치
+        {
+            for (int socketIndex = 0; socketIndex < placed.Sockets.Count; socketIndex++) // 출입구 순회
+            {
+                DungeonSocket socketObject = instance.SocketAt(socketIndex); // 오브젝트
+
+                if (socketObject == null || socketObject.FloorOffset != stop) // 다른 층
+                {
+                    continue; // 다음
+                }
+
+                return socketObject.DoorAnchor.position - (socketObject.transform.forward * 1.2f); // 문 안쪽 1.2m
+            }
+
+            return instance.transform.position + (Vector3.up * (stop * DungeonModuleMetrics.FloorStep)); // 예비 위치
+        }
+
+        private void BuildPower() // 전력망을 만들고 구역·조명·발전기·배전반을 연결
+        {
+            if (!enablePower || Plan.Zones.Count == 0) // 전력 계통 미사용
+            {
+                return; // 종료
+            }
+
+            GameObject gridObject = new GameObject("PowerGrid"); // 전력망 루트
+            gridObject.transform.SetParent(generatedRoot, false); // 생성물 아래
+            powerGrid = gridObject.AddComponent<DungeonPowerGrid>(); // 전력망
+
+            foreach (ModuleZone zone in Plan.Zones) // 구역 생성
+            {
+                powerGrid.CreateZone(zone.Id, zone.Id < zonesPoweredAtStart); // 입구 쪽 구역만 처음부터 켜짐
+            }
+
+            for (int index = 0; index < Plan.Modules.Count; index++) // 모듈마다 조명을 구역에 등록
+            {
+                PlacedModule placed = Plan.Modules[index]; // 배치
+                DungeonModule instance = index < spawnedModules.Count ? spawnedModules[index] : null; // 오브젝트
+
+                if (instance == null) // 없음
+                {
+                    continue; // 다음
+                }
+
+                DungeonPowerZone zone = powerGrid.Zone(placed.ZoneId); // 구역
+
+                if (zone == null) // 미배정
+                {
+                    continue; // 다음
+                }
+
+                zone.Register(BuildConsumer(instance)); // 조명 등록
+
+                foreach (DungeonElevator elevator in instance.GetComponentsInChildren<DungeonElevator>(true)) // 승강기
+                {
+                    elevator.Bind(zone); // 전력 구역 연결
+                    elevators.Add(elevator); // 등록
+                }
+
+                if (placed.Role == ModuleRole.PowerPlant) // 발전실
+                {
+                    powerPlant = instance.GetComponentInChildren<DungeonPowerPlant>(true); // 발전기
+
+                    if (powerPlant != null) // 확인
+                    {
+                        powerPlant.Bind(powerGrid); // 연결
+                    }
+                }
+
+                if (placed.Role == ModuleRole.Breaker) // 배전반 방
+                {
+                    DungeonBreaker breaker = instance.GetComponentInChildren<DungeonBreaker>(true); // 차단기
+
+                    if (breaker != null) // 확인
+                    {
+                        breaker.Bind(zone); // 담당 구역 연결
+                        breakers.Add(breaker); // 등록
+                    }
+                }
+            }
+
+            powerGrid.RefreshAll(); // 초기 상태 반영
+        }
+
+        private DungeonPowerConsumer BuildConsumer(DungeonModule instance) // 모듈의 조명을 전력 소비처로 묶고 비상등을 붙임
+        {
+            List<Light> lights = new List<Light>(); // 전기 조명
+
+            foreach (Light light in instance.GetComponentsInChildren<Light>(true)) // 조명 순회
+            {
+                lights.Add(light); // 등록
+            }
+
+            GameObject emergencyObject = new GameObject("EmergencyLight"); // 비상등
+            emergencyObject.transform.SetParent(instance.transform, false); // 모듈 아래
+            emergencyObject.transform.localPosition = EmergencyLightPosition(instance); // 위치
+            Light emergency = emergencyObject.AddComponent<Light>(); // 점광원
+            emergency.type = LightType.Point; // 점광원
+            emergency.range = 9f; // 범위
+            emergency.intensity = emergencyLightIntensity; // 밝기
+            emergency.color = emergencyLightColor; // 색
+            emergency.shadows = LightShadows.None; // 그림자 없음
+            emergency.enabled = false; // 정전 때만 켜짐
+            DungeonPowerConsumer consumer = instance.gameObject.AddComponent<DungeonPowerConsumer>(); // 소비처
+            consumer.Configure(lights, emergency); // 구성
+            return consumer; // 반환
+        }
+
+        private Vector3 EmergencyLightPosition(DungeonModule instance) // 모듈 안쪽 천장 아래
+        {
+            Vector3 sum = Vector3.zero; // 합
+            int count = 0; // 칸 수
+
+            foreach (Vector2Int cell in instance.Cells) // 칸 순회
+            {
+                sum += new Vector3((cell.x + 0.5f) * ModuleDoorway.CellSize, 0f, (cell.y + 0.5f) * ModuleDoorway.CellSize); // 누적
+                count++; // 집계
+            }
+
+            Vector3 center = count == 0 ? Vector3.zero : sum / count; // 평균
+            center.y = DungeonModuleMetrics.RoomHeight - 0.5f; // 천장 아래
+            return center; // 반환
         }
 
         private void SpawnContent(System.Random random) // 회수품·열쇠 생성
@@ -571,6 +796,8 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
 
         private void RegisterFill(GameObject fill, PassageFill kind) // 생성한 채움을 목록에 등록
         {
+            DungeonNavMeshBuilder.ExcludeFromBuild(fill); // 문·금 간 벽은 길을 막지 않는 것으로 간주 (열쇠·파괴로 통과 가능)
+
             DungeonDoor door = fill.GetComponentInChildren<DungeonDoor>(true); // 문
 
             if (door != null) // 문

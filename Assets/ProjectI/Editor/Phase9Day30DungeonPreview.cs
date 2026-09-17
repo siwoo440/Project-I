@@ -2,13 +2,15 @@ using System.Collections.Generic; // 목록 사용
 using ProjectI.Dungeon; // 생성기 참조
 using ProjectI.Generation; // 배치 규칙 참조
 using UnityEditor; // 에디터 기능 참조
+using UnityEditor.SceneManagement; // 씬 편집 참조
 using UnityEngine; // 유니티 기본 기능 참조
 
 namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
 {
     public static class Phase9Day30DungeonPreview // 모듈 던전을 실제로 생성해 월드 좌표까지 맞는지 확인합니다
     {
-        private const string LibraryPath = "Assets/ProjectI/Prefabs/Dungeon/Library/DungeonModuleLibrary.asset"; // 모듈 목록
+        private const string LibraryPath = "Assets/ProjectI/Prefabs/Dungeon/ModuleLibrary/DungeonModuleLibrary.asset"; // 모듈 목록
+        private const string TestDungeonScenePath = "Assets/ProjectI/Scenes/02_TestDungeon.unity"; // 외부 문이 놓인 테스트 던전 씬
         private const string PreviewRootName = "Day30_ModuleDungeonPreview"; // 미리보기 루트
         private const int PreviewSeeds = 12; // 실제 생성으로 확인할 시드 수
         private const float SocketTolerance = 0.01f; // 출입구가 맞닿았다고 볼 오차 (m)
@@ -96,8 +98,9 @@ namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
             ValidateBuild(); // 검사
         }
 
-        private static ModuleDungeonGenerator CreateGenerator() // 미리보기용 생성기 오브젝트
+        private static ModuleDungeonGenerator CreateGenerator() // 미리보기용 생성기 오브젝트 (외부 문이 있어야 하므로 테스트 던전 씬에서 만듦)
         {
+            EditorSceneManager.OpenScene(TestDungeonScenePath, OpenSceneMode.Single); // 씬 열기 (씬을 연 뒤에 에셋을 불러야 함)
             DungeonModuleLibrary library = AssetDatabase.LoadAssetAtPath<DungeonModuleLibrary>(LibraryPath); // 목록
 
             if (library == null) // 없음
@@ -190,7 +193,21 @@ namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
                 return sealedProblem; // 오류
             }
 
-            return CheckLightLeak(generator); // 실제로 밖이 보이는 틈이 있는지 광선으로 확인
+            string leak = CheckLightLeak(generator); // 실제로 밖이 보이는 틈이 있는지 광선으로 확인
+
+            if (!string.IsNullOrEmpty(leak)) // 문제
+            {
+                return leak; // 오류
+            }
+
+            string power = CheckPowerRuntime(generator); // 전력망 실제 구성 확인
+
+            if (!string.IsNullOrEmpty(power)) // 문제
+            {
+                return power; // 오류
+            }
+
+            return CheckNavMesh(generator); // 걸어서 모든 모듈에 갈 수 있는지
         }
 
         private static string CheckSocketCell(ModuleDungeonGenerator generator, PlacedSocket socket, DungeonSocket socketObject, int moduleIndex, int socketIndex) // 배치가 계산한 칸과 실제 오브젝트 위치가 같은지
@@ -200,6 +217,128 @@ namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
             float distance = Vector3.Distance(local, expected); // 거리 (층 높이 포함)
 
             return distance <= SocketTolerance ? string.Empty : $"모듈 {moduleIndex} 출입구 {socketIndex} 위치가 배치와 {distance:F3}m 다름 (칸 {socket.Cell} {socket.Facing} {WorldCell.FloorName(socket.Floor)})"; // 결과
+        }
+
+        private static string CheckNavMesh(ModuleDungeonGenerator generator) // 걸어서 이어져야 하는 구간이 NavMesh 로 실제 이어지는지
+        {
+            if (generator.NavMesh == null || !generator.NavMesh.IsBuilt) // 굽기 실패
+            {
+                return "NavMesh 가 생성되지 않음"; // 오류
+            }
+
+            List<string> problems = new List<string>(); // 문제
+
+            foreach (PlacedModule module in generator.Plan.Modules) // 모든 모듈에 설 자리가 있어야 함
+            {
+                Vector3 center = generator.ModuleCenterWorld(module) + (Vector3.up * 0.3f); // 기준점
+
+                if (!generator.NavMesh.TrySample(center, out Vector3 _)) // NavMesh 없음
+                {
+                    problems.Add($"{module.Index}({module.Definition.Id} {WorldCell.FloorName(module.Floor)}) 설 자리 없음"); // 등록
+                }
+            }
+
+            foreach (PlacedModule module in generator.Plan.Modules) // 걸어서 이어진 이웃끼리 경로가 있어야 함
+            {
+                if (module.Role == ModuleRole.Vertical) // 세로형 방은 사다리·승강기로 오가므로 제외
+                {
+                    continue; // 다음
+                }
+
+                foreach (PlacedSocket socket in module.Sockets) // 출입구 순회
+                {
+                    if (socket.ConnectedModule < 0 || socket.ConnectedModule < module.Index) // 연결 없음·짝 중복
+                    {
+                        continue; // 다음
+                    }
+
+                    PlacedModule other = generator.Plan.Module(socket.ConnectedModule); // 상대
+
+                    if (other.Role == ModuleRole.Vertical) // 세로형 방 상대는 제외
+                    {
+                        continue; // 다음
+                    }
+
+                    Vector3 a = generator.ModuleCenterWorld(module) + (Vector3.up * 0.3f); // 이쪽
+                    Vector3 b = generator.ModuleCenterWorld(other) + (Vector3.up * 0.3f); // 저쪽
+
+                    if (!generator.NavMesh.IsReachable(a, b)) // 끊김
+                    {
+                        problems.Add($"{module.Index}({module.Definition.Id})↔{other.Index}({other.Definition.Id}) {socket.Fill} 통로가 NavMesh 로 이어지지 않음"); // 등록
+                    }
+                }
+            }
+
+            int badLinks = 0; // 끝점이 NavMesh 에 붙지 않은 연결
+
+            foreach (Unity.AI.Navigation.NavMeshLink link in generator.NavLinks) // 사다리·승강기 연결 순회
+            {
+                if (link == null) // 확인
+                {
+                    continue; // 다음
+                }
+
+                Vector3 start = link.transform.TransformPoint(link.startPoint); // 월드 시작
+                Vector3 end = link.transform.TransformPoint(link.endPoint); // 월드 끝
+                badLinks += generator.NavMesh.TrySample(start, out Vector3 _) && generator.NavMesh.TrySample(end, out Vector3 _) ? 0 : 1; // 집계
+            }
+
+            if (badLinks > 0) // 연결 끝점이 바닥에 안 붙음
+            {
+                problems.Add($"사다리·승강기 연결 {generator.NavLinks.Count}개 중 {badLinks}개의 끝점이 바닥에 붙지 않음"); // 등록
+            }
+
+            if (problems.Count == 0) // 통과
+            {
+                return string.Empty; // 문제 없음
+            }
+
+            return $"NavMesh 문제 {problems.Count}건 / {string.Join(" | ", problems.GetRange(0, Mathf.Min(4, problems.Count)))}"; // 오류
+        }
+
+        private static string CheckPowerRuntime(ModuleDungeonGenerator generator) // 전력망·구역·발전기·배전반이 실제로 연결되었는지
+        {
+            if (generator.PowerGrid == null) // 전력망 없음
+            {
+                return "전력망이 생성되지 않음"; // 오류
+            }
+
+            if (generator.PowerGrid.Zones.Count != generator.Plan.Zones.Count) // 구역 수
+            {
+                return $"전력 구역 {generator.PowerGrid.Zones.Count}개 (배치 {generator.Plan.Zones.Count}개)"; // 오류
+            }
+
+            if (generator.PowerPlant == null) // 발전기 없음
+            {
+                return "발전기가 연결되지 않음"; // 오류
+            }
+
+            if (generator.Breakers.Count != generator.Plan.Zones.Count) // 배전반 수
+            {
+                return $"배전반 {generator.Breakers.Count}개 (구역 {generator.Plan.Zones.Count}개)"; // 오류
+            }
+
+            foreach (DungeonBreaker breaker in generator.Breakers) // 배전반 순회
+            {
+                if (breaker == null || breaker.Zone == null) // 연결 없음
+                {
+                    return "배전반이 구역에 연결되지 않음"; // 오류
+                }
+            }
+
+            int consumers = 0; // 소비처 수
+
+            foreach (DungeonPowerZone zone in generator.PowerGrid.Zones) // 구역 순회
+            {
+                consumers += zone.ConsumerCount; // 집계
+            }
+
+            if (consumers != generator.SpawnedModules.Count) // 모든 모듈이 등록되어야 함
+            {
+                return $"전력 소비처 {consumers}개 (모듈 {generator.SpawnedModules.Count}개)"; // 오류
+            }
+
+            return string.Empty; // 통과
         }
 
         private static string CheckLightLeak(ModuleDungeonGenerator generator) // 방 안에서 사방으로 광선을 쏴 하나라도 밖으로 빠져나가면 틈이 있는 것

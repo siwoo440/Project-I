@@ -6736,12 +6736,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectI.Dungeon.ModuleDungeonGenerator
   library: {fileID: 11400000, guid: 8bd13b9c8a8ba7247a64755c0c4d0235, type: 2}
   seedOverride: 0
-  targetModules: 26
-  minModules: 18
+  targetRoomCount: 22
+  targetModules: 60
+  minModules: 24
   exteriorDoorCount: 2
   enableBoss: 1
   secretRoomCount: 1
-  gridRadius: 90
+  gridRadius: 120
   floorsAbove: 2
   floorsBelow: 2
   keyDefinition: {fileID: 11400000, guid: 2b8a6a6fcf292d6479f27f03cd088430, type: 2}
@@ -6771,6 +6772,12 @@ MonoBehaviour:
     maxDepthRatio: 1
     weight: 1
   lootChancePerRoom: 0.72
+  enablePower: 1
+  powerZoneCount: 3
+  zonesPoweredAtStart: 1
+  emergencyLightColor: {r: 1, g: 0.3, b: 0.25, a: 1}
+  emergencyLightIntensity: 0.55
+  buildNavMesh: 1
   originXZ: {x: 0, y: -38}
   surfaceClearance: 12
   exteriorReference: {fileID: 1810902232}

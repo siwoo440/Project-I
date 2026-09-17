@@ -12,7 +12,7 @@ namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
     {
         private const string PrefabRoot = "Assets/ProjectI/Prefabs/Dungeon"; // 프리팹 최상위 폴더
         private const string DoorsFolder = "Doors"; // 문 프리팹 폴더
-        private const string LibraryFolder = "Library"; // 모듈 목록 폴더
+        private const string LibraryFolder = "ModuleLibrary"; // 모듈 목록 폴더 (이름을 Library 로 하면 .gitignore 의 [Ll]ibrary/ 규칙에 걸려 커밋되지 않음)
         private const string MaterialFolder = "Assets/ProjectI/Art/Generated/Day30"; // 재질 폴더
         private const string LibraryPath = PrefabRoot + "/" + LibraryFolder + "/DungeonModuleLibrary.asset"; // 목록 에셋 경로
 
@@ -43,6 +43,7 @@ namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
             EnsureFolder(PrefabRoot + "/" + DungeonModuleCatalog.RoomsFolder); // 방 폴더
             EnsureFolder(PrefabRoot + "/" + DungeonModuleCatalog.CorridorsFolder); // 복도 폴더
             EnsureFolder(PrefabRoot + "/" + DungeonModuleCatalog.VerticalFolder); // 세로형 방 폴더
+            EnsureFolder(PrefabRoot + "/" + DungeonModuleCatalog.PowerFolder); // 발전실·배전반 폴더
             EnsureFolder(PrefabRoot + "/" + DoorsFolder); // 문 폴더
             EnsureFolder(PrefabRoot + "/" + LibraryFolder); // 목록 폴더
             List<DungeonModule> saved = new List<DungeonModule>(); // 저장된 모듈
@@ -66,7 +67,24 @@ namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
                 folderCount[shape.Folder] = folderCount.TryGetValue(shape.Folder, out int count) ? count + 1 : 1; // 집계
             }
 
-            foreach (GameObject vertical in new[] { DungeonVerticalModuleBaker.BuildStairwell(materials), DungeonVerticalModuleBaker.BuildLadderRoom(materials) }) // 층을 잇는 세로형 모듈
+            foreach (GameObject power in new[] { DungeonPowerModuleBaker.BuildPowerPlant(materials), DungeonPowerModuleBaker.BuildBreakerRoom(materials) }) // 발전실·배전반 방
+            {
+                string powerPath = $"{PrefabRoot}/{DungeonModuleCatalog.PowerFolder}/{power.name}.prefab"; // 저장 경로
+                GameObject powerPrefab = PrefabUtility.SaveAsPrefabAsset(power, powerPath); // 저장
+                Object.DestroyImmediate(power); // 임시 제거
+                DungeonModule powerModule = powerPrefab == null ? null : powerPrefab.GetComponent<DungeonModule>(); // 모듈 부품
+
+                if (powerModule == null) // 실패
+                {
+                    Debug.LogError($"[Project I] 전력 모듈 프리팹 저장 실패 / {powerPath}"); // 오류
+                    continue; // 다음
+                }
+
+                saved.Add(powerModule); // 등록
+                folderCount[DungeonModuleCatalog.PowerFolder] = folderCount.TryGetValue(DungeonModuleCatalog.PowerFolder, out int powerCount) ? powerCount + 1 : 1; // 집계
+            }
+
+            foreach (GameObject vertical in DungeonVerticalModuleBaker.BuildAll(materials)) // 층을 잇는 세로형 모듈 (종류별 바리에이션)
             {
                 string verticalPath = $"{PrefabRoot}/{DungeonModuleCatalog.VerticalFolder}/{vertical.name}.prefab"; // 저장 경로
                 GameObject verticalPrefab = PrefabUtility.SaveAsPrefabAsset(vertical, verticalPath); // 저장

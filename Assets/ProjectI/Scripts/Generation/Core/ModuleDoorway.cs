@@ -12,9 +12,9 @@ namespace ProjectI.Generation // 배치 규칙 네임스페이스 (유니티 비
     public static class ModuleDoorway // 모든 모듈이 공유하는 출입구 규격
     {
         public const float CellSize = 1f; // 모듈 격자 한 칸 (m)
-        public const float Width = 2.4f; // 출입구 폭 (m) — 모든 모듈·문이 이 값을 씁니다
+        public const float Width = 1.6f; // 출입구 폭 (m) — 모든 모듈·문이 이 값을 씁니다 (31일차에 모듈과 함께 1/3 축소)
         public const float Height = 2.8f; // 출입구 높이 (m)
-        public const float FrameDepth = 0.3f; // 문틀 두께 (m)
+        public const float FrameDepth = 0.2f; // 문틀 두께 (m)
         public const float LeafThickness = 0.12f; // 문짝 두께 (m)
         public const float LeafClearance = 0.04f; // 문짝과 문틀 사이 여유 (m)
 

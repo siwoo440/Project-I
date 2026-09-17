@@ -9,7 +9,7 @@ namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
     public static class Phase9Day30ApplyToDungeon // 테스트 던전이 모듈(소켓) 방식으로 생성되도록 전환합니다
     {
         private const string TestDungeonScenePath = "Assets/ProjectI/Scenes/02_TestDungeon.unity"; // 테스트 던전 씬
-        private const string LibraryPath = "Assets/ProjectI/Prefabs/Dungeon/Library/DungeonModuleLibrary.asset"; // 모듈 목록
+        private const string LibraryPath = "Assets/ProjectI/Prefabs/Dungeon/ModuleLibrary/DungeonModuleLibrary.asset"; // 모듈 목록
         private const string GeneratorName = "Day30_ModuleDungeon"; // 모듈 생성기 오브젝트 이름
 
         [MenuItem("Project I/Day 30/Use Module Dungeon In Test Dungeon")] // 메뉴
@@ -51,6 +51,7 @@ namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
 
             module.Clear(); // 남은 생성물 제거
             module.ConfigureLibrary(library, module.transform); // 모듈 목록·지형 기준
+            module.ConfigureCatacombPreset(); // 지하묘지 프리셋 (방 20~24개 · 전력 계통)
 
             if (grid != null) // 이전 생성기의 열쇠·회수품 표를 그대로 넘겨받음
             {

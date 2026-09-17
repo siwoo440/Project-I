@@ -10,6 +10,8 @@ namespace ProjectI.Generation // 배치 규칙 네임스페이스 (유니티 비
         Boss, // 보스방
         Secret, // 비밀방
         Vertical, // 층을 잇는 세로형 방
+        PowerPlant, // 발전실 (던전 전체 전력)
+        Breaker, // 배전반 방 (구역 전력)
     }
 
     public enum SocketKind // 출입구 종류

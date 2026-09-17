@@ -8,7 +8,7 @@ namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
 {
     public static class Phase9Day30PlacementValidator // 실제 모듈 프리팹으로 소켓 배치를 여러 시드 돌려 검사합니다
     {
-        private const string LibraryPath = "Assets/ProjectI/Prefabs/Dungeon/Library/DungeonModuleLibrary.asset"; // 모듈 목록
+        private const string LibraryPath = "Assets/ProjectI/Prefabs/Dungeon/ModuleLibrary/DungeonModuleLibrary.asset"; // 모듈 목록
         private const int SeedCount = 600; // 검사할 시드 수
 
         [MenuItem("Project I/Day 30/Validate Placement")] // 메뉴
@@ -32,6 +32,7 @@ namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
             int totalLocked = 0; // 잠긴 문 합
             int totalFloors = 0; // 층 수 합
             int totalVertical = 0; // 세로형 모듈 합
+            int totalZones = 0; // 배전 구역 합
 
             for (int seed = 0; seed < SeedCount; seed++) // 시드 순회
             {
@@ -47,6 +48,7 @@ namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
                 totalModules += plan.Modules.Count; // 집계
                 totalFloors += plan.FloorCount; // 집계
                 totalVertical += plan.CountOfRole(ModuleRole.Vertical); // 집계
+                totalZones += plan.Zones.Count; // 집계
                 string problem = Inspect(plan, config, seed); // 검사
 
                 if (!string.IsNullOrEmpty(problem)) // 문제
@@ -76,7 +78,7 @@ namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
 
             float average = success == 0 ? 0f : (float)totalModules / success; // 평균 모듈 수
             float averageFloors = success == 0 ? 0f : (float)totalFloors / success; // 평균 층 수
-            Debug.Log($"[Project I] 30일차 배치 검사 통과 / 시드 {SeedCount}개 전부 성공 / 평균 모듈 {average:F1}개 · 평균 층 {averageFloors:F1}개 · 세로형 {totalVertical}개 / 연결당 뚫린 통로 {totalOpen} · 여닫이문 {totalDoors} · 잠긴 문 {totalLocked}"); // 완료
+            Debug.Log($"[Project I] 30일차 배치 검사 통과 / 시드 {SeedCount}개 전부 성공 / 평균 모듈 {average:F1}개 · 평균 층 {averageFloors:F1}개 · 세로형 {totalVertical}개 · 전력 구역 {totalZones}개 / 연결당 뚫린 통로 {totalOpen} · 여닫이문 {totalDoors} · 잠긴 문 {totalLocked}"); // 완료
         }
 
         public static void ValidateFromCommandLine() // 배치모드 실행용
@@ -126,6 +128,13 @@ namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
                 return $"seed={seed} 비밀방 {plan.SecretIndices.Count}개"; // 오류
             }
 
+            string power = CheckPower(plan, config, seed); // 전력 계통 검사
+
+            if (!string.IsNullOrEmpty(power)) // 문제
+            {
+                return power; // 오류
+            }
+
             string reach = CheckReachable(plan, seed); // 도달 가능 검사
 
             if (!string.IsNullOrEmpty(reach)) // 문제
@@ -134,6 +143,92 @@ namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
             }
 
             return CheckConnections(plan, seed); // 연결 정합 검사
+        }
+
+        private static string CheckPower(ModuleDungeonPlan plan, ModulePlanConfig config, int seed) // 발전실·배전반·구역 배정 검사
+        {
+            if (!config.EnablePower) // 전력 계통 미사용
+            {
+                return string.Empty; // 통과
+            }
+
+            if (plan.PowerPlantIndex < 0) // 발전실 없음
+            {
+                return $"seed={seed} 발전실 없음"; // 오류
+            }
+
+            if (plan.Zones.Count != config.PowerZoneCount) // 구역 수
+            {
+                return $"seed={seed} 배전 구역 {plan.Zones.Count}개 (기대 {config.PowerZoneCount})"; // 오류
+            }
+
+            foreach (ModuleZone zone in plan.Zones) // 구역 순회
+            {
+                if (zone.BreakerModuleIndex < 0) // 차단기 없음
+                {
+                    return $"seed={seed} {zone.Id}구역에 배전반 없음"; // 오류
+                }
+
+                if (plan.Module(zone.BreakerModuleIndex).Role != ModuleRole.Breaker) // 역할 확인
+                {
+                    return $"seed={seed} {zone.Id}구역 배전반이 배전반 방이 아님"; // 오류
+                }
+
+                if (zone.ModuleIndices.Count == 0) // 빈 구역
+                {
+                    return $"seed={seed} {zone.Id}구역에 모듈이 없음"; // 오류
+                }
+            }
+
+            foreach (PlacedModule module in plan.Modules) // 모든 모듈이 구역에 속해야 함
+            {
+                if (module.ZoneId < 0 || module.ZoneId >= plan.Zones.Count) // 미배정
+                {
+                    return $"seed={seed} 모듈 {module.Index} 구역 미배정 ({module.ZoneId})"; // 오류
+                }
+            }
+
+            HashSet<int> open = ReachableWithoutBlockers(plan); // 잠긴 문·금 간 벽을 지나지 않고 갈 수 있는 모듈
+
+            if (!open.Contains(plan.PowerPlantIndex)) // 발전실이 막힌 너머
+            {
+                return $"seed={seed} 발전실이 잠긴 문·금 간 벽 너머에만 있음"; // 오류
+            }
+
+            foreach (ModuleZone zone in plan.Zones) // 배전반도 마찬가지
+            {
+                if (!open.Contains(zone.BreakerModuleIndex)) // 막힌 너머
+                {
+                    return $"seed={seed} {zone.Id}구역 배전반이 잠긴 문·금 간 벽 너머에만 있음"; // 오류
+                }
+            }
+
+            return string.Empty; // 통과
+        }
+
+        private static HashSet<int> ReachableWithoutBlockers(ModuleDungeonPlan plan) // 잠긴 문·금 간 벽을 지나지 않고 갈 수 있는 모듈
+        {
+            HashSet<int> visited = new HashSet<int> { plan.EntranceIndex }; // 방문
+            Queue<int> queue = new Queue<int>(); // 탐색
+            queue.Enqueue(plan.EntranceIndex); // 시작
+
+            while (queue.Count > 0) // 너비 우선 탐색
+            {
+                foreach (PlacedSocket socket in plan.Module(queue.Dequeue()).Sockets) // 출입구 순회
+                {
+                    if (socket.ConnectedModule < 0 || socket.Fill == PassageFill.LockedDoor || socket.Fill == PassageFill.Breakable) // 막힌 연결
+                    {
+                        continue; // 다음
+                    }
+
+                    if (visited.Add(socket.ConnectedModule)) // 처음 방문
+                    {
+                        queue.Enqueue(socket.ConnectedModule); // 등록
+                    }
+                }
+            }
+
+            return visited; // 반환
         }
 
         private static string CheckReachable(ModuleDungeonPlan plan, int seed) // 시작 방에서 모든 모듈에 갈 수 있는지

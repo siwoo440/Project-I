@@ -9,7 +9,7 @@ namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
     public static class Phase9Day30SceneSetup // 테스트 던전 씬에 모듈 던전 생성기를 올려 둡니다 (기존 격자 생성기는 그대로 둠)
     {
         private const string TestDungeonScenePath = "Assets/ProjectI/Scenes/02_TestDungeon.unity"; // 테스트 던전 씬
-        private const string LibraryPath = "Assets/ProjectI/Prefabs/Dungeon/Library/DungeonModuleLibrary.asset"; // 모듈 목록
+        private const string LibraryPath = "Assets/ProjectI/Prefabs/Dungeon/ModuleLibrary/DungeonModuleLibrary.asset"; // 모듈 목록
         private const string GeneratorName = "Day30_ModuleDungeon"; // 생성기 오브젝트 이름
 
         [MenuItem("Project I/Day 30/Add Module Generator To Test Dungeon")] // 메뉴

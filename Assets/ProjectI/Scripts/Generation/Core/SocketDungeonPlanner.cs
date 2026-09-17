@@ -39,7 +39,7 @@ namespace ProjectI.Generation // 배치 규칙 네임스페이스 (유니티 비
 
             plan.EntranceIndex = 0; // 시작 방 번호
 
-            if (!ReserveExteriorDoors(plan, config, random)) // 외부 씬 문 예약 (정문 1개 + 서브문 N개)
+            if (!ReserveMainDoor(plan, random)) // 시작 방에는 정문만 두고 나머지 외부 전용 출입구는 막음
             {
                 return null; // 실패
             }
@@ -64,6 +64,16 @@ namespace ProjectI.Generation // 배치 규칙 네임스페이스 (유니티 비
                 }
             }
 
+            if (config.EnablePower && !PlacePowerRooms(plan, occupied, modules, config, random)) // 발전실·배전반
+            {
+                return null; // 실패
+            }
+
+            if (!PlaceSubDoors(plan, config, random)) // 서브문 (시작 방에서 충분히 떨어진 곳에만)
+            {
+                return null; // 실패
+            }
+
             RecordFloorRange(plan); // 층 범위 기록
             AddLoops(plan, random); // 마주 본 빈 출입구끼리 이어 순환로 생성
             AssignFills(plan, config, random); // 문·잠긴 문·뚫린 통로 결정
@@ -73,9 +83,10 @@ namespace ProjectI.Generation // 배치 규칙 네임스페이스 (유니티 비
 
         private static void GrowBody(ModuleDungeonPlan plan, Dictionary<WorldCell, int> occupied, IReadOnlyList<ModuleDefinition> modules, ModulePlanConfig config, Random random) // 목표 수까지 모듈을 이어 붙임
         {
-            int guard = config.TargetModules * 40; // 무한 반복 방지
+            int budget = config.TargetRoomCount * 3 > config.TargetModules ? config.TargetRoomCount * 3 : config.TargetModules; // 성장 예산
+            int guard = budget * 40; // 무한 반복 방지
 
-            while (plan.Modules.Count < config.TargetModules && guard-- > 0) // 목표까지
+            while (!GrowthDone(plan, config) && guard-- > 0) // 목표까지
             {
                 PlacedSocket socket = PickFrontier(plan, random); // 이어 붙일 출입구
 
@@ -98,6 +109,16 @@ namespace ProjectI.Generation // 배치 규칙 네임스페이스 (유니티 비
                     socket.IsSealed = true; // 실패한 출입구는 막음
                 }
             }
+        }
+
+        private static bool GrowthDone(ModuleDungeonPlan plan, ModulePlanConfig config) // 성장을 멈출 조건
+        {
+            if (config.TargetRoomCount > 0) // 방 수 기준
+            {
+                return plan.CountOfRole(ModuleRole.Room) >= config.TargetRoomCount; // 방 수 도달
+            }
+
+            return plan.Modules.Count >= config.TargetModules; // 모듈 수 도달
         }
 
         private static bool TryAttachVertical(ModuleDungeonPlan plan, Dictionary<WorldCell, int> occupied, IReadOnlyList<ModuleDefinition> modules, ModulePlanConfig config, Random random, PlacedSocket socket) // 층을 옮기는 세로형 방을 붙임
@@ -126,6 +147,186 @@ namespace ProjectI.Generation // 배치 규칙 네임스페이스 (유니티 비
             }
 
             return false; // 실패
+        }
+
+        private static bool PlacePowerRooms(ModuleDungeonPlan plan, Dictionary<WorldCell, int> occupied, IReadOnlyList<ModuleDefinition> modules, ModulePlanConfig config, Random random) // 발전실 1개와 구역마다 배전반 1개를 배치하고 구역을 나눔
+        {
+            if (!PlaceRoleRoom(plan, occupied, modules, config, random, ModuleRole.PowerPlant, config.MinPowerPlantDepth, out int plantIndex)) // 발전실
+            {
+                return false; // 실패
+            }
+
+            plan.PowerPlantIndex = plantIndex; // 기록
+            int maxDepth = 1; // 최대 깊이
+
+            foreach (PlacedModule module in plan.Modules) // 모듈 순회
+            {
+                maxDepth = module.Depth > maxDepth ? module.Depth : maxDepth; // 갱신
+            }
+
+            int zoneCount = config.PowerZoneCount < 1 ? 1 : config.PowerZoneCount; // 구역 수
+
+            for (int index = 0; index < zoneCount; index++) // 구역별 깊이 구간 계산
+            {
+                ModuleZone zone = new ModuleZone { Id = index }; // 구역
+                zone.MinDepth = (maxDepth * index) / zoneCount; // 시작 깊이
+                zone.MaxDepth = index == zoneCount - 1 ? int.MaxValue : ((maxDepth * (index + 1)) / zoneCount) - 1; // 끝 깊이
+                plan.Zones.Add(zone); // 등록
+            }
+
+            foreach (ModuleZone zone in plan.Zones) // 구역마다 배전반 방 하나
+            {
+                if (!PlaceBreakerForZone(plan, occupied, modules, config, random, zone)) // 배치
+                {
+                    return false; // 실패
+                }
+            }
+
+            AssignZones(plan); // 모든 모듈을 구역에 배정
+            return true; // 성공
+        }
+
+        private static bool PlaceBreakerForZone(ModuleDungeonPlan plan, Dictionary<WorldCell, int> occupied, IReadOnlyList<ModuleDefinition> modules, ModulePlanConfig config, Random random, ModuleZone zone) // 구역 깊이 구간 안의 방에 배전반을 붙임
+        {
+            List<ModuleDefinition> candidates = RoleCandidates(modules, ModuleRole.Breaker); // 후보
+
+            if (candidates.Count == 0) // 후보 없음
+            {
+                return false; // 실패
+            }
+
+            List<PlacedSocket> frontier = OpenSockets(plan); // 빈 출입구
+
+            foreach (PlacedSocket socket in frontier) // 구간 안쪽 우선
+            {
+                PlacedModule owner = plan.Module(socket.ModuleIndex); // 소속 모듈
+
+                if (owner.Depth < zone.MinDepth || owner.Depth > zone.MaxDepth || IsSpecial(owner.Role)) // 구간 밖·특수 방
+                {
+                    continue; // 다음
+                }
+
+                foreach (ModuleDefinition candidate in Shuffle(new List<ModuleDefinition>(candidates), random)) // 후보 순회
+                {
+                    if (TryAttach(plan, occupied, config, random, socket, candidate, PassageFill.Open)) // 붙이기
+                    {
+                        PlacedModule placed = plan.Modules[plan.Modules.Count - 1]; // 방금 배치한 배전반 방
+                        placed.ZoneId = zone.Id; // 구역 고정
+                        zone.BreakerModuleIndex = placed.Index; // 기록
+                        return true; // 성공
+                    }
+                }
+            }
+
+            foreach (PlacedSocket socket in frontier) // 구간을 못 맞추면 아무 곳에나 (구역 자체는 유지)
+            {
+                PlacedModule owner = plan.Module(socket.ModuleIndex); // 소속 모듈
+
+                if (IsSpecial(owner.Role)) // 특수 방
+                {
+                    continue; // 다음
+                }
+
+                foreach (ModuleDefinition candidate in Shuffle(new List<ModuleDefinition>(candidates), random)) // 후보 순회
+                {
+                    if (TryAttach(plan, occupied, config, random, socket, candidate, PassageFill.Open)) // 붙이기
+                    {
+                        PlacedModule placed = plan.Modules[plan.Modules.Count - 1]; // 배전반 방
+                        placed.ZoneId = zone.Id; // 구역 고정
+                        zone.BreakerModuleIndex = placed.Index; // 기록
+                        return true; // 성공
+                    }
+                }
+            }
+
+            return false; // 실패
+        }
+
+        private static bool PlaceRoleRoom(ModuleDungeonPlan plan, Dictionary<WorldCell, int> occupied, IReadOnlyList<ModuleDefinition> modules, ModulePlanConfig config, Random random, ModuleRole role, int minDepth, out int placedIndex) // 역할 방 하나를 깊이 조건에 맞춰 배치
+        {
+            placedIndex = -1; // 기본값
+            List<ModuleDefinition> candidates = RoleCandidates(modules, role); // 후보
+
+            if (candidates.Count == 0) // 후보 없음
+            {
+                return false; // 실패
+            }
+
+            List<PlacedSocket> frontier = OpenSockets(plan); // 빈 출입구
+
+            foreach (PlacedSocket socket in frontier) // 출입구 순회
+            {
+                PlacedModule owner = plan.Module(socket.ModuleIndex); // 소속 모듈
+
+                if (owner.Depth < minDepth || IsSpecial(owner.Role)) // 너무 얕음·특수 방
+                {
+                    continue; // 다음
+                }
+
+                foreach (ModuleDefinition candidate in Shuffle(new List<ModuleDefinition>(candidates), random)) // 후보 순회
+                {
+                    if (TryAttach(plan, occupied, config, random, socket, candidate, PassageFill.Open)) // 붙이기
+                    {
+                        placedIndex = plan.Modules.Count - 1; // 기록
+                        return true; // 성공
+                    }
+                }
+            }
+
+            return false; // 실패
+        }
+
+        private static void AssignZones(ModuleDungeonPlan plan) // 깊이에 따라 모든 모듈을 배전 구역에 배정
+        {
+            foreach (PlacedModule module in plan.Modules) // 모듈 순회
+            {
+                if (module.ZoneId >= 0) // 이미 고정된 배전반 방
+                {
+                    continue; // 다음
+                }
+
+                foreach (ModuleZone zone in plan.Zones) // 구역 순회
+                {
+                    if (module.Depth >= zone.MinDepth && module.Depth <= zone.MaxDepth) // 구간 일치
+                    {
+                        module.ZoneId = zone.Id; // 배정
+                        break; // 종료
+                    }
+                }
+
+                if (module.ZoneId < 0 && plan.Zones.Count > 0) // 못 찾으면 마지막 구역
+                {
+                    module.ZoneId = plan.Zones[plan.Zones.Count - 1].Id; // 배정
+                }
+            }
+
+            foreach (PlacedModule module in plan.Modules) // 구역별 목록 채우기
+            {
+                if (module.ZoneId >= 0 && module.ZoneId < plan.Zones.Count) // 유효
+                {
+                    plan.Zones[module.ZoneId].ModuleIndices.Add(module.Index); // 등록
+                }
+            }
+        }
+
+        private static List<ModuleDefinition> RoleCandidates(IReadOnlyList<ModuleDefinition> modules, ModuleRole role) // 역할별 후보
+        {
+            List<ModuleDefinition> candidates = new List<ModuleDefinition>(); // 결과
+
+            foreach (ModuleDefinition definition in modules) // 모듈 순회
+            {
+                if (definition.Role == role) // 일치
+                {
+                    candidates.Add(definition); // 후보
+                }
+            }
+
+            return candidates; // 반환
+        }
+
+        private static bool IsSpecial(ModuleRole role) // 다른 것을 이어 붙이면 안 되는 방
+        {
+            return role == ModuleRole.Boss || role == ModuleRole.Secret || role == ModuleRole.PowerPlant || role == ModuleRole.Breaker; // 판정
         }
 
         private static void RecordFloorRange(ModuleDungeonPlan plan) // 실제로 쓰인 층 범위 기록
@@ -319,7 +520,7 @@ namespace ProjectI.Generation // 배치 규칙 네임스페이스 (유니티 비
                     continue; // 다음
                 }
 
-                if (plan.Module(socket.ModuleIndex).Role == ModuleRole.Boss || plan.Module(socket.ModuleIndex).Role == ModuleRole.Secret) // 특수 방끼리 붙이지 않음
+                if (IsSpecial(plan.Module(socket.ModuleIndex).Role)) // 특수 방끼리 붙이지 않음
                 {
                     continue; // 다음
                 }
@@ -336,7 +537,7 @@ namespace ProjectI.Generation // 배치 규칙 네임스페이스 (유니티 비
             return false; // 실패
         }
 
-        private static bool ReserveExteriorDoors(ModuleDungeonPlan plan, ModulePlanConfig config, Random random) // 시작 방의 외부 전용 출입구를 정문·서브문으로 예약
+        private static bool ReserveMainDoor(ModuleDungeonPlan plan, Random random) // 시작 방의 외부 전용 출입구 하나를 정문으로 쓰고 나머지는 막음
         {
             PlacedModule entrance = plan.Module(plan.EntranceIndex); // 시작 방
             List<PlacedSocket> exterior = new List<PlacedSocket>(); // 외부 전용 출입구
@@ -349,26 +550,89 @@ namespace ProjectI.Generation // 배치 규칙 네임스페이스 (유니티 비
                 }
             }
 
-            int required = config.ExteriorDoorCount + 1; // 서브문 + 정문
-
-            if (exterior.Count < required) // 부족
+            if (exterior.Count == 0) // 정문 자리가 없음
             {
                 return false; // 실패
             }
 
             ShuffleSockets(exterior, random); // 순서 섞기
+            exterior[0].Fill = PassageFill.Exterior; // 정문
+            plan.ExteriorSockets.Add(exterior[0]); // 등록
 
-            for (int index = 0; index < exterior.Count; index++) // 예약
+            for (int index = 1; index < exterior.Count; index++) // 남는 외부 전용 출입구
             {
-                if (index < required) // 사용
+                exterior[index].IsSealed = true; // 벽으로 막음
+            }
+
+            return true; // 성공
+        }
+
+        private static bool PlaceSubDoors(ModuleDungeonPlan plan, ModulePlanConfig config, Random random) // 시작 방에서 충분히 떨어진 방의 빈 출입구를 서브문으로 예약
+        {
+            List<PlacedSocket> candidates = new List<PlacedSocket>(); // 후보
+
+            foreach (PlacedSocket socket in OpenSockets(plan)) // 빈 출입구 순회
+            {
+                PlacedModule owner = plan.Module(socket.ModuleIndex); // 소속 모듈
+
+                if (owner.Depth < config.MinSubDoorDepth || IsSpecial(owner.Role) || owner.Role == ModuleRole.Vertical) // 너무 가깝거나 특수·세로형 방
                 {
-                    exterior[index].Fill = PassageFill.Exterior; // 외부 문
-                    plan.ExteriorSockets.Add(exterior[index]); // 등록
+                    continue; // 다음
                 }
-                else // 남는 외부 전용 출입구
+
+                candidates.Add(socket); // 후보
+            }
+
+            candidates.Sort((left, right) => plan.Module(right.ModuleIndex).Depth.CompareTo(plan.Module(left.ModuleIndex).Depth)); // 깊은 곳 우선
+            List<PlacedSocket> chosen = new List<PlacedSocket>(); // 선택
+
+            foreach (PlacedSocket socket in candidates) // 후보 순회
+            {
+                if (chosen.Count >= config.ExteriorDoorCount) // 다 채움
                 {
-                    exterior[index].IsSealed = true; // 벽으로 막음
+                    break; // 종료
                 }
+
+                bool tooClose = false; // 다른 서브문과 너무 가까운지
+
+                foreach (PlacedSocket other in chosen) // 이미 고른 것과 비교
+                {
+                    int gap = plan.Module(socket.ModuleIndex).Depth - plan.Module(other.ModuleIndex).Depth; // 깊이 차
+                    gap = gap < 0 ? -gap : gap; // 절댓값
+                    tooClose |= socket.ModuleIndex == other.ModuleIndex || gap < config.MinSubDoorGap; // 같은 방·가까운 깊이
+                }
+
+                if (!tooClose) // 충분히 떨어짐
+                {
+                    chosen.Add(socket); // 선택
+                }
+            }
+
+            if (chosen.Count < config.ExteriorDoorCount) // 간격 조건을 못 맞추면 깊이 조건만 지켜 채움
+            {
+                foreach (PlacedSocket socket in candidates) // 후보 순회
+                {
+                    if (chosen.Count >= config.ExteriorDoorCount) // 다 채움
+                    {
+                        break; // 종료
+                    }
+
+                    if (!chosen.Contains(socket)) // 중복 아님
+                    {
+                        chosen.Add(socket); // 선택
+                    }
+                }
+            }
+
+            if (chosen.Count < config.ExteriorDoorCount) // 자리가 모자람
+            {
+                return false; // 실패
+            }
+
+            foreach (PlacedSocket socket in chosen) // 서브문 예약
+            {
+                socket.Fill = PassageFill.Exterior; // 외부 문
+                plan.ExteriorSockets.Add(socket); // 등록
             }
 
             return true; // 성공
@@ -435,7 +699,7 @@ namespace ProjectI.Generation // 배치 규칙 네임스페이스 (유니티 비
                     {
                         fill = PassageFill.Door; // 여닫이문
                     }
-                    else if (!lockedPlaced && plan.Module(socket.ModuleIndex).Depth >= config.MinBossDepth && random.NextDouble() < 0.35) // 깊은 곳에 잠긴 문 하나
+                    else if (!lockedPlaced && plan.Module(socket.ModuleIndex).Depth >= config.MinBossDepth && random.NextDouble() < 0.35 && CanLock(plan, socket, other)) // 깊은 곳에 잠긴 문 하나 (전력 설비를 막지 않는 곳에만)
                     {
                         fill = PassageFill.LockedDoor; // 잠긴 문
                         lockedPlaced = true; // 기록
@@ -449,6 +713,50 @@ namespace ProjectI.Generation // 배치 규칙 네임스페이스 (유니티 비
                     other.Fill = fill; // 짝도 같은 값
                 }
             }
+        }
+
+        private static bool CanLock(ModuleDungeonPlan plan, PlacedSocket socket, PlacedSocket other) // 이 연결을 잠가도 발전실·배전반에 갈 수 있는지
+        {
+            PassageFill previousA = socket.Fill; // 원래 값
+            PassageFill previousB = other.Fill; // 원래 값
+            socket.Fill = PassageFill.LockedDoor; // 임시 적용
+            other.Fill = PassageFill.LockedDoor; // 임시 적용
+            HashSet<int> reachable = ReachableWithoutBlockers(plan); // 막힌 연결을 빼고 도달 가능한 모듈
+            bool ok = plan.PowerPlantIndex < 0 || reachable.Contains(plan.PowerPlantIndex); // 발전실
+
+            foreach (ModuleZone zone in plan.Zones) // 배전반
+            {
+                ok &= zone.BreakerModuleIndex < 0 || reachable.Contains(zone.BreakerModuleIndex); // 확인
+            }
+
+            socket.Fill = previousA; // 되돌리기
+            other.Fill = previousB; // 되돌리기
+            return ok; // 판정
+        }
+
+        private static HashSet<int> ReachableWithoutBlockers(ModuleDungeonPlan plan) // 잠긴 문·금 간 벽을 지나지 않고 갈 수 있는 모듈
+        {
+            HashSet<int> visited = new HashSet<int> { plan.EntranceIndex }; // 방문
+            Queue<int> queue = new Queue<int>(); // 탐색
+            queue.Enqueue(plan.EntranceIndex); // 시작
+
+            while (queue.Count > 0) // 너비 우선 탐색
+            {
+                foreach (PlacedSocket socket in plan.Module(queue.Dequeue()).Sockets) // 출입구 순회
+                {
+                    if (socket.ConnectedModule < 0 || socket.Fill == PassageFill.LockedDoor || socket.Fill == PassageFill.Breakable) // 막힌 연결
+                    {
+                        continue; // 다음
+                    }
+
+                    if (visited.Add(socket.ConnectedModule)) // 처음 방문
+                    {
+                        queue.Enqueue(socket.ConnectedModule); // 등록
+                    }
+                }
+            }
+
+            return visited; // 반환
         }
 
         private static void SealOpenSockets(ModuleDungeonPlan plan) // 연결되지 않은 출입구는 벽으로 막음

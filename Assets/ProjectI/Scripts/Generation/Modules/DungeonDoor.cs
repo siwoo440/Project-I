@@ -131,15 +131,23 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
             return -1; // 없음
         }
 
-        private int ChooseSwingSign(PlayerInteractor interactor) // 플레이어 반대쪽으로 열리게 방향 결정
+        private int ChooseSwingSign(PlayerInteractor interactor) // 플레이어가 바라보는 방향으로 밀려 열리게 방향 결정
         {
             if (interactor == null) // 기준 없음
             {
                 return 1; // 기본
             }
 
-            Vector3 toPlayer = interactor.transform.position - transform.position; // 플레이어 방향
-            return Vector3.Dot(toPlayer, transform.forward) > 0f ? -1 : 1; // 플레이어 반대쪽
+            Vector3 look = interactor.transform.forward; // 바라보는 방향
+            look.y = 0f; // 수평 성분만
+
+            if (look.sqrMagnitude < 0.0001f) // 방향을 못 구하면 위치로 대신
+            {
+                Vector3 toPlayer = interactor.transform.position - transform.position; // 플레이어 쪽
+                return Vector3.Dot(toPlayer, transform.forward) > 0f ? 1 : -1; // 플레이어 반대쪽으로 밀림
+            }
+
+            return Vector3.Dot(look, transform.forward) > 0f ? -1 : 1; // 문짝이 바라보는 쪽으로 밀려 열림 (+각도는 문 안쪽, -각도는 바깥쪽)
         }
 
         private IEnumerator SwingRoutine(bool open) // 문짝 회전 연출

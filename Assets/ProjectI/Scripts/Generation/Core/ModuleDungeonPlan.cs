@@ -31,16 +31,28 @@ namespace ProjectI.Generation // 배치 규칙 네임스페이스 (유니티 비
         public CellPoint Origin; // 월드 격자 원점
         public int Floor; // 모듈 바닥이 놓인 층
         public int Depth; // 시작 방에서의 거리
+        public int ZoneId = -1; // 소속 배전 구역 (-1이면 미배정)
         public readonly List<CellPoint> Cells = new List<CellPoint>(); // 차지하는 월드 칸
         public readonly List<PlacedSocket> Sockets = new List<PlacedSocket>(); // 출입구
 
         public ModuleRole Role => Definition.Role; // 역할
     }
 
+    public sealed class ModuleZone // 배전 구역 하나 (차단기 하나가 담당하는 모듈 묶음)
+    {
+        public int Id; // 구역 번호
+        public int BreakerModuleIndex = -1; // 이 구역 차단기가 있는 모듈
+        public int MinDepth; // 구역이 담당하는 최소 깊이
+        public int MaxDepth; // 구역이 담당하는 최대 깊이
+        public readonly List<int> ModuleIndices = new List<int>(); // 소속 모듈
+    }
+
     public sealed class ModuleDungeonPlan // 소켓 배치 결과
     {
         public readonly List<PlacedModule> Modules = new List<PlacedModule>(); // 배치된 모듈
         public int EntranceIndex = -1; // 시작 방
+        public int PowerPlantIndex = -1; // 발전실
+        public readonly List<ModuleZone> Zones = new List<ModuleZone>(); // 배전 구역
         public int MinFloor; // 가장 아래층
         public int MaxFloor; // 가장 위층
         public int FloorCount => (MaxFloor - MinFloor) + 1; // 층 수
@@ -84,11 +96,17 @@ namespace ProjectI.Generation // 배치 규칙 네임스페이스 (유니티 비
         public int FloorsBelow = 2; // 시작 층 아래로 만들 층 수
         public float VerticalChance = 0.22f; // 이어 붙일 때 세로형 방을 고를 확률
         public int MinModulesPerFloor = 4; // 층마다 최소 모듈 수
+        public int TargetRoomCount; // 목표 방 수 (0이면 사용 안 함 — 복도·세로형 방·특수 방 제외)
         public int TargetModules = 26; // 목표 모듈 수
         public int MinModules = 18; // 최소 모듈 수
         public int ExteriorDoorCount = 2; // 외부 씬 서브문 수 (외부 씬 배치 수를 읽어 넣음)
         public bool EnableBoss = true; // 보스방 사용
         public int SecretCount = 1; // 비밀방 수
+        public bool EnablePower = true; // 발전실·배전반 사용
+        public int PowerZoneCount = 3; // 배전 구역 수
+        public int MinPowerPlantDepth = 2; // 발전실 최소 깊이
+        public int MinSubDoorDepth = 5; // 서브문 최소 깊이 (시작 방과 그 이웃에는 생기지 않게)
+        public int MinSubDoorGap = 4; // 서브문끼리 떨어뜨릴 최소 깊이 차
         public int MaxAttempts = 40; // 재시도 횟수
         public int GridRadius = 90; // 배치 가능한 격자 반경 (칸)
         public int MinBossDepth = 4; // 보스방 최소 깊이
