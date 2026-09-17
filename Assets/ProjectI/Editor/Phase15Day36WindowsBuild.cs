@@ -10,7 +10,7 @@ namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
 {
     public static class Phase15Day36WindowsBuild // Windows 싱글 알파 빌드 (36일차)
     {
-        public const string AlphaVersion = "0.40.0-alpha"; // 알파 버전 표시
+        public const string AlphaVersion = "0.41.0-alpha"; // 알파 버전 표시
         private const string OutputFolder = "Builds/Windows"; // 출력 폴더 (git 제외)
         private const string ExecutableName = "ProjectI.exe"; // 실행 파일
         private const string TextMaterialPath = "Assets/ProjectI/Resources/Text/TextMeshDepth.mat"; // 빌드에 필요한 글자 재질

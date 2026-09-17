@@ -18,6 +18,10 @@ namespace ProjectI.UI // 메뉴·창 UI 네임스페이스
         private RetroHover leaveHover; // 메인 메뉴로 / 방 나가기 글자
         private Text hintLabel; // 제목 아래 안내
         private Button inviteButton; // 친구 초대 (Steam 방)
+        private Button copyButton; // 41일차: 방 코드·주소 복사
+        private Text codeLabel; // 41일차: 방 코드·주소
+        private RetroHover copyHover; // 복사 버튼 글자
+        private float copyFlashUntil; // "복사됨" 표시 시각
 
         public static PauseMenu Instance { get; private set; } // 전역 참조
         public bool IsOpen => canvas != null && canvas.gameObject.activeSelf; // 열림 여부
@@ -68,9 +72,58 @@ namespace ProjectI.UI // 메뉴·창 UI 네임스페이스
             canvas.gameObject.SetActive(true); // 표시
             menuRoot.gameObject.SetActive(true); // 버튼
             leaveHover.SetText(NetworkSession.IsHost ? "방 닫고 메인 메뉴로" : NetworkSession.IsGuest ? "방 나가기" : "메인 메뉴로"); // 협동 상태별 글자
-            inviteButton.gameObject.SetActive(ProjectI.Net.Steam.SteamLobbyService.InLobby); // Steam 방에서만 초대
+            bool inLobby = ProjectI.Net.Steam.SteamLobbyService.InLobby; // Steam 방
+            inviteButton.gameObject.SetActive(inLobby); // Steam 방에서만 초대
+            copyButton.gameObject.SetActive(!string.IsNullOrEmpty(NetworkSession.ShareCode)); // 알려 줄 값이 있을 때
+            ((RectTransform)copyButton.transform).anchoredPosition = new Vector2(110f, inLobby ? InviteRowY - RowStep : InviteRowY); // 초대 버튼이 없으면 한 줄 위
+            copyFlashUntil = 0f; // 초기화
+            RefreshCodeLabel(); // 코드
             hintLabel.text = NetworkSession.IsOnline ? $"게임은 계속 진행됩니다  ·  {(NetworkSession.IsHost ? "방장" : "참가")} {NetworkSession.PlayerCount}/{NetworkSession.MaxPlayers}명" : "게임은 계속 진행됩니다"; // 안내
             return true; // 성공
+        }
+
+        private const float InviteRowY = -660f; // 친구 초대 줄 (버튼 4개 아래)
+        private const float RowStep = 70f; // 줄 간격
+
+        private void Update() // 로비 생성이 늦게 끝나도 코드 표시
+        {
+            if (IsOpen) // 열림
+            {
+                RefreshCodeLabel(); // 갱신
+            }
+        }
+
+        private void RefreshCodeLabel() // 방 코드·주소 줄
+        {
+            string share = NetworkSession.ShareCode; // 알려 줄 값
+
+            if (string.IsNullOrEmpty(share)) // 없음
+            {
+                codeLabel.text = NetworkSession.IsOnline && NetworkSession.Transport == SessionTransport.Steam ? "방 코드 준비 중..." : string.Empty; // 로비 생성 대기
+                copyButton.gameObject.SetActive(false); // 숨김
+                return; // 종료
+            }
+
+            copyButton.gameObject.SetActive(true); // 표시
+            copyHover.SetText(NetworkSession.ShareIsCode ? "코드 복사" : "주소 복사"); // 글자
+            string title = NetworkSession.ShareIsCode ? "방 코드" : "주소"; // 제목
+            string scope = NetworkSession.ShareIsCode && NetworkSession.IsHost && NetworkSession.HostVisibility == RoomVisibility.CodeOnly ? "  (코드 전용)" : string.Empty; // 공개 범위
+            string copied = Time.unscaledTime < copyFlashUntil ? "  ·  복사됨" : string.Empty; // 복사 표시
+            codeLabel.text = $"{title}  {share}{scope}{copied}"; // 표시
+        }
+
+        private void CopyShareCode() // 코드·주소를 클립보드로
+        {
+            string share = NetworkSession.ShareCode; // 값
+
+            if (string.IsNullOrEmpty(share)) // 없음
+            {
+                return; // 생략
+            }
+
+            GUIUtility.systemCopyBuffer = share; // 복사
+            copyFlashUntil = Time.unscaledTime + 2f; // 표시
+            RefreshCodeLabel(); // 갱신
         }
 
         public void Close() // 닫기 (게임으로)
@@ -122,6 +175,8 @@ namespace ProjectI.UI // 메뉴·창 UI 네임스페이스
             RetroUi.Place(title.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 0.5f), new Vector2(120f, -220f), new Vector2(600f, 80f)); // 왼쪽 위
             hintLabel = RetroUi.Label(menuRoot, "Hint", "게임은 계속 진행됩니다", 22, RetroUi.OrangeDim, TextAnchor.MiddleLeft); // 안내
             RetroUi.Place(hintLabel.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 0.5f), new Vector2(126f, -275f), new Vector2(600f, 34f)); // 제목 아래
+            codeLabel = RetroUi.Label(menuRoot, "ShareCode", string.Empty, 28, RetroUi.OrangeBright, TextAnchor.MiddleLeft); // 방 코드·주소
+            RetroUi.Place(codeLabel.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 0.5f), new Vector2(126f, -318f), new Vector2(900f, 40f)); // 안내 아래
 
             string[] labels = { "계속하기", "설정", "메인 메뉴로", "게임 종료" }; // 버튼
             System.Action[] actions = { Close, OpenSettings, AskMainMenu, AskQuit }; // 동작
@@ -140,7 +195,10 @@ namespace ProjectI.UI // 메뉴·창 UI 네임스페이스
             }
 
             inviteButton = RetroUi.TextButton(menuRoot, "Pause_Invite", "친구 초대 (Steam)", 36, ProjectI.Net.Steam.SteamLobbyService.OpenInviteOverlay); // 친구 초대
-            RetroUi.Place((RectTransform)inviteButton.transform, new Vector2(0f, 1f), new Vector2(0f, 0.5f), new Vector2(110f, y), new Vector2(460f, 60f)); // 마지막 줄
+            RetroUi.Place((RectTransform)inviteButton.transform, new Vector2(0f, 1f), new Vector2(0f, 0.5f), new Vector2(110f, InviteRowY), new Vector2(460f, 60f)); // 버튼 4개 아래
+            copyButton = RetroUi.TextButton(menuRoot, "Pause_CopyCode", "코드 복사", 36, CopyShareCode); // 코드·주소 복사
+            RetroUi.Place((RectTransform)copyButton.transform, new Vector2(0f, 1f), new Vector2(0f, 0.5f), new Vector2(110f, InviteRowY - RowStep), new Vector2(460f, 60f)); // 초대 아래
+            copyHover = copyButton.GetComponent<RetroHover>(); // 글자 변경용
             settingsPanel = SettingsPanel.Create(root); // 설정
             dialog = RetroDialog.Create(root); // 확인 창
             canvas.gameObject.SetActive(false); // 처음엔 닫힘

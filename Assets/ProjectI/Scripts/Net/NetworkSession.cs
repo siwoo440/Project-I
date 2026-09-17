@@ -36,7 +36,7 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
         public const string WorldStateResourcePath = "Net/NetWorldState"; // 월드 상태 프리팹
         public const int MaxPlayers = 4; // 최대 인원
         public const ushort DefaultPort = 7777; // 기본 포트
-        public const string ProtocolTag = "ProjectI-0.40"; // 접속 확인용 버전 (다르면 거부, 40일차 Steam 로비)
+        public const string ProtocolTag = "ProjectI-0.41"; // 접속 확인용 버전 (다르면 거부, 41일차 방 코드)
         private static NetworkSession instance; // 현재 세션
         private NetworkManager manager; // 넷코드 관리자
         private UnityTransport transport; // 연결 방식
@@ -49,6 +49,7 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
         private float nextLobbyUpdate; // 로비 정보 갱신 시각
         private const int MaxReconnectAttempts = 3; // 다시 연결 최대 횟수
         private static CSteamID pendingSteamJoin = CSteamID.Nil; // 메뉴로 돌아간 뒤 들어갈 Steam 방
+        private static string directAddress = string.Empty; // 41일차: 직접 IP 방 주소 (방장 내 IP:포트 / 참가자 들어간 주소)
 
         public static SessionMode Mode { get; private set; } = SessionMode.Offline; // 참여 방식
         public static bool IsOnline => Mode != SessionMode.Offline; // 협동 중
@@ -58,6 +59,27 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
         public static bool SteamReady => SteamService.EnsureInitialized(); // Steam 사용 가능
         public static string LocalPlayerName => SteamService.Initialized ? SteamService.PersonaName : string.Empty; // 내 표시 이름 (Steam 이 없으면 번호로 표시)
         public static string PendingMessage { get; private set; } = string.Empty; // 메뉴로 돌아왔을 때 보여 줄 안내
+        public static RoomVisibility HostVisibility { get; private set; } = RoomVisibility.Public; // 41일차: 방 공개 범위
+
+        public static string ShareCode // 41일차: 친구에게 알려 줄 값 (Steam 방 코드 K7Q-2MX 또는 직접 IP 주소:포트, 없으면 빈칸)
+        {
+            get
+            {
+                if (!IsOnline) // 혼자
+                {
+                    return string.Empty; // 없음
+                }
+
+                if (Transport == SessionTransport.Steam) // Steam 방
+                {
+                    return RoomCode.Format(SteamLobbyService.CurrentCode); // 로비 코드 (로비 생성 전이면 빈칸)
+                }
+
+                return directAddress; // 주소
+            }
+        }
+
+        public static bool ShareIsCode => Transport == SessionTransport.Steam; // 코드인지 주소인지 (표시 문구용)
         public static event Action<string> StatusChanged; // 연결 상태 문구
 
         public static bool IsConnected => instance != null && instance.manager != null && instance.manager.IsListening && (instance.manager.IsServer || instance.manager.IsConnectedClient); // 연결 완료
@@ -104,10 +126,15 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
 
         public static bool BeginHost(ushort port, out string error) // 방 열기 예약 (Steam 이 있으면 Steam 방, 없으면 직접 IP)
         {
-            return BeginHost(port, SteamReady, out error); // 방 열기
+            return BeginHost(port, RoomVisibility.Public, SteamReady, out error); // 방 열기
         }
 
-        public static bool BeginHost(ushort port, bool useSteam, out string error) // 방 열기 예약 (게임 월드가 준비되면 실제로 열림)
+        public static bool BeginHost(ushort port, RoomVisibility visibility, out string error) // 41일차: 공개 범위 지정 방 열기 (Steam 이 있으면 Steam 방)
+        {
+            return BeginHost(port, visibility, SteamReady, out error); // 방 열기
+        }
+
+        public static bool BeginHost(ushort port, RoomVisibility visibility, bool useSteam, out string error) // 방 열기 예약 (게임 월드가 준비되면 실제로 열림)
         {
             error = null; // 기본값
             NetworkSession session = Ensure(); // 준비
@@ -127,6 +154,8 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
             Mode = SessionMode.Host; // 방장
             Transport = useSteam && SteamReady ? SessionTransport.Steam : SessionTransport.Direct; // 연결 방식
             session.hostPort = port; // 포트
+            HostVisibility = visibility; // 공개 범위
+            directAddress = string.Empty; // 방이 열리면 기록
             session.transport.SetConnectionData("127.0.0.1", port, "0.0.0.0"); // 모든 주소에서 접속 받음
             session.pendingHost = true; // 월드 준비 후 열기
             Announce(Transport == SessionTransport.Steam ? "Steam 방을 여는 중..." : $"방을 여는 중 — 포트 {port}"); // 상태
@@ -154,7 +183,9 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
             Transport = SessionTransport.Direct; // 직접 연결
             session.reconnectAttempts = 0; // 초기화
             session.manager.NetworkConfig.NetworkTransport = session.transport; // 연결 방식
-            session.transport.SetConnectionData(string.IsNullOrWhiteSpace(address) ? "127.0.0.1" : address.Trim(), port); // 주소
+            string host = string.IsNullOrWhiteSpace(address) ? "127.0.0.1" : address.Trim(); // 주소
+            directAddress = $"{host}:{port}"; // 다른 대원에게 알려 줄 주소
+            session.transport.SetConnectionData(host, port); // 주소
             session.manager.NetworkConfig.ConnectionData = Encoding.UTF8.GetBytes(ProtocolTag); // 버전 확인 데이터
 
             if (!session.manager.StartClient()) // 시작 실패
@@ -190,6 +221,38 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
             session.reconnectAttempts = 0; // 초기화
             Announce("Steam 방에 들어가는 중..."); // 상태
             SteamLobbyService.Enter(lobby, (ok, host, message) => session.HandleLobbyEntered(ok, host, message)); // 로비
+            return true; // 시작
+        }
+
+        public static bool BeginCodeJoin(string input, out string error) // 41일차: 방 코드로 참가 (코드 → Steam 로비 찾기 → 들어가기 → 연결)
+        {
+            error = null; // 기본값
+
+            if (!RoomCode.TryParseCode(input, out string code)) // 형식
+            {
+                error = $"방 코드는 {RoomCode.Length}자리입니다 (예: K7Q-2MX · 숫자 0·1, 글자 O·I 는 쓰지 않음)"; // 이유
+                return false; // 실패
+            }
+
+            NetworkSession session = Ensure(); // 준비
+
+            if (session == null || !SteamReady) // 준비 안 됨
+            {
+                error = session == null ? "네트워크 구성이 없습니다 (Day 37 메뉴 실행 필요)" : $"방 코드는 Steam 이 필요합니다 — 주소로 참가하세요 ({SteamService.FailureReason})"; // 이유
+                return false; // 실패
+            }
+
+            if (session.manager.IsListening || IsOnline) // 이미 연결 중
+            {
+                error = "이미 방에 연결되어 있습니다"; // 이유
+                return false; // 실패
+            }
+
+            Mode = SessionMode.Guest; // 참가자 (찾는 동안 Esc 로 취소 가능)
+            Transport = SessionTransport.Steam; // Steam
+            session.reconnectAttempts = 0; // 초기화
+            Announce($"방 {RoomCode.Format(code)} 을 찾는 중..."); // 상태
+            SteamLobbyService.FindByCode(code, (found, lobby, message) => session.HandleCodeFound(found, lobby, message)); // 찾기
             return true; // 시작
         }
 
@@ -386,16 +449,37 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
 
             if (Transport == SessionTransport.Steam) // Steam 방
             {
-                SteamLobbyService.Create(null, MaxPlayers, false, (ok, message) => // 로비 만들기
+                string code = RoomCode.Generate(); // 방 코드
+                SteamLobbyService.Create(null, MaxPlayers, HostVisibility, code, (ok, message) => // 로비 만들기
                 {
                     Announce(message); // 상태
-                    GameHud.ShowNotice(ok ? "Steam 방을 열었습니다 — Esc 창에서 친구를 초대하세요" : $"{message} (연결은 유지)", 4f); // 안내
+                    string scope = HostVisibility == RoomVisibility.Public ? "공개" : "코드 전용"; // 공개 범위
+                    GameHud.ShowNotice(ok ? $"{scope} 방 코드 {RoomCode.Format(code)} — Esc 창에서 복사·초대" : $"{message} (연결은 유지)", 6f); // 안내
                 });
                 return; // 종료
             }
 
-            Announce($"방 열림 — 포트 {hostPort}"); // 상태
-            GameHud.ShowNotice($"방을 열었습니다 — 포트 {hostPort}", 4f); // 화면 안내
+            directAddress = $"{RoomCode.LocalIPv4()}:{hostPort}"; // 같은 네트워크 주소
+            Announce($"방 열림 — {directAddress}"); // 상태
+            GameHud.ShowNotice($"방을 열었습니다 — 주소 {directAddress} (Esc 창에서 복사)", 6f); // 화면 안내
+        }
+
+        private void HandleCodeFound(bool found, CSteamID lobby, string message) // 코드로 로비를 찾음 → 들어가기
+        {
+            if (Mode != SessionMode.Guest || Transport != SessionTransport.Steam) // 그사이 취소
+            {
+                return; // 종료
+            }
+
+            if (!found) // 없음
+            {
+                Mode = SessionMode.Offline; // 되돌림 (메뉴가 버튼을 다시 허용)
+                Announce(message); // 이유
+                return; // 종료
+            }
+
+            Announce(message); // 상태
+            SteamLobbyService.Enter(lobby, HandleLobbyEntered); // 로비
         }
 
         private void HandleLobbyEntered(bool ok, CSteamID host, string message) // Steam 로비에 들어감 → 방장에게 연결
@@ -408,6 +492,11 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
                 {
                     Mode = SessionMode.Offline; // 되돌림
                     SteamLobbyService.Leave(); // 정리
+                    Announce(message); // 메뉴가 버튼을 다시 허용 (Offline 상태로)
+                }
+                else if (ok) // 기다리는 사이 취소됨
+                {
+                    SteamLobbyService.Leave(); // 들어간 로비 정리
                 }
 
                 return; // 종료
