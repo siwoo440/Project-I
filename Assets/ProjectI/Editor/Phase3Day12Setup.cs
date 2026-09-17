@@ -496,6 +496,7 @@ namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
             textMesh.anchor = TextAnchor.MiddleCenter; // 라벨 중심 정렬 설정
             textMesh.alignment = TextAlignment.Center; // 라벨 문자 중앙 정렬 설정
             textMesh.color = color; // 장비 라벨 색상 설정
+            ProjectI.EditorTools.TextMeshDepthFixTool.ApplyTo(textMesh); // 깊이 검사 글꼴 재질 (벽 너머로 비치지 않음)
             return textMesh; // 생성된 라벨 반환
         }
 

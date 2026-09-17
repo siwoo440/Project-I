@@ -224,6 +224,20 @@ namespace ProjectI.Persistence // 일차 저장·복구 네임스페이스
                 }
             }
 
+            if (target == null) // 원래 경로의 단상을 찾지 못했는지 확인 (34일차 마을 재구성으로 단상 부모가 바뀐 경우)
+            {
+                string pedestalName = string.IsNullOrEmpty(storageKey) ? string.Empty : storageKey.Substring(storageKey.LastIndexOf('/') + 1); // 경로 마지막 이름
+
+                foreach (OfficeStoragePedestal pedestal in pedestals) // 같은 이름의 단상 검색 (단상 이름은 고유)
+                {
+                    if (pedestal != null && !string.IsNullOrEmpty(pedestalName) && pedestal.name == pedestalName && PedestalStoredItemField.GetValue(pedestal) == null) // 이름 일치·비어 있음
+                    {
+                        target = pedestal; // 선택
+                        break; // 검색 종료
+                    }
+                }
+            }
+
             if (target == null) // 원래 단상을 찾지 못했는지 확인
             {
                 return false; // 임의 단상 배치를 하지 않고 실패 반환

@@ -178,6 +178,7 @@ namespace ProjectI.Loop // 원정 루프 기능 네임스페이스
             }
 
             TeleportPersistentGroup(anchor.StopPoint.position, anchor.StopPoint.rotation); // Persistent Wagon/Player를 안전 정차 지점으로 이동
+            PlacePlayerAtSpawn(anchor); // 34일차: 시작 위치가 있으면 플레이어를 그 자리에 세움
             currentDestination = targetDestination; // 현재 환경 목적지 갱신
             RestoreRuntimeOfficeState(); // Office라면 경제 상태 복원
             BindBell(); // 이동 종 참조 재확인
@@ -220,6 +221,7 @@ namespace ProjectI.Loop // 원정 루프 기능 네임스페이스
             if (anchor != null && anchor.StopPoint != null) // 정차 지점 존재 여부 확인
             {
                 TeleportPersistentGroup(anchor.StopPoint.position, anchor.StopPoint.rotation); // Wagon/Player를 정차 위치로 이동
+                PlacePlayerAtSpawn(anchor); // 34일차: 시작 위치가 있으면 플레이어를 그 자리에 세움
             }
 
             currentDestination = initialDestination; // 현재 목적지 기록
@@ -298,6 +300,32 @@ namespace ProjectI.Loop // 원정 루프 기능 네임스페이스
             yield return null; // 한 프레임 안정화
             yield return FadeTo(0f, 0.25f); // 암전 해제
             isTransitioning = false; // 이동 완료
+        }
+
+        private void PlacePlayerAtSpawn(MapTravelAnchor anchor) // 시작·불러오기 때 플레이어를 정해진 시작 위치에 세움 (마차 이동 중에는 사용하지 않음)
+        {
+            if (anchor == null || anchor.PlayerSpawnPoint == null || playerRoot == null || (wagonRoot != null && playerRoot.IsChildOf(wagonRoot))) // 시작 위치·별도 플레이어 확인
+            {
+                return; // 기존 마차 기준 위치 유지
+            }
+
+            CharacterController controller = playerRoot.GetComponentInChildren<CharacterController>(); // 이동 충돌체
+            bool controllerWasEnabled = controller != null && controller.enabled; // 원래 활성 상태
+
+            if (controller != null) // 충돌체 확인
+            {
+                controller.enabled = false; // 순간이동 중 충돌 보정 방지
+            }
+
+            Transform spawn = anchor.PlayerSpawnPoint; // 시작 위치
+            playerRoot.SetPositionAndRotation(spawn.position, Quaternion.Euler(0f, spawn.eulerAngles.y, 0f)); // 좌우 방향만 적용
+            Physics.SyncTransforms(); // 물리 위치 즉시 반영
+            NotifyPlayerTeleported(); // 추락 판정 기준 초기화
+
+            if (controller != null) // 충돌체 확인
+            {
+                controller.enabled = controllerWasEnabled; // 원래 상태 복원
+            }
         }
 
         private void NotifyPlayerTeleported() // 플레이어 이동 컴포넌트에 순간이동 알림 (추락 판정 기준 초기화)

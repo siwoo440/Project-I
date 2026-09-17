@@ -32,6 +32,34 @@ namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
         private const float ShelfCenterX = -2.0f; // 진열대 중심 x
         private const float TrayCenterX = 0.25f; // 수령대 중심 x
 
+        private struct ShopLayout // 진열대·수령대 배치 기준
+        {
+            public float FloorY; // 바닥
+            public float BackWallZ; // 뒷벽 안쪽 면
+            public float ShelfX; // 진열대 x
+            public float TrayX; // 수령대 x
+        }
+
+        private static readonly ShopLayout DefaultLayout = new ShopLayout { FloorY = FloorTopY, BackWallZ = SouthWallInnerZ, ShelfX = ShelfCenterX, TrayX = TrayCenterX }; // 33일차 사무소
+        private static readonly ShopLayout Day34Layout = new ShopLayout { FloorY = 0f, BackWallZ = -(Phase13Day34TownSetup.BuildingDepth * 0.5f) + ProjectI.EditorTools.Town.TownBuilding.WallThickness, ShelfX = Phase13Day34TownSetup.ShopShelfX, TrayX = Phase13Day34TownSetup.ShopTrayX }; // 34일차 상점 건물
+        private static ShopLayout layout = DefaultLayout; // 현재 기준
+
+        private static Transform FindDay34ShopInterior(UnityEngine.SceneManagement.Scene scene) // 34일차 상점 건물 실내
+        {
+            foreach (GameObject root in scene.GetRootGameObjects()) // 루트
+            {
+                foreach (Transform child in root.GetComponentsInChildren<Transform>(true)) // 하위
+                {
+                    if (child.name == Phase13Day34TownSetup.ShopBuildingName) // 상점 건물
+                    {
+                        return child.Find("Interior"); // 실내
+                    }
+                }
+            }
+
+            return null; // 없음
+        }
+
         private static readonly (string id, int price, int max, ShopShelfTier tier)[] Products = // 상품 표 (칸 안에서는 왼쪽부터)
         {
             ("light.flashlight", 120, 5, ShopShelfTier.Upper), // 손전등
@@ -65,7 +93,14 @@ namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
                 return; // 종료
             }
 
-            Transform interior = counter.transform.parent; // OfficeInterior
+            Transform interior = counter.transform.parent; // OfficeInterior (33일차 배치)
+            Transform day34Shop = FindDay34ShopInterior(scene); // 34일차 마을의 상점 건물
+            layout = day34Shop == null ? DefaultLayout : Day34Layout; // 배치 기준
+
+            if (day34Shop != null) // 34일차 이후: 상점 건물 안에 다시 만듦
+            {
+                interior = day34Shop; // 상점 실내
+            }
             Transform old = interior.Find(ShopRootName); // 이전 상점
 
             if (old != null) // 다시 만들기
@@ -147,7 +182,7 @@ namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
         {
             GameObject shelf = new GameObject("Shelf"); // 진열대
             shelf.transform.SetParent(parent, false); // 상점 아래
-            shelf.transform.localPosition = new Vector3(ShelfCenterX, FloorTopY, SouthWallInnerZ + (ShelfDepth * 0.5f) + 0.03f); // 남쪽 벽에 붙임 (앞면이 +z, 사무소 안쪽)
+            shelf.transform.localPosition = new Vector3(layout.ShelfX, layout.FloorY, layout.BackWallZ + (ShelfDepth * 0.5f) + 0.03f); // 남쪽 벽에 붙임 (앞면이 +z, 사무소 안쪽)
             shelf.transform.localRotation = Quaternion.identity; // 앞면 +z
 
             float innerWidth = ShelfWidth - (Board * 2f); // 안쪽 폭
@@ -313,7 +348,7 @@ namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
             text.anchor = TextAnchor.MiddleCenter; // 가운데
             text.alignment = TextAlignment.Center; // 가운데
             text.color = new Color(0.12f, 0.08f, 0.05f); // 글자색
-            label.GetComponent<MeshRenderer>().sharedMaterial = font.material; // 글꼴 재질
+            ProjectI.EditorTools.TextMeshDepthFixTool.ApplyTo(text); // 깊이 검사 글꼴 재질 (벽 너머로 비치지 않음)
             plate.name = "PriceTag"; // 이름
         }
 
@@ -321,7 +356,7 @@ namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
         {
             GameObject trayObject = new GameObject("PickupTray"); // 수령대
             trayObject.transform.SetParent(parent, false); // 상점 아래
-            trayObject.transform.localPosition = new Vector3(TrayCenterX, FloorTopY, SouthWallInnerZ + (TrayDepth * 0.5f) + 0.03f); // 진열대 오른쪽, 벽에 붙임
+            trayObject.transform.localPosition = new Vector3(layout.TrayX, layout.FloorY, layout.BackWallZ + (TrayDepth * 0.5f) + 0.03f); // 진열대 오른쪽, 벽에 붙임
             trayObject.transform.localRotation = Quaternion.identity; // 진열대와 같은 방향
             OfficeShopPickupTray tray = trayObject.AddComponent<OfficeShopPickupTray>(); // 수령대 (상자 콜라이더 자동 추가)
             BoxCollider surface = trayObject.GetComponent<BoxCollider>(); // 윗면
