@@ -1,3 +1,4 @@
+using ProjectI.UI; // 주황 단말기 HUD 모양
 using UnityEngine; // 유니티 기본 기능 참조
 using UnityEngine.SceneManagement; // Canvas 씬 소속 확인 기능 참조
 using UnityEngine.UI; // Canvas UI Image와 Text 기능 참조
@@ -16,6 +17,7 @@ namespace ProjectI.Items // 아이템 기능 네임스페이스
         [SerializeField] private Color normalColor = new Color(0.07f, 0.07f, 0.07f, 0.86f); // 일반 슬롯 배경색
         [SerializeField] private Color selectedColor = new Color(0.42f, 0.42f, 0.42f, 0.96f); // 선택 슬롯 배경색
         [SerializeField] private Color lockedColor = new Color(0.28f, 0.12f, 0.12f, 0.96f); // 양손 잠금 슬롯 배경색
+        private bool styled; // 정식 HUD 모양 적용 여부
 
         private void Awake() // HUD 초기화
         {
@@ -55,6 +57,7 @@ namespace ProjectI.Items // 아이템 기능 네임스페이스
             }
 
             EnsureSlotCanvas(); // 슬롯 UI가 없거나 환경 씬에 묶여 있으면 플레이어 씬에 확보
+            ApplyRetroStyle(); // 정식 HUD 모양 (한 번만)
 
             for (int index = 0; index < PlayerInventory.Capacity; index++) // 1번부터 6번 슬롯 순회
             {
@@ -74,7 +77,7 @@ namespace ProjectI.Items // 아이템 기능 네임스페이스
 
                 if (lockLabels != null && index < lockLabels.Length && lockLabels[index] != null) // LOCK Text 참조 유효성 확인
                 {
-                    lockLabels[index].text = locked ? "LOCK" : string.Empty; // 양손 운반 중 선택 슬롯에만 LOCK 표시
+                    lockLabels[index].text = locked ? "양손" : string.Empty; // 양손 운반 중 선택 슬롯에만 잠금 표시
                 }
 
                 if (slotBackgrounds != null && index < slotBackgrounds.Length && slotBackgrounds[index] != null) // 슬롯 배경 Image 참조 유효성 확인
@@ -100,6 +103,45 @@ namespace ProjectI.Items // 아이템 기능 네임스페이스
             }
 
             BindFromCanvas(canvasObject.transform); // 슬롯 UI 참조 연결
+        }
+
+        private void ApplyRetroStyle() // 36일차 정식 HUD 모양 (주황 글자 · 어두운 칸 · 테두리)
+        {
+            if (styled || !HasBoundSlots()) // 이미 적용 또는 UI 없음
+            {
+                return; // 생략
+            }
+
+            styled = true; // 표시
+            normalColor = new Color(0.04f, 0.03f, 0.02f, 0.78f); // 일반 칸
+            selectedColor = new Color(0.44f, 0.2f, 0.1f, 0.92f); // 선택 칸
+            lockedColor = new Color(0.42f, 0.08f, 0.07f, 0.92f); // 잠금 칸
+
+            for (int index = 0; index < PlayerInventory.Capacity; index++) // 칸
+            {
+                StyleText(slotNumbers[index], RetroUi.OrangeDim, 18); // 번호
+                StyleText(itemNames[index], RetroUi.OrangeBright, 16); // 이름
+                StyleText(lockLabels[index], RetroUi.Red, 13); // 잠금
+
+                if (lockLabels[index] != null) // 잠금 문구
+                {
+                    lockLabels[index].text = string.Empty; // 초기화
+                }
+
+                RetroUi.Frame(slotBackgrounds[index].rectTransform, RetroUi.OrangeDim, 2f); // 테두리
+            }
+        }
+
+        private static void StyleText(Text text, Color color, int size) // 글자 모양
+        {
+            if (text == null) // 없음
+            {
+                return; // 생략
+            }
+
+            text.font = RetroUi.Font; // 한글 글꼴
+            text.color = color; // 색
+            text.fontSize = size; // 크기
         }
 
         private bool HasBoundSlots() // 슬롯 UI 참조가 모두 살아 있는지 확인
@@ -141,6 +183,7 @@ namespace ProjectI.Items // 아이템 기능 네임스페이스
         private void BindFromCanvas(Transform canvasRoot) // Canvas 하위 슬롯 오브젝트에서 참조 연결
         {
             Transform panel = canvasRoot.Find(PanelName); // 슬롯 패널 조회
+            styled = false; // 새 UI 에 모양 다시 적용
             slotBackgrounds = new Image[PlayerInventory.Capacity]; // 배경 배열 생성
             slotNumbers = new Text[PlayerInventory.Capacity]; // 번호 배열 생성
             itemNames = new Text[PlayerInventory.Capacity]; // 이름 배열 생성

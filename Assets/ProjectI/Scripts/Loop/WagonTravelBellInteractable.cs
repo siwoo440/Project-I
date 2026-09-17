@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using ProjectI.Audio;
 using ProjectI.Interaction;
 using UnityEngine;
 
@@ -53,10 +54,12 @@ namespace ProjectI.Loop
             if (blockReason != null)
             {
                 Debug.Log($"[Project I] 마차 종 / {blockReason}", this);
+                SoundPlayer.PlayAt(SoundId.UiDenied, transform.position, 0.5f);
                 return;
             }
 
             TravelRequested?.Invoke();
+            SoundPlayer.PlayAt(SoundId.WagonBell, transform.position, 1f, 0.02f, 45f);
             StartCoroutine(PlayRingAnimation());
         }
 

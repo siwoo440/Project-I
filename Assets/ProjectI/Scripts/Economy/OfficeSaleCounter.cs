@@ -1,5 +1,6 @@
 using System.Collections; // 판매 연출 코루틴 사용
 using System.Collections.Generic; // 판매대 위 아이템 목록 사용
+using ProjectI.Audio; // 효과음
 using ProjectI.Interaction; // 기존 F 상호작용 인터페이스 참조
 using ProjectI.Items; // 기존 빠른 슬롯과 WorldItem 기능 참조
 using UnityEngine; // 유니티 Transform과 컴포넌트 기능 참조
@@ -112,6 +113,11 @@ namespace ProjectI.Economy // 사무소 경제 기능 네임스페이스
                 total += price; // 합계
                 Debug.Log($"[Project I] {item.DisplayName} 판매 완료 / +{price} / 공동 자금 {economy.SharedFunds}", this); // 개발용 판매 결과 로그
                 StartCoroutine(VanishRoutine(item)); // 줄어들며 사라지는 연출
+            }
+
+            if (total > 0) // 판매됨
+            {
+                SoundPlayer.PlayAt(SoundId.Sale, transform.position, 0.9f); // 판매 소리
             }
 
             return total; // 합계 반환

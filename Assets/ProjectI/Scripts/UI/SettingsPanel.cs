@@ -8,11 +8,17 @@ namespace ProjectI.UI // 메뉴·창 UI 네임스페이스
 {
     public sealed class SettingsPanel : MonoBehaviour // 설정 창 (메인 메뉴·일시정지 공용)
     {
-        private const float RowHeight = 64f; // 줄 높이
+        private const float RowHeight = 58f; // 줄 높이
         private Slider sensitivitySlider; // 감도
         private Text sensitivityValue; // 감도 값
         private Slider volumeSlider; // 음량
         private Text volumeValue; // 음량 값
+        private Slider musicSlider; // 음악
+        private Text musicValue; // 음악 값
+        private Slider sfxSlider; // 효과음
+        private Text sfxValue; // 효과음 값
+        private Slider ambienceSlider; // 환경음
+        private Text ambienceValue; // 환경음 값
         private RetroHover fullscreenHover; // 전체 화면
         private RetroHover resolutionHover; // 해상도
         private RetroHover vSyncHover; // 수직 동기화
@@ -55,7 +61,7 @@ namespace ProjectI.UI // 메뉴·창 UI 네임스페이스
         {
             RetroUi.Solid(root, "Shade", RetroUi.Shade, true); // 뒤 화면 어둡게 (클릭 차단)
             RectTransform window = RetroUi.Rect(root, "Window"); // 창
-            RetroUi.Place(window, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(860f, 560f)); // 가운데
+            RetroUi.Place(window, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(860f, 800f)); // 가운데
             RetroUi.Solid(window, "Fill", RetroUi.Backdrop, true); // 바탕
             RetroUi.Frame(window, RetroUi.Orange, 3f); // 테두리
 
@@ -68,6 +74,15 @@ namespace ProjectI.UI // 메뉴·창 UI 네임스페이스
             y -= RowHeight; // 다음 줄
             volumeSlider = SliderRow(window, "전체 음량", y, 0f, 1f, out volumeValue); // 음량
             volumeSlider.onValueChanged.AddListener(value => { GameSettings.MasterVolume = value; RefreshValues(); }); // 적용
+            y -= RowHeight; // 다음 줄
+            musicSlider = SliderRow(window, "음악", y, 0f, 1f, out musicValue); // 음악
+            musicSlider.onValueChanged.AddListener(value => { GameSettings.MusicVolume = value; RefreshValues(); }); // 적용
+            y -= RowHeight; // 다음 줄
+            sfxSlider = SliderRow(window, "효과음", y, 0f, 1f, out sfxValue); // 효과음
+            sfxSlider.onValueChanged.AddListener(value => { GameSettings.SfxVolume = value; RefreshValues(); }); // 적용
+            y -= RowHeight; // 다음 줄
+            ambienceSlider = SliderRow(window, "환경음", y, 0f, 1f, out ambienceValue); // 환경음
+            ambienceSlider.onValueChanged.AddListener(value => { GameSettings.AmbienceVolume = value; RefreshValues(); }); // 적용
             y -= RowHeight; // 다음 줄
             fullscreenHover = ButtonRow(window, "전체 화면", y, () => { GameSettings.Fullscreen = !GameSettings.Fullscreen; RefreshValues(); }); // 전체 화면
             y -= RowHeight; // 다음 줄
@@ -127,12 +142,23 @@ namespace ProjectI.UI // 메뉴·창 UI 네임스페이스
             RefreshValues(); // 표시
         }
 
+        private static string Percent(float value) // 백분율
+        {
+            return $"{Mathf.RoundToInt(value * 100f)}%"; // 표시
+        }
+
         private void RefreshValues() // 현재 값 표시
         {
             sensitivitySlider.SetValueWithoutNotify(GameSettings.LookSensitivity); // 감도
             sensitivityValue.text = $"x{GameSettings.LookSensitivity:0.00}"; // 감도 값
             volumeSlider.SetValueWithoutNotify(GameSettings.MasterVolume); // 음량
-            volumeValue.text = $"{Mathf.RoundToInt(GameSettings.MasterVolume * 100f)}%"; // 음량 값
+            volumeValue.text = Percent(GameSettings.MasterVolume); // 음량 값
+            musicSlider.SetValueWithoutNotify(GameSettings.MusicVolume); // 음악
+            musicValue.text = Percent(GameSettings.MusicVolume); // 음악 값
+            sfxSlider.SetValueWithoutNotify(GameSettings.SfxVolume); // 효과음
+            sfxValue.text = Percent(GameSettings.SfxVolume); // 효과음 값
+            ambienceSlider.SetValueWithoutNotify(GameSettings.AmbienceVolume); // 환경음
+            ambienceValue.text = Percent(GameSettings.AmbienceVolume); // 환경음 값
             fullscreenHover.SetText(GameSettings.Fullscreen ? "[ 켜짐 ]" : "[ 꺼짐 ]"); // 전체 화면
             Vector2Int size = GameSettings.Resolution; // 해상도
             resolutionHover.SetText($"{size.x} x {size.y} ▸"); // 해상도

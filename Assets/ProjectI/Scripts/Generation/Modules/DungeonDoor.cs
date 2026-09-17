@@ -1,4 +1,5 @@
 using System.Collections; // 여닫이 연출 Coroutine 사용
+using ProjectI.Audio; // 효과음
 using ProjectI.Generation; // 출입구 규격 참조
 using ProjectI.Interaction; // 상호작용 규약 참조
 using ProjectI.Items; // 열쇠 확인용 인벤토리 참조
@@ -56,6 +57,7 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
             {
                 if (!TryUnlock(interactor)) // 열쇠 확인
                 {
+                    SoundPlayer.PlayAt(SoundId.UiDenied, transform.position, 0.6f); // 잠김 소리
                     return; // 그대로 잠김
                 }
 
@@ -63,6 +65,7 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
             }
 
             swingSign = isOpen ? swingSign : ChooseSwingSign(interactor); // 열 때는 미는 방향으로
+            SoundPlayer.PlayAt(isOpen ? SoundId.DoorClose : SoundId.DoorOpen, transform.position + Vector3.up, 0.8f); // 문 소리
             StartCoroutine(SwingRoutine(!isOpen)); // 연출 시작
         }
 

@@ -1,4 +1,5 @@
 using System.Collections.Generic; // 목록 사용
+using ProjectI.Audio; // 효과음
 using ProjectI.Items; // WorldItem 참조
 using UnityEngine; // 유니티 기본 기능 참조
 
@@ -78,6 +79,7 @@ namespace ProjectI.Economy // 사무소 경제 기능 네임스페이스
                 economy.AddFunds(entry.price * (quantity - delivered.Count)); // 환불
             }
 
+            SoundPlayer.PlayAt(SoundId.Purchase, tray.transform.position, 0.9f); // 동전 소리
             Debug.Log($"[Project I] 상점 구매 / {entry.DisplayName} x{delivered.Count} / -{entry.price * delivered.Count} / 공동 자금 {economy.SharedFunds}", this); // 개발용 로그
             return ShopPurchaseResult.Success; // 성공
         }

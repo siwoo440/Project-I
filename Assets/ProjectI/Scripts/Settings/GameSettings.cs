@@ -13,6 +13,9 @@ namespace ProjectI.Settings // 게임 설정 네임스페이스
         private static bool loaded; // 불러옴 여부
         private static float lookSensitivity = DefaultLookSensitivity; // 감도 배율
         private static float masterVolume = 1f; // 전체 음량
+        private static float musicVolume = 0.7f; // 음악
+        private static float sfxVolume = 1f; // 효과음
+        private static float ambienceVolume = 0.8f; // 환경음
         private static bool fullscreen = true; // 전체 화면
         private static bool vSync = true; // 수직 동기화
         private static int resolutionWidth; // 해상도 폭 (0 = 현재 화면)
@@ -22,6 +25,9 @@ namespace ProjectI.Settings // 게임 설정 네임스페이스
 
         public static float LookSensitivity { get { EnsureLoaded(); return lookSensitivity; } set { EnsureLoaded(); lookSensitivity = Mathf.Clamp(value, MinLookSensitivity, MaxLookSensitivity); Changed?.Invoke(); } } // 마우스 감도 배율
         public static float MasterVolume { get { EnsureLoaded(); return masterVolume; } set { EnsureLoaded(); masterVolume = Mathf.Clamp01(value); ApplyAudio(); Changed?.Invoke(); } } // 전체 음량
+        public static float MusicVolume { get { EnsureLoaded(); return musicVolume; } set { EnsureLoaded(); musicVolume = Mathf.Clamp01(value); Changed?.Invoke(); } } // 음악 음량
+        public static float SfxVolume { get { EnsureLoaded(); return sfxVolume; } set { EnsureLoaded(); sfxVolume = Mathf.Clamp01(value); Changed?.Invoke(); } } // 효과음 음량
+        public static float AmbienceVolume { get { EnsureLoaded(); return ambienceVolume; } set { EnsureLoaded(); ambienceVolume = Mathf.Clamp01(value); Changed?.Invoke(); } } // 환경음 음량
         public static bool Fullscreen { get { EnsureLoaded(); return fullscreen; } set { EnsureLoaded(); fullscreen = value; ApplyDisplay(); Changed?.Invoke(); } } // 전체 화면
         public static bool VSync { get { EnsureLoaded(); return vSync; } set { EnsureLoaded(); vSync = value; ApplyDisplay(); Changed?.Invoke(); } } // 수직 동기화
         public static Vector2Int Resolution // 해상도
@@ -55,6 +61,9 @@ namespace ProjectI.Settings // 게임 설정 네임스페이스
             EnsureLoaded(); // 불러오기
             PlayerPrefs.SetFloat(Prefix + "LookSensitivity", lookSensitivity); // 감도
             PlayerPrefs.SetFloat(Prefix + "MasterVolume", masterVolume); // 음량
+            PlayerPrefs.SetFloat(Prefix + "MusicVolume", musicVolume); // 음악
+            PlayerPrefs.SetFloat(Prefix + "SfxVolume", sfxVolume); // 효과음
+            PlayerPrefs.SetFloat(Prefix + "AmbienceVolume", ambienceVolume); // 환경음
             PlayerPrefs.SetInt(Prefix + "Fullscreen", fullscreen ? 1 : 0); // 전체 화면
             PlayerPrefs.SetInt(Prefix + "VSync", vSync ? 1 : 0); // 수직 동기화
             PlayerPrefs.SetInt(Prefix + "ResolutionWidth", resolutionWidth); // 폭
@@ -67,6 +76,9 @@ namespace ProjectI.Settings // 게임 설정 네임스페이스
             EnsureLoaded(); // 불러오기
             lookSensitivity = DefaultLookSensitivity; // 감도
             masterVolume = 1f; // 음량
+            musicVolume = 0.7f; // 음악
+            sfxVolume = 1f; // 효과음
+            ambienceVolume = 0.8f; // 환경음
             fullscreen = true; // 전체 화면
             vSync = true; // 수직 동기화
             resolutionWidth = 0; // 현재 화면
@@ -108,6 +120,9 @@ namespace ProjectI.Settings // 게임 설정 네임스페이스
             loaded = true; // 표시
             lookSensitivity = Mathf.Clamp(PlayerPrefs.GetFloat(Prefix + "LookSensitivity", DefaultLookSensitivity), MinLookSensitivity, MaxLookSensitivity); // 감도
             masterVolume = Mathf.Clamp01(PlayerPrefs.GetFloat(Prefix + "MasterVolume", 1f)); // 음량
+            musicVolume = Mathf.Clamp01(PlayerPrefs.GetFloat(Prefix + "MusicVolume", 0.7f)); // 음악
+            sfxVolume = Mathf.Clamp01(PlayerPrefs.GetFloat(Prefix + "SfxVolume", 1f)); // 효과음
+            ambienceVolume = Mathf.Clamp01(PlayerPrefs.GetFloat(Prefix + "AmbienceVolume", 0.8f)); // 환경음
             fullscreen = PlayerPrefs.GetInt(Prefix + "Fullscreen", 1) == 1; // 전체 화면
             vSync = PlayerPrefs.GetInt(Prefix + "VSync", 1) == 1; // 수직 동기화
             resolutionWidth = PlayerPrefs.GetInt(Prefix + "ResolutionWidth", 0); // 폭

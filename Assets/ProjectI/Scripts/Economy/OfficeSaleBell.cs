@@ -1,4 +1,5 @@
 using System.Collections; // 벨 흔들림 연출 코루틴 사용
+using ProjectI.Audio; // 효과음
 using ProjectI.Interaction; // 기존 F 상호작용 인터페이스 참조
 using UnityEngine; // 유니티 기본 기능 참조
 
@@ -61,6 +62,10 @@ namespace ProjectI.Economy // 사무소 경제 기능 네임스페이스
             if (ringAudio != null) // 소리
             {
                 ringAudio.Play(); // 재생
+            }
+            else
+            {
+                SoundPlayer.PlayAt(SoundId.SaleBell, transform.position, 0.8f); // 합성 벨 소리
             }
 
             if (ringVisual != null && isActiveAndEnabled) // 흔들림

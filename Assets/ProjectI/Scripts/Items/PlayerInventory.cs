@@ -1,3 +1,4 @@
+using ProjectI.Audio; // 효과음
 using ProjectI.Player; // 플레이어 입력 기능 참조
 using UnityEngine; // 유니티 기본 기능 참조
 
@@ -112,6 +113,7 @@ namespace ProjectI.Items // 아이템 기능 네임스페이스
             item.Store(storageRoot); // 먼저 인벤토리 숨김 보관 상태로 전환
             slots[emptyIndex].SetItem(item); // 첫 빈 슬롯에 아이템 저장
             SelectSlot(emptyIndex); // 새로 획득한 슬롯을 즉시 선택하여 손에 표시
+            SoundPlayer.PlayAt(SoundId.ItemPickup, transform.position + Vector3.up, 0.7f); // 줍기 소리
             return true; // 획득 성공 반환
         }
 
@@ -210,6 +212,7 @@ namespace ProjectI.Items // 아이템 기능 네임스페이스
             }
 
             slots[selectedIndex].Clear(); // 현재 빠른 슬롯 비우기
+            SoundPlayer.PlayAt(SoundId.ItemDrop, droppedItem.transform.position, 0.7f); // 내려놓기 소리
             return true; // 내려놓기 성공 반환
         }
 

@@ -23,6 +23,7 @@ namespace ProjectI.Core // 프로젝트 공통 네임스페이스
             rootObject.AddComponent<GameManager>(); // 게임 관리자 추가
             rootObject.AddComponent<SceneFlowManager>(); // 씬 관리자 추가
             rootObject.AddComponent<PauseMenu>(); // 게임 중 Esc 창 (플레이어가 있을 때만 열림)
+            rootObject.AddComponent<GameHud>(); // 정식 HUD (플레이어가 있을 때만 표시)
             ProjectLog.Log("Project I 런타임 부트스트랩 완료"); // 부트스트랩 로그 출력
         }
     }

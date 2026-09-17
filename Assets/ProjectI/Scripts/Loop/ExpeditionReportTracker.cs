@@ -14,9 +14,9 @@ namespace ProjectI.Loop // 원정 루프 기능 네임스페이스
         private readonly HashSet<string> broughtItemIds = new HashSet<string>(); // 출발 시 마차·인벤토리에 있던 아이템 InstanceId
         private bool expeditionActive; // 원정 결과 추적 중 여부
         private float reportVisibleUntil; // 결과 표시 종료 시각
-        private GUIStyle panelStyle; // 결과 패널 글꼴 스타일
 
         public ExpeditionReport LastReport { get; private set; } // 최근 원정 결과 공개
+        public bool IsReportVisible => LastReport != null && Time.unscaledTime < reportVisibleUntil; // HUD 결과 표시 시간
 
         public void BeginExpedition(Transform wagonRoot) // 던전 출발 시 가져가는 물건 기록
         {
@@ -131,34 +131,23 @@ namespace ProjectI.Loop // 원정 루프 기능 네임스페이스
             return identity == null ? null : identity.InstanceId; // 개별 ID 반환
         }
 
-        private void OnGUI() // 일차 상태와 최근 원정 결과를 테스트 화면에 표시
-        {
-            DailySnapshotService service = DailySnapshotService.Instance; // 저장 서비스 조회
-
-            if (service == null || !service.IsInitialized) // 일차 시스템 준비 여부 확인
-            {
-                return; // 표시 생략
-            }
-
-            panelStyle ??= new GUIStyle(GUI.skin.box) { fontSize = 16, alignment = TextAnchor.UpperLeft, wordWrap = true }; // 패널 스타일 생성
-            string status = $"{service.CurrentDay}일차 · {GetPhaseText(service.DayPhase)}"; // 일차 상태 문구
-
-            if (Time.unscaledTime < reportVisibleUntil && LastReport != null) // 귀환 결과 표시 시간인지 확인
-            {
-                status += $"\n원정 결과: 귀환 {LastReport.ReturnedCount}개 / 신규 회수품 {LastReport.NewLootCount}개 (가치 {LastReport.NewLootValue}) / 두고 온 장비 {LastReport.LostBroughtCount}개"; // 결과 문구 추가
-            }
-
-            float width = Mathf.Min(620f, Screen.width - 40f); // 패널 너비 계산
-            GUI.Box(new Rect((Screen.width - width) * 0.5f, 12f, width, status.Contains("\n") ? 58f : 32f), status, panelStyle); // 화면 상단 중앙 표시
-        }
-
-        private static string GetPhaseText(ExpeditionDayPhase phase) // 원정 단계 표시 문구
+        public static string PhaseTitle(ExpeditionDayPhase phase) // HUD 짧은 단계 이름
         {
             switch (phase) // 단계별 문구 선택
             {
-                case ExpeditionDayPhase.OnExpedition: return "원정 중"; // 원정 중 문구
-                case ExpeditionDayPhase.Returned: return "귀환 완료 — 판매·보관 후 일차 마감 장부에서 하루를 마감하세요"; // 귀환 문구
-                default: return "사무소 준비 — 마차 창고 안의 종으로 출발"; // 준비 문구
+                case ExpeditionDayPhase.OnExpedition: return "원정 중"; // 원정 중
+                case ExpeditionDayPhase.Returned: return "귀환 완료"; // 귀환
+                default: return "출발 준비"; // 준비
+            }
+        }
+
+        public static string PhaseGuide(ExpeditionDayPhase phase) // HUD 할 일 안내
+        {
+            switch (phase) // 단계별 문구 선택
+            {
+                case ExpeditionDayPhase.OnExpedition: return "회수품을 모아 마차로 돌아오세요 — 마차 창고 안의 종으로 귀환"; // 원정 중
+                case ExpeditionDayPhase.Returned: return "판매소·보관 창고에서 정리한 뒤, 사무소의 일차 마감 장부로 하루를 마감하세요"; // 귀환
+                default: return "상점에서 장비를 사고, 마차 창고 안의 종으로 출발하세요"; // 준비
             }
         }
     }

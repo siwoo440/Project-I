@@ -1,4 +1,5 @@
 using System; // 콜백
+using ProjectI.Audio; // 효과음
 using UnityEngine; // 유니티 기본 기능 참조
 using UnityEngine.EventSystems; // UI 입력 이벤트
 using UnityEngine.InputSystem.UI; // 새 Input System UI 입력 모듈
@@ -152,7 +153,7 @@ namespace ProjectI.UI // 메뉴·창 UI 네임스페이스
             Text label = Label(rect, "Label", text, size, Orange, alignment); // 글자
             RetroHover hover = rect.gameObject.AddComponent<RetroHover>(); // 강조
             hover.Configure(label, null, text, true); // 설정
-            button.onClick.AddListener(() => onClick?.Invoke()); // 클릭
+            button.onClick.AddListener(() => { SoundPlayer.Play(SoundId.UiClick, 0.6f); onClick?.Invoke(); }); // 클릭
             return button; // 반환
         }
 
@@ -167,7 +168,7 @@ namespace ProjectI.UI // 메뉴·창 UI 네임스페이스
             Text label = Label(rect, "Label", text, size, Orange, TextAnchor.MiddleCenter); // 글자
             RetroHover hover = rect.gameObject.AddComponent<RetroHover>(); // 강조
             hover.Configure(label, fill, text, false); // 설정
-            button.onClick.AddListener(() => onClick?.Invoke()); // 클릭
+            button.onClick.AddListener(() => { SoundPlayer.Play(SoundId.UiClick, 0.6f); onClick?.Invoke(); }); // 클릭
             return button; // 반환
         }
 
@@ -311,7 +312,17 @@ namespace ProjectI.UI // 메뉴·창 UI 네임스페이스
             Refresh(); // 반영
         }
 
-        public void OnPointerEnter(PointerEventData eventData) { hovered = true; Refresh(); } // 올림
+        public void OnPointerEnter(PointerEventData eventData) // 올림
+        {
+            hovered = true; // 강조
+            Refresh(); // 반영
+
+            if (selectable == null || selectable.IsInteractable()) // 누를 수 있음
+            {
+                SoundPlayer.Play(SoundId.UiHover, 0.35f); // 짧은 소리
+            }
+        }
+
         public void OnPointerExit(PointerEventData eventData) { hovered = false; Refresh(); } // 내림
         public void OnSelect(BaseEventData eventData) { hovered = true; Refresh(); } // 선택
         public void OnDeselect(BaseEventData eventData) { hovered = false; Refresh(); } // 해제

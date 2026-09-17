@@ -1,14 +1,15 @@
 using System.Collections.Generic; // 목록 사용
+using ProjectI.Audio; // 효과음
 using ProjectI.Interaction; // 조작 잠금 참조
 using ProjectI.Items; // WorldItem 참조
+using ProjectI.UI; // 정식 창 모양
 using UnityEngine; // 유니티 기본 기능 참조
+using UnityEngine.UI; // uGUI
 
 namespace ProjectI.Economy // 사무소 경제 기능 네임스페이스
 {
-    public sealed class OfficeShopPanel : MonoBehaviour // 구매 수량과 구매 여부를 묻는 창 (33일차, 정식 HUD 전까지 즉시 모드 GUI)
+    public sealed class OfficeShopPanel : MonoBehaviour // 구매 수량과 구매 여부를 묻는 창 (33일차 기능 · 36일차 정식 창 모양)
     {
-        private const float PanelWidth = 380f; // 창 너비
-        private const float PanelHeight = 250f; // 창 높이
         private const float NoticeSeconds = 2.5f; // 결과 안내 표시 시간
 
         private OfficeShopShelf shelf; // 진열대
@@ -19,6 +20,17 @@ namespace ProjectI.Economy // 사무소 경제 기능 네임스페이스
         private float noticeUntil; // 안내 종료 시각
         private int cachedMax; // 프레임 단위 최대 수량 캐시 (OnGUI 여러 번 호출 대비)
         private int cachedMaxFrame = -1; // 캐시 프레임
+        private Canvas canvas; // 창 캔버스
+        private Text nameLabel; // 상품 이름
+        private Text priceLabel; // 단가
+        private Text quantityLabel; // 수량
+        private Text maxLabel; // 최대 수량
+        private Text totalLabel; // 합계
+        private Text fundsLabel; // 자금 변화
+        private Text messageLabel; // 질문·이유·안내
+        private Button buyButton; // 구매 버튼
+        private Button minusButton; // 감소
+        private Button plusButton; // 증가
 
         public bool IsOpen { get; private set; } // 열림 여부
         public int Quantity { get; private set; } = 1; // 선택 수량
@@ -40,7 +52,12 @@ namespace ProjectI.Economy // 사무소 경제 기능 네임스페이스
             Quantity = 1; // 기본 1개
             IsOpen = true; // 열림
             openedFrame = Time.frameCount; // 연 프레임
+            notice = string.Empty; // 이전 안내 정리
             PlayerControlLock.Acquire(this, interactor); // 조작 정지
+            BuildView(); // 창 구성
+            RetroUi.EnsureEventSystem(); // UI 입력
+            canvas.gameObject.SetActive(true); // 표시
+            RefreshView(); // 내용
         }
 
         public void SetQuantity(int value) // 수량 변경 (1 ~ 상품 한도)
@@ -64,6 +81,11 @@ namespace ProjectI.Economy // 사무소 경제 기능 네임스페이스
             if (LastResult == ShopPurchaseResult.Success) // 성공하면 닫기
             {
                 Close(); // 닫기
+                GameHud.ShowNotice(notice); // 화면 알림
+            }
+            else
+            {
+                SoundPlayer.Play(SoundId.UiDenied, 0.6f); // 실패 소리
             }
 
             return LastResult; // 결과
@@ -78,6 +100,11 @@ namespace ProjectI.Economy // 사무소 경제 기능 네임스페이스
 
             IsOpen = false; // 닫힘
             PlayerControlLock.Release(this); // 조작 복구
+
+            if (canvas != null) // 창
+            {
+                canvas.gameObject.SetActive(false); // 숨김
+            }
         }
 
         private int ComputeMax() // 최대 수량 (프레임당 한 번 계산)
@@ -102,7 +129,10 @@ namespace ProjectI.Economy // 사무소 경제 기능 네임스페이스
             if (IsOpen && Time.frameCount > openedFrame + 1 && Cursor.lockState == CursorLockMode.Locked) // Esc로 커서를 다시 잠그면 취소
             {
                 Close(); // 닫기
+                return; // 종료
             }
+
+            RefreshView(); // 창 내용
         }
 
         private void OnDisable() // 비활성화 시 조작 복구
@@ -110,16 +140,11 @@ namespace ProjectI.Economy // 사무소 경제 기능 네임스페이스
             Close(); // 닫기
         }
 
-        private void OnGUI() // 창 그리기
+        private void RefreshView() // 창 내용 갱신
         {
-            if (!IsOpen) // 닫혀 있으면 결과 안내만
+            if (!IsOpen || canvas == null) // 닫힘
             {
-                if (!string.IsNullOrEmpty(notice) && Time.unscaledTime < noticeUntil) // 안내 표시 중
-                {
-                    GUI.Box(new Rect((Screen.width - 360f) * 0.5f, (Screen.height * 0.5f) + 96f, 360f, 30f), notice); // 조준점 아래
-                }
-
-                return; // 종료
+                return; // 생략
             }
 
             if (entry == null || shelf == null) // 상품 없음
@@ -132,59 +157,79 @@ namespace ProjectI.Economy // 사무소 경제 기능 네임스페이스
             int total = entry.price * Quantity; // 합계
             int funds = shelf.Funds; // 자금
             bool canBuy = Quantity <= max; // 구매 가능
-            Rect area = new Rect((Screen.width - PanelWidth) * 0.5f, (Screen.height - PanelHeight) * 0.5f, PanelWidth, PanelHeight); // 화면 중앙
-            GUI.Box(area, string.Empty); // 배경
-            GUILayout.BeginArea(new Rect(area.x + 16f, area.y + 12f, area.width - 32f, area.height - 24f)); // 안쪽
-            GUILayout.Label(entry.DisplayName); // 상품 이름
-            GUILayout.Label($"가격 {entry.price} / 개"); // 단가
-
-            GUILayout.BeginHorizontal(); // 수량 줄
-            GUILayout.Label("수량", GUILayout.Width(60f)); // 제목
-            if (GUILayout.Button("-", GUILayout.Width(36f))) // 감소
-            {
-                SetQuantity(Quantity - 1); // 적용
-            }
-
-            GUILayout.Label($"{Quantity}", GUILayout.Width(40f)); // 현재 수량
-            if (GUILayout.Button("+", GUILayout.Width(36f))) // 증가
-            {
-                SetQuantity(Quantity + 1); // 적용
-            }
-
-            GUILayout.Label($"(지금 최대 {max}개)"); // 한도
-            GUILayout.EndHorizontal(); // 줄 끝
-
-            GUILayout.Label($"합계 {total}"); // 합계
-            GUILayout.Label($"공동 자금 {funds} → {Mathf.Max(0, funds - total)}"); // 자금 변화
+            int limit = Mathf.Max(1, entry.maxPerPurchase); // 한도
+            nameLabel.text = entry.DisplayName; // 이름
+            priceLabel.text = $"가격  {entry.price:N0} / 개"; // 단가
+            quantityLabel.text = Quantity.ToString(); // 수량
+            maxLabel.text = $"(지금 최대 {max}개 · 한 번에 {limit}개까지)"; // 한도
+            totalLabel.text = $"합계  {total:N0}"; // 합계
+            fundsLabel.text = $"공동 자금  {funds:N0} → {Mathf.Max(0, funds - total):N0}"; // 자금 변화
+            minusButton.interactable = Quantity > 1; // 감소
+            plusButton.interactable = Quantity < limit; // 증가
+            buyButton.interactable = canBuy; // 구매
 
             if (!canBuy) // 살 수 없는 이유
             {
-                GUILayout.Label(funds < total ? "자금이 부족합니다" : "수령대 자리가 부족합니다"); // 이유
+                messageLabel.color = RetroUi.Red; // 빨강
+                messageLabel.text = funds < total ? "자금이 부족합니다" : "수령대 자리가 부족합니다"; // 이유
             }
             else if (!string.IsNullOrEmpty(notice) && Time.unscaledTime < noticeUntil) // 직전 실패 안내
             {
-                GUILayout.Label(notice); // 안내
+                messageLabel.color = RetroUi.Red; // 빨강
+                messageLabel.text = notice; // 안내
             }
             else // 확인 질문
             {
-                GUILayout.Label($"{entry.DisplayName} {Quantity}개를 구매하시겠습니까?"); // 질문
+                messageLabel.color = RetroUi.OrangeBright; // 강조
+                messageLabel.text = $"{entry.DisplayName} {Quantity}개를 구매하시겠습니까?"; // 질문
+            }
+        }
+
+        private void BuildView() // 창 구성 (처음 한 번)
+        {
+            if (canvas != null) // 이미 있음
+            {
+                return; // 생략
             }
 
-            GUILayout.FlexibleSpace(); // 아래로
-            GUILayout.BeginHorizontal(); // 버튼 줄
-            GUI.enabled = canBuy; // 가능할 때만
-            if (GUILayout.Button("구매", GUILayout.Height(32f))) // 구매
-            {
-                Confirm(); // 확정
-            }
+            canvas = RetroUi.CreateCanvas("ShopPanelCanvas", 300, transform); // 캔버스
+            RectTransform root = (RectTransform)canvas.transform; // 루트
+            RetroUi.Solid(root, "Shade", RetroUi.Shade, true); // 뒤 화면
+            RectTransform window = RetroUi.Rect(root, "Window"); // 창
+            RetroUi.Place(window, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(760f, 520f)); // 가운데
+            RetroUi.Solid(window, "Fill", RetroUi.Backdrop, true); // 바탕
+            RetroUi.Frame(window, RetroUi.Orange, 3f); // 테두리
 
-            GUI.enabled = true; // 복구
-            if (GUILayout.Button("취소", GUILayout.Height(32f))) // 취소
-            {
-                Close(); // 닫기
-            }
-            GUILayout.EndHorizontal(); // 줄 끝
-            GUILayout.EndArea(); // 안쪽 끝
+            nameLabel = Row(window, "Name", 38, RetroUi.Orange, -50f); // 이름
+            priceLabel = Row(window, "Price", 24, RetroUi.OrangeDim, -100f); // 단가
+
+            Text quantityTitle = Row(window, "QuantityTitle", 26, RetroUi.Orange, -170f); // 수량 제목
+            quantityTitle.text = "수량"; // 글자
+            minusButton = RetroUi.BoxButton(window, "Minus", "-", 30, () => SetQuantity(Quantity - 1)); // 감소
+            RetroUi.Place((RectTransform)minusButton.transform, new Vector2(0f, 1f), new Vector2(0f, 0.5f), new Vector2(150f, -170f), new Vector2(60f, 54f)); // 위치
+            quantityLabel = RetroUi.Label(window, "Quantity", "1", 32, RetroUi.OrangeBright, TextAnchor.MiddleCenter); // 수량
+            RetroUi.Place(quantityLabel.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 0.5f), new Vector2(214f, -170f), new Vector2(80f, 54f)); // 위치
+            plusButton = RetroUi.BoxButton(window, "Plus", "+", 30, () => SetQuantity(Quantity + 1)); // 증가
+            RetroUi.Place((RectTransform)plusButton.transform, new Vector2(0f, 1f), new Vector2(0f, 0.5f), new Vector2(298f, -170f), new Vector2(60f, 54f)); // 위치
+            maxLabel = RetroUi.Label(window, "Max", string.Empty, 20, RetroUi.OrangeDim, TextAnchor.MiddleLeft); // 한도
+            RetroUi.Place(maxLabel.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 0.5f), new Vector2(380f, -170f), new Vector2(360f, 40f)); // 위치
+
+            totalLabel = Row(window, "Total", 28, RetroUi.OrangeBright, -240f); // 합계
+            fundsLabel = Row(window, "Funds", 24, RetroUi.Orange, -285f); // 자금 변화
+            messageLabel = Row(window, "Message", 24, RetroUi.OrangeBright, -345f); // 질문
+
+            buyButton = RetroUi.BoxButton(window, "Buy", "구매", 28, () => Confirm()); // 구매
+            RetroUi.Place((RectTransform)buyButton.transform, new Vector2(1f, 0f), new Vector2(1f, 0.5f), new Vector2(-250f, 60f), new Vector2(200f, 58f)); // 오른쪽 아래
+            Button cancel = RetroUi.BoxButton(window, "Cancel", "취소", 28, Close); // 취소
+            RetroUi.Place((RectTransform)cancel.transform, new Vector2(1f, 0f), new Vector2(1f, 0.5f), new Vector2(-36f, 60f), new Vector2(190f, 58f)); // 오른쪽 아래
+            canvas.gameObject.SetActive(false); // 처음엔 숨김
+        }
+
+        private static Text Row(RectTransform window, string name, int size, Color color, float y) // 한 줄 글자
+        {
+            Text text = RetroUi.Label(window, name, string.Empty, size, color, TextAnchor.MiddleLeft); // 글자
+            RetroUi.Place(text.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 0.5f), new Vector2(36f, y), new Vector2(690f, size + 16f)); // 위치
+            return text; // 반환
         }
     }
 }
