@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using ProjectI.Audio;
 using ProjectI.Interaction;
+using ProjectI.Net;
 using UnityEngine;
 
 namespace ProjectI.Loop
@@ -49,6 +50,12 @@ namespace ProjectI.Loop
                 return;
             }
 
+            if (NetworkSession.IsGuest)
+            {
+                NetWorldState.RequestTravel(); // 37일차: 참가자는 방장에게 출발 요청 (방장이 확인 후 모두에게 종소리)
+                return;
+            }
+
             string blockReason = PersistentMapLoader.Instance == null ? null : PersistentMapLoader.Instance.GetTravelBlockReason();
 
             if (blockReason != null)
@@ -59,6 +66,23 @@ namespace ProjectI.Loop
             }
 
             TravelRequested?.Invoke();
+
+            if (NetworkSession.IsHost)
+            {
+                NetWorldState.BroadcastBell(); // 37일차: 모두에게 종소리·연출
+                return;
+            }
+
+            PlayRemoteRing();
+        }
+
+        public void PlayRemoteRing()
+        {
+            if (isRinging || !isActiveAndEnabled)
+            {
+                return;
+            }
+
             SoundPlayer.PlayAt(SoundId.WagonBell, transform.position, 1f, 0.02f, 45f);
             StartCoroutine(PlayRingAnimation());
         }

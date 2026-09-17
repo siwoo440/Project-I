@@ -44,6 +44,7 @@ namespace ProjectI.Core // 프로젝트 공통 네임스페이스
 
         public void LoadMainMenu() // 메인 메뉴 이동
         {
+            ProjectI.Net.NetworkSession.Leave(); // 37일차: 협동 중이면 연결 종료
             LoadScene(MainMenuSceneName, GameState.MainMenu); // 메인 메뉴 요청
         }
 

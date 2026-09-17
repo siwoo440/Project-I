@@ -24,8 +24,15 @@ namespace ProjectI.UI // 메뉴·창 UI 네임스페이스
         private ServerSortMode sortMode = ServerSortMode.Worldwide; // 정렬
         private Coroutine fadeRoutine; // 나타나기
         private Coroutine refreshRoutine; // 새로고침
+        private InputField addressField; // 참가 주소
+        private InputField portField; // 포트
+        private Button hostButton; // 방 만들기
+        private Button joinButton; // 참가
+        private bool connecting; // 연결 진행 중
 
         public event Action Closed; // 닫힘 (메뉴로 돌아가기)
+        public event Action<ushort> HostRequested; // 방 만들기 (포트)
+        public event Action<string, ushort> JoinRequested; // 주소로 참가 (주소, 포트)
         public bool IsOpen => gameObject.activeSelf; // 열림 여부
         public int ShownCount => content == null ? 0 : content.childCount; // 표시된 서버 수 (검증용)
         public string StatusText => statusLabel == null ? string.Empty : statusLabel.text; // 상태 줄 (검증용)
@@ -80,6 +87,46 @@ namespace ProjectI.UI // 메뉴·창 UI 네임스페이스
             }
 
             refreshRoutine = StartCoroutine(RefreshRoutine()); // 요청
+        }
+
+        public void ShowStatus(string text) // 상태 줄 문구 (연결 진행 등)
+        {
+            if (statusLabel != null && !string.IsNullOrEmpty(text)) // 있음
+            {
+                statusLabel.text = text; // 표시
+            }
+        }
+
+        public void SetConnecting(bool value) // 연결 중에는 방 만들기·참가를 막음
+        {
+            connecting = value; // 기록
+
+            if (hostButton != null) // 버튼
+            {
+                hostButton.interactable = !value; // 방 만들기
+                joinButton.interactable = !value; // 참가
+            }
+        }
+
+        private ushort ReadPort() // 포트 입력 (잘못되면 기본값)
+        {
+            return ushort.TryParse(portField.text, out ushort port) && port > 1024 ? port : (ushort)7777; // 포트
+        }
+
+        private void RequestHost() // 방 만들기
+        {
+            if (!connecting) // 대기 중 아님
+            {
+                HostRequested?.Invoke(ReadPort()); // 알림
+            }
+        }
+
+        private void RequestJoin() // 주소로 참가
+        {
+            if (!connecting) // 대기 중 아님
+            {
+                JoinRequested?.Invoke(addressField.text, ReadPort()); // 알림
+            }
         }
 
         public void SetSearch(string text) // 검색어 지정 (검증용)
@@ -191,14 +238,31 @@ namespace ProjectI.UI // 메뉴·창 UI 네임스페이스
             RetroUi.Place((RectTransform)refreshButton.transform, new Vector2(1f, 1f), new Vector2(1f, 0.5f), new Vector2(-120f, -78f), new Vector2(240f, 50f)); // 오른쪽 위
 
             RectTransform listFrame = RetroUi.Rect(root, "ListFrame"); // 목록 테두리
-            RetroUi.Stretch(listFrame, 110f, 110f, 130f, 150f); // 여백
+            RetroUi.Stretch(listFrame, 110f, 110f, 130f, 230f); // 여백 (아래에 방 만들기·참가 줄)
             RetroUi.Solid(listFrame, "Fill", new Color(0f, 0f, 0f, 0.35f)); // 바탕
             RetroUi.Frame(listFrame, RetroUi.Red, 3f); // 빨간 테두리
             scroll = RetroUi.ScrollList(listFrame, "List", 10f, out content); // 목록
             RetroUi.Stretch((RectTransform)scroll.transform, 26f, 18f, 22f, 22f); // 안쪽 여백
 
             statusLabel = RetroUi.Label(root, "Status", string.Empty, 20, RetroUi.OrangeDim, TextAnchor.MiddleRight); // 상태 줄
-            RetroUi.Place(statusLabel.rectTransform, new Vector2(1f, 0f), new Vector2(1f, 0.5f), new Vector2(-120f, 115f), new Vector2(1200f, 30f)); // 목록 아래 오른쪽
+            RetroUi.Place(statusLabel.rectTransform, new Vector2(1f, 0f), new Vector2(1f, 0.5f), new Vector2(-120f, 90f), new Vector2(1200f, 30f)); // 아래 오른쪽
+
+            hostButton = RetroUi.BoxButton(root, "Host", "[ 방 만들기 ]", 24, RequestHost); // 방 만들기 (현재 저장으로 방장 시작)
+            RetroUi.Place((RectTransform)hostButton.transform, new Vector2(0f, 0f), new Vector2(0f, 0.5f), new Vector2(110f, 170f), new Vector2(250f, 54f)); // 왼쪽
+            Text addressTitle = RetroUi.Label(root, "AddressTitle", "주소", 22, RetroUi.Orange, TextAnchor.MiddleRight); // 주소 제목
+            RetroUi.Place(addressTitle.rectTransform, new Vector2(0f, 0f), new Vector2(0f, 0.5f), new Vector2(390f, 170f), new Vector2(80f, 54f)); // 위치
+            addressField = RetroUi.InputBox(root, "Address", "127.0.0.1", 22, RetroUi.Green); // 주소
+            RetroUi.Place((RectTransform)addressField.transform, new Vector2(0f, 0f), new Vector2(0f, 0.5f), new Vector2(485f, 170f), new Vector2(300f, 54f)); // 위치
+            addressField.text = "127.0.0.1"; // 기본 (같은 컴퓨터)
+            Text portTitle = RetroUi.Label(root, "PortTitle", ":", 26, RetroUi.Orange, TextAnchor.MiddleCenter); // 구분
+            RetroUi.Place(portTitle.rectTransform, new Vector2(0f, 0f), new Vector2(0f, 0.5f), new Vector2(790f, 170f), new Vector2(20f, 54f)); // 위치
+            portField = RetroUi.InputBox(root, "Port", "7777", 22, RetroUi.Green); // 포트
+            RetroUi.Place((RectTransform)portField.transform, new Vector2(0f, 0f), new Vector2(0f, 0.5f), new Vector2(815f, 170f), new Vector2(120f, 54f)); // 위치
+            portField.text = "7777"; // 기본 포트
+            portField.contentType = InputField.ContentType.IntegerNumber; // 숫자만
+            portField.characterLimit = 5; // 길이
+            joinButton = RetroUi.BoxButton(root, "Join", "[ 주소로 참가 ]", 24, RequestJoin); // 참가
+            RetroUi.Place((RectTransform)joinButton.transform, new Vector2(0f, 0f), new Vector2(0f, 0.5f), new Vector2(955f, 170f), new Vector2(270f, 54f)); // 위치
 
             Button back = RetroUi.TextButton(root, "Back", "메뉴로 돌아가기", 26, Close); // 돌아가기
             RetroUi.Place((RectTransform)back.transform, new Vector2(0f, 0f), new Vector2(0f, 0.5f), new Vector2(120f, 90f), new Vector2(360f, 50f)); // 왼쪽 아래

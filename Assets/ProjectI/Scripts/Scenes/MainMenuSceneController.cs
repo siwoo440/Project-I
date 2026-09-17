@@ -1,5 +1,6 @@
 using ProjectI.Core; // 프로젝트 핵심 기능 참조
 using ProjectI.Diagnostics; // 프로젝트 로그 참조
+using ProjectI.Net; // 37일차 협동
 using ProjectI.UI; // 메뉴 UI
 using UnityEngine; // 유니티 기본 기능 참조
 using UnityEngine.InputSystem; // Esc 입력
@@ -43,6 +44,67 @@ namespace ProjectI.Scenes // 씬 기능 네임스페이스
             {
                 cameraRig.SnapTo(MenuCameraPose.Main); // 전경
             }
+
+            NetworkSession.StatusChanged += HandleNetworkStatus; // 연결 상태
+            string message = NetworkSession.TakePendingMessage(); // 연결이 끊겨 돌아온 경우
+
+            if (!string.IsNullOrEmpty(message)) // 안내
+            {
+                noticeLabel.text = message; // 표시
+            }
+        }
+
+        private void OnDestroy() // 해제
+        {
+            NetworkSession.StatusChanged -= HandleNetworkStatus; // 해제
+        }
+
+        private void HandleNetworkStatus(string text) // 연결 상태 표시
+        {
+            if (serverPanel != null && serverPanel.IsOpen) // 서버 창
+            {
+                serverPanel.ShowStatus(text); // 상태 줄
+            }
+
+            if (!NetworkSession.IsOnline && !leaving && serverPanel != null) // 연결 실패·종료
+            {
+                serverPanel.SetConnecting(false); // 다시 허용
+            }
+        }
+
+        private void HostGame(ushort port) // 방 만들기 (현재 저장으로 방장 시작, 저장이 없으면 1일차)
+        {
+            if (leaving || Flow() == null) // 이동 중
+            {
+                return; // 생략
+            }
+
+            if (!NetworkSession.BeginHost(port, out string error)) // 실패
+            {
+                serverPanel.ShowStatus(error); // 이유
+                return; // 종료
+            }
+
+            leaving = true; // 중복 방지
+            serverPanel.SetConnecting(true); // 버튼 잠금
+            serverPanel.ShowStatus(continueButton.interactable ? $"{continueDay}일차 저장으로 방을 엽니다..." : "1일차부터 방을 엽니다..."); // 안내
+            Flow().ContinueGame(); // 게임 월드 → 준비되면 방 열림
+        }
+
+        private void JoinGame(string address, ushort port) // 주소로 참가
+        {
+            if (leaving) // 이동 중
+            {
+                return; // 생략
+            }
+
+            if (!NetworkSession.BeginJoin(address, port, out string error)) // 실패
+            {
+                serverPanel.ShowStatus(error); // 이유
+                return; // 종료
+            }
+
+            serverPanel.SetConnecting(true); // 버튼 잠금 (연결되면 세션이 게임 월드를 불러옴)
         }
 
         private void Update() // Esc 뒤로 가기
@@ -64,6 +126,13 @@ namespace ProjectI.Scenes // 씬 기능 네임스페이스
             }
             else if (serverPanel.IsOpen) // 서버 목록
             {
+                if (NetworkSession.IsGuest) // 연결 시도 중
+                {
+                    NetworkSession.Leave(); // 취소
+                    serverPanel.SetConnecting(false); // 다시 허용
+                    return; // 창은 유지
+                }
+
                 serverPanel.Close(); // 닫기 → 카메라 복귀
             }
         }
@@ -126,6 +195,8 @@ namespace ProjectI.Scenes // 씬 기능 네임스페이스
 
             serverPanel = ServerListPanel.Create(root, new SampleServerListProvider()); // 서버 목록
             serverPanel.Closed += ReturnFromServers; // 닫힘
+            serverPanel.HostRequested += HostGame; // 방 만들기
+            serverPanel.JoinRequested += JoinGame; // 참가
             settingsPanel = SettingsPanel.Create(root); // 설정
             dialog = RetroDialog.Create(root); // 확인 창
             RefreshContinue(); // 이어하기 상태

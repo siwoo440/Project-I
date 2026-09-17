@@ -60,6 +60,15 @@ namespace ProjectI.Persistence // 일차 저장·복구 네임스페이스
             }
 
             yield return WaitForMapLoaderReady(); // 초기 Office 준비 완료 대기
+
+            if (ProjectI.Net.NetworkSession.IsGuest) // 37일차 참가자: 자기 저장을 읽거나 쓰지 않고 방장 기록을 따름
+            {
+                CaptureRuntimeOfficeState(); // 현재 사무소 경제 상태 보관
+                initialized = true; // 준비 완료
+                Debug.Log("[Project I] 협동 참가 — 방장의 일차 기록을 따릅니다 (저장 안 함)", this); // 안내
+                yield break; // 디스크 복구 생략
+            }
+
             yield return InitializeFromDisk(); // Current 또는 이전 정상 완료 일차에서 Office 복구
             nextOfficeAutosaveTime = Time.unscaledTime + officeAutosaveInterval; // 복구 직후 자동 저장 타이머 재설정
         }
@@ -167,8 +176,30 @@ namespace ProjectI.Persistence // 일차 저장·복구 네임스페이스
             dayPhase = ExpeditionDayPhase.Returned; // 일차 마감 전까지 재출발 금지 단계
         }
 
+        public void ApplyGuestState(int day, ExpeditionDayPhase phase, int seed) // 37일차 참가자: 방장의 일차·단계·시드 적용
+        {
+            if (!ProjectI.Net.NetworkSession.IsGuest) // 참가자만
+            {
+                return; // 생략
+            }
+
+            currentDay = Mathf.Max(1, day); // 일차
+            dayPhase = phase; // 단계
+
+            if (seed != 0) // 방장 시드
+            {
+                campaignSeed = seed; // 같은 던전
+            }
+        }
+
         public void CompleteCurrentDay() // 사무소에서 현재 일차를 완료 일차로 확정
         {
+            if (ProjectI.Net.NetworkSession.IsGuest) // 참가자
+            {
+                ProjectI.UI.GameHud.ShowNotice("하루 마감은 방장만 할 수 있습니다", 3f); // 안내
+                return; // 거부
+            }
+
             if (!initialized || restoreInProgress || dayCompletionInProgress) // 저장 서비스 준비와 중복 실행 여부 확인
             {
                 Debug.LogWarning("[Project I] 일차 Snapshot 저장 불가 / 초기화·복구·일차 확정 진행 중", this); // 호출 시점 안내
@@ -181,6 +212,11 @@ namespace ProjectI.Persistence // 일차 저장·복구 네임스페이스
 
         public void RestoreMostRecentDailySnapshot() // 사용자가 가장 최근 정상 완료 일차로 직접 롤백
         {
+            if (ProjectI.Net.NetworkSession.IsGuest) // 참가자는 기록을 바꾸지 않음
+            {
+                return; // 거부
+            }
+
             if (restoreInProgress) // 이미 복구 중인지 확인
             {
                 return; // 중복 롤백 차단
@@ -206,6 +242,11 @@ namespace ProjectI.Persistence // 일차 저장·복구 네임스페이스
 
         private bool SaveSafeOfficeCheckpoint(bool logFailure) // 현재 Office 상태를 Current로 갱신하는 공통 구현
         {
+            if (ProjectI.Net.NetworkSession.IsGuest) // 37일차 참가자: 저장하지 않음 (출발 절차는 계속 진행)
+            {
+                return initialized; // 준비됐으면 성공으로 처리
+            }
+
             if (!initialized || restoreInProgress || dayCompletionInProgress) // 안전하게 캡처할 수 있는 상태인지 확인
             {
                 if (logFailure) // 명시 저장 호출인지 확인

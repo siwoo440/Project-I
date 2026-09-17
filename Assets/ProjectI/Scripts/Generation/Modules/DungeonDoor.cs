@@ -3,6 +3,7 @@ using ProjectI.Audio; // 효과음
 using ProjectI.Generation; // 출입구 규격 참조
 using ProjectI.Interaction; // 상호작용 규약 참조
 using ProjectI.Items; // 열쇠 확인용 인벤토리 참조
+using ProjectI.Net; // 37일차 협동 문 동기화
 using UnityEngine; // 유니티 기본 기능 참조
 
 namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
@@ -53,6 +54,8 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
                 return; // 무시
             }
 
+            bool unlocked = false; // 이번에 열쇠를 씀
+
             if (isLocked) // 잠긴 문
             {
                 if (!TryUnlock(interactor)) // 열쇠 확인
@@ -62,11 +65,32 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
                 }
 
                 isLocked = false; // 잠금 해제
+                unlocked = true; // 기록
             }
 
             swingSign = isOpen ? swingSign : ChooseSwingSign(interactor); // 열 때는 미는 방향으로
+
+            if (NetWorldState.RelayDoor(this, !isOpen, unlocked)) // 37일차 협동: 방장 확인 후 모두에게 같은 상태 적용
+            {
+                return; // 방송으로 연출
+            }
+
             SoundPlayer.PlayAt(isOpen ? SoundId.DoorClose : SoundId.DoorOpen, transform.position + Vector3.up, 0.8f); // 문 소리
             StartCoroutine(SwingRoutine(!isOpen)); // 연출 시작
+        }
+
+        public void ApplyNetworkState(bool open) // 37일차: 방장이 확정한 문 상태 적용 (모든 대원)
+        {
+            isLocked = false; // 열렸던 문은 잠금 해제 상태
+
+            if (open == isOpen && !isMoving) // 이미 같은 상태
+            {
+                return; // 생략
+            }
+
+            StopAllCoroutines(); // 진행 중 연출 중단
+            SoundPlayer.PlayAt(open ? SoundId.DoorOpen : SoundId.DoorClose, transform.position + Vector3.up, 0.8f); // 문 소리
+            StartCoroutine(SwingRoutine(open)); // 연출
         }
 
         public void SetOpenImmediate(bool open) // 즉시 상태 지정 (검증·초기화용)

@@ -1,6 +1,7 @@
 using ProjectI.Economy; // 공동 자금·채무
 using ProjectI.Interaction; // 조사 안내·조작 잠금
 using ProjectI.Loop; // 원정 결과
+using ProjectI.Net; // 협동 인원
 using ProjectI.Persistence; // 일차·단계
 using ProjectI.Player; // 체력·기력·시점
 using ProjectI.TimeOfDay; // 시각
@@ -18,6 +19,8 @@ namespace ProjectI.UI // 메뉴·창 UI 네임스페이스
         private Text clockLabel; // 시각
         private Text fundsLabel; // 공동 자금
         private Text debtLabel; // 채무
+        private Text netLabel; // 협동 인원
+        private RectTransform statusPanel; // 상태 상자
         private Text guideLabel; // 할 일 안내
         private RectTransform reportBox; // 원정 결과
         private Text reportLabel; // 원정 결과 글자
@@ -189,6 +192,9 @@ namespace ProjectI.UI // 메뉴·창 UI 네임스페이스
             }
 
             debtLabel.text = lastDebt; // 채무
+            bool online = NetworkSession.IsOnline; // 협동 중
+            netLabel.text = online ? $"{(NetworkSession.IsHost ? "방장" : "참가")}  ·  원정대 {NetworkSession.PlayerCount}/{NetworkSession.MaxPlayers}" : string.Empty; // 인원
+            statusPanel.sizeDelta = new Vector2(430f, online ? 206f : 176f); // 줄 수에 맞춤
             guideLabel.text = ready ? ExpeditionReportTracker.PhaseGuide(service.DayPhase) : string.Empty; // 할 일
 
             ExpeditionReport report = reportTracker == null ? null : reportTracker.LastReport; // 원정 결과
@@ -274,10 +280,12 @@ namespace ProjectI.UI // 메뉴·창 UI 네임스페이스
             RectTransform root = (RectTransform)canvas.transform; // 루트
 
             RectTransform status = Panel(root, "Status", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(28f, -28f), new Vector2(430f, 176f)); // 왼쪽 위 상태
+            statusPanel = status; // 크기 조절용
             dayLabel = Line(status, "Day", 28, RetroUi.Orange, 14f); // 일차
             clockLabel = Line(status, "Clock", 22, RetroUi.OrangeBright, 56f); // 시각
             fundsLabel = Line(status, "Funds", 24, RetroUi.Orange, 92f); // 자금
             debtLabel = Line(status, "Debt", 20, RetroUi.OrangeDim, 130f); // 채무
+            netLabel = Line(status, "Net", 20, RetroUi.Green, 162f); // 협동 인원
 
             guideLabel = RetroUi.Label(root, "Guide", string.Empty, 20, RetroUi.OrangeDim, TextAnchor.UpperCenter); // 할 일
             RetroUi.Place(guideLabel.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -30f), new Vector2(900f, 30f)); // 위 가운데

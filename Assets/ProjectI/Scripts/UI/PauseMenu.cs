@@ -1,6 +1,7 @@
 using ProjectI.Core; // 씬 이동
 using ProjectI.Interaction; // 조작 잠금
 using ProjectI.Loop; // 현재 목적지
+using ProjectI.Net; // 협동 나가기
 using ProjectI.Persistence; // 저장
 using UnityEngine; // 유니티 기본 기능 참조
 using UnityEngine.SceneManagement; // 씬 로드 이벤트
@@ -14,6 +15,8 @@ namespace ProjectI.UI // 메뉴·창 UI 네임스페이스
         private RectTransform menuRoot; // 버튼 묶음
         private SettingsPanel settingsPanel; // 설정
         private RetroDialog dialog; // 확인 창
+        private RetroHover leaveHover; // 메인 메뉴로 / 방 나가기 글자
+        private Text hintLabel; // 제목 아래 안내
 
         public static PauseMenu Instance { get; private set; } // 전역 참조
         public bool IsOpen => canvas != null && canvas.gameObject.activeSelf; // 열림 여부
@@ -63,6 +66,8 @@ namespace ProjectI.UI // 메뉴·창 UI 네임스페이스
             RetroUi.EnsureEventSystem(); // UI 입력 (씬이 바뀌었을 수 있음)
             canvas.gameObject.SetActive(true); // 표시
             menuRoot.gameObject.SetActive(true); // 버튼
+            leaveHover.SetText(NetworkSession.IsHost ? "방 닫고 메인 메뉴로" : NetworkSession.IsGuest ? "방 나가기" : "메인 메뉴로"); // 협동 상태별 글자
+            hintLabel.text = NetworkSession.IsOnline ? $"게임은 계속 진행됩니다  ·  {(NetworkSession.IsHost ? "방장" : "참가")} {NetworkSession.PlayerCount}/{NetworkSession.MaxPlayers}명" : "게임은 계속 진행됩니다"; // 안내
             return true; // 성공
         }
 
@@ -113,8 +118,8 @@ namespace ProjectI.UI // 메뉴·창 UI 네임스페이스
             menuRoot = RetroUi.Rect(root, "Menu"); // 버튼 묶음
             Text title = RetroUi.Label(menuRoot, "Title", "일시정지", 60, RetroUi.Orange, TextAnchor.MiddleLeft); // 제목
             RetroUi.Place(title.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 0.5f), new Vector2(120f, -220f), new Vector2(600f, 80f)); // 왼쪽 위
-            Text hint = RetroUi.Label(menuRoot, "Hint", "게임은 계속 진행됩니다", 22, RetroUi.OrangeDim, TextAnchor.MiddleLeft); // 안내
-            RetroUi.Place(hint.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 0.5f), new Vector2(126f, -275f), new Vector2(600f, 34f)); // 제목 아래
+            hintLabel = RetroUi.Label(menuRoot, "Hint", "게임은 계속 진행됩니다", 22, RetroUi.OrangeDim, TextAnchor.MiddleLeft); // 안내
+            RetroUi.Place(hintLabel.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 0.5f), new Vector2(126f, -275f), new Vector2(600f, 34f)); // 제목 아래
 
             string[] labels = { "계속하기", "설정", "메인 메뉴로", "게임 종료" }; // 버튼
             System.Action[] actions = { Close, OpenSettings, AskMainMenu, AskQuit }; // 동작
@@ -125,6 +130,11 @@ namespace ProjectI.UI // 메뉴·창 UI 네임스페이스
                 Button button = RetroUi.TextButton(menuRoot, $"Pause_{labels[index]}", labels[index], 36, actions[index]); // 버튼
                 RetroUi.Place((RectTransform)button.transform, new Vector2(0f, 1f), new Vector2(0f, 0.5f), new Vector2(110f, y), new Vector2(460f, 60f)); // 위치
                 y -= 70f; // 다음 줄
+
+                if (index == 2) // 메인 메뉴로
+                {
+                    leaveHover = button.GetComponent<RetroHover>(); // 글자 변경용
+                }
             }
 
             settingsPanel = SettingsPanel.Create(root); // 설정
@@ -140,19 +150,22 @@ namespace ProjectI.UI // 메뉴·창 UI 네임스페이스
 
         private void AskMainMenu() // 메인 메뉴로
         {
-            string message = IsSafeOffice() ? "진행 상황을 저장하고 메인 메뉴로 나갈까요?" : "원정(이동) 중입니다. 나가면 오늘 원정은 사무소 출발 전 저장 시점부터 다시 시작합니다.\n메인 메뉴로 나갈까요?"; // 안내
+            string message = NetworkSession.IsGuest ? "방에서 나가 메인 메뉴로 갈까요?\n(참가 중에는 저장하지 않습니다)"
+                : IsSafeOffice() ? (NetworkSession.IsHost ? "진행 상황을 저장하고 방을 닫을까요?\n참가한 원정대원의 연결이 끊깁니다." : "진행 상황을 저장하고 메인 메뉴로 나갈까요?")
+                : "원정(이동) 중입니다. 나가면 오늘 원정은 사무소 출발 전 저장 시점부터 다시 시작합니다.\n메인 메뉴로 나갈까요?"; // 안내
             dialog.Show(message, "메인 메뉴로", LeaveToMainMenu); // 확인
         }
 
         private void AskQuit() // 종료
         {
             string message = IsSafeOffice() ? "진행 상황을 저장하고 게임을 종료할까요?" : "원정(이동) 중입니다. 종료하면 오늘 원정은 사무소 출발 전 저장 시점부터 다시 시작합니다.\n종료할까요?"; // 안내
-            dialog.Show(message, "종료", () => { SaveIfSafe(); if (ProjectServices.TryGet(out SceneFlowManager flow)) flow.QuitGame(); }); // 확인
+            dialog.Show(message, "종료", () => { SaveIfSafe(); NetworkSession.Leave(); if (ProjectServices.TryGet(out SceneFlowManager flow)) flow.QuitGame(); }); // 확인
         }
 
         private void LeaveToMainMenu() // 저장 후 메뉴 씬
         {
-            SaveIfSafe(); // 저장
+            SaveIfSafe(); // 저장 (참가자는 저장하지 않음)
+            NetworkSession.Leave(); // 협동 연결 종료
             Close(); // 조작 잠금 해제 (씬 이동 전)
 
             if (ProjectServices.TryGet(out SceneFlowManager flow)) // 씬 관리자

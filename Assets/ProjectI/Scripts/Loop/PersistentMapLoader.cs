@@ -3,6 +3,7 @@ using System.Collections; // Coroutine 이동 절차 사용
 using System.Collections.Generic; // 실패 상실 목록 기능 참조
 using ProjectI.Economy; // 회수품 가치 참조
 using ProjectI.Items; // 플레이어 운반 기능 참조
+using ProjectI.Net; // 37일차 협동 (방장·참가자)
 using ProjectI.Persistence; // 사무소 안전 체크포인트 저장 서비스 참조
 using ProjectI.Player; // 플레이어 이동 추락 판정 초기화 참조
 using ProjectI.Wagon; // 마차 CargoArea 참조
@@ -40,6 +41,9 @@ namespace ProjectI.Loop // 원정 루프 기능 네임스페이스
         private bool isTransitioning; // 환경 교체 진행 여부
 
         public static PersistentMapLoader Instance => instance; // 전역 맵 로더 공개
+        public static event Action<TravelDestination, bool> TravelStarted; // 방장·혼자 하기에서 마차 이동 시작 (목적지, 실패 귀환)
+        public Transform PlayerRoot { get { BindPersistentReferences(); return playerRoot; } } // 플레이어 루트 공개 (협동 몸체 위치)
+        public Transform WagonRoot { get { BindPersistentReferences(); return wagonRoot; } } // 마차 루트 공개
         public TravelDestination CurrentDestination => currentDestination; // 현재 목적지 공개
         public bool IsTransitioning => isTransitioning; // 이동 진행 상태 공개
         public WagonCargoPersistence CargoPersistence => cargoPersistence; // Cargo 보존 관리자 공개
@@ -238,9 +242,16 @@ namespace ProjectI.Loop // 원정 루프 기능 네임스페이스
                 return "마차 이동 중"; // 중복 이동 차단 사유
             }
 
-            if (!IsPlayerAboard()) // 플레이어 탑승 여부 확인
+            if (!IsPlayerAboard() && !IsLocalPlayerDead()) // 플레이어 탑승 여부 확인 (쓰러진 방장은 동료가 옮김)
             {
                 return "마차 창고 안에 탑승한 뒤 종을 울리세요"; // 탑승 판정 실패 사유
+            }
+
+            string crewReason = NetworkSession.CrewBlockReason(); // 37일차: 다른 원정대원 탑승 확인
+
+            if (crewReason != null) // 안 탄 대원 있음
+            {
+                return crewReason; // 대기
             }
 
             if (currentDestination != TravelDestination.Office) // 던전에서 귀환하는 경우인지 확인
@@ -261,6 +272,71 @@ namespace ProjectI.Loop // 원정 루프 기능 네임스페이스
             }
 
             return null; // 출발 가능
+        }
+
+        public string RequestNetworkTravel() // 37일차 방장: 참가자가 울린 종으로 출발 (불가하면 이유)
+        {
+            string blockReason = GetTravelBlockReason(); // 출발 조건
+
+            if (blockReason != null) // 불가
+            {
+                return blockReason; // 이유
+            }
+
+            HandleTravelRequested(); // 출발
+            return null; // 성공
+        }
+
+        public bool FollowNetworkTravel(TravelDestination targetDestination, bool failureReturn) // 37일차 참가자: 방장의 마차 이동을 따라감
+        {
+            if (isTransitioning || targetDestination == currentDestination) // 이동 중·같은 맵
+            {
+                return false; // 생략
+            }
+
+            if (!IsPlayerAboard()) // 마차 밖 (늦게 참가·실패 귀환 등)
+            {
+                MovePlayerIntoWagon(); // 마차 창고 안으로 옮김
+            }
+
+            StartCoroutine(TravelRoutine(targetDestination, failureReturn, true)); // 같은 이동 절차 (저장·요청 없음)
+            return true; // 시작
+        }
+
+        private bool IsLocalPlayerDead() // 내 플레이어 사망 여부
+        {
+            PlayerDeathController death = playerRoot == null ? null : playerRoot.GetComponentInChildren<PlayerDeathController>(true); // 사망 상태
+            return death != null && death.IsDead; // 결과
+        }
+
+        private void MovePlayerIntoWagon() // 플레이어를 마차 창고 바닥으로 옮김
+        {
+            BindPersistentReferences(); // 참조
+
+            if (playerRoot == null || wagonRoot == null || IsLocalPlayerDead()) // 없음·쓰러짐
+            {
+                return; // 생략
+            }
+
+            WagonCargoArea cargoArea = wagonRoot.GetComponentInChildren<WagonCargoArea>(true); // 적재칸
+            BoxCollider box = cargoArea == null ? null : cargoArea.GetComponent<BoxCollider>(); // 판정 박스
+            Vector3 position = box != null ? box.transform.TransformPoint(box.center) - (Vector3.up * (box.size.y * Mathf.Abs(box.transform.lossyScale.y) * 0.5f)) + (Vector3.up * 0.25f) : wagonRoot.position + (Vector3.up * 1.2f); // 창고 바닥 위
+            CharacterController controller = playerRoot.GetComponentInChildren<CharacterController>(); // 충돌체
+            bool controllerWasEnabled = controller != null && controller.enabled; // 원래 상태
+
+            if (controller != null) // 충돌체
+            {
+                controller.enabled = false; // 순간이동 중 끔
+            }
+
+            playerRoot.SetPositionAndRotation(position, Quaternion.Euler(0f, wagonRoot.eulerAngles.y, 0f)); // 이동
+            Physics.SyncTransforms(); // 반영
+            NotifyPlayerTeleported(); // 추락 판정 초기화
+
+            if (controller != null) // 충돌체
+            {
+                controller.enabled = controllerWasEnabled; // 복구
+            }
         }
 
         public bool RequestPlayerTeleport(Vector3 position, Quaternion rotation) // 짧은 암전과 함께 플레이어 순간이동 (던전 출입구용)
@@ -396,6 +472,11 @@ namespace ProjectI.Loop // 원정 루프 기능 네임스페이스
 
             if (currentDestination != TravelDestination.Office) // 던전에서 사망한 경우
             {
+                if (NetworkSession.IsGuest || !NetworkSession.AllCrewDead()) // 37일차: 참가자는 방장 판단을 따르고, 방장은 동료가 살아 있으면 대기
+                {
+                    return; // 쓰러진 채 대기
+                }
+
                 BeginExpeditionFailure(); // 원정 실패 처리 시작
                 return; // 종료
             }
@@ -525,7 +606,7 @@ namespace ProjectI.Loop // 원정 루프 기능 네임스페이스
             death.Revive(position, rotation); // 부활
         }
 
-        private IEnumerator TravelRoutine(TravelDestination targetDestination, bool failureReturn = false) // 실제 Office↔Dungeon 이동 절차
+        private IEnumerator TravelRoutine(TravelDestination targetDestination, bool failureReturn = false, bool followingHost = false) // 실제 Office↔Dungeon 이동 절차 (followingHost = 참가자가 방장을 따라감)
         {
             if (currentDestination == TravelDestination.Office && targetDestination == TravelDestination.TestDungeon) // 새 원정을 시작하는 순간인지 확인
             {
@@ -539,6 +620,12 @@ namespace ProjectI.Loop // 원정 루프 기능 네임스페이스
             }
 
             isTransitioning = true; // 실제 환경 교체 잠금 시작
+
+            if (!followingHost) // 방장·혼자 하기
+            {
+                TravelStarted?.Invoke(targetDestination, failureReturn); // 37일차: 참가자에게 출발 알림
+            }
+
             BindPersistentReferences(); // 최신 Persistent 참조 확보
             int lostCount = 0; // 실패로 잃은 물건 수
             int lostValue = 0; // 실패로 잃은 가치
