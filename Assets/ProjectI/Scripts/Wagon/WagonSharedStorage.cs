@@ -69,6 +69,7 @@ namespace ProjectI.Wagon // 마차 시스템 네임스페이스
                 if (inventory.TryStoreSelectedItem(storageRoot, out WorldItem storedItem) && storedItem != null) // 기존 빠른 슬롯 아이템을 외부 보관으로 이동
                 {
                     storedItems.Add(storedItem); // 공동 보관 목록에 추가
+                    ProjectI.Net.NetItemSync.NotifyStored(storedItem, ProjectI.Net.NetItemPlace.WagonStorage, string.Empty); // 협동: 모두의 보관함에 넣기
                 }
 
                 return; // 보관 처리 종료
@@ -86,6 +87,23 @@ namespace ProjectI.Wagon // 마차 시스템 네임스페이스
             {
                 storedItems.RemoveAt(lastIndex); // 회수 성공한 아이템을 공동 보관 목록에서 제거
             }
+        }
+
+        public void AcceptNetworkItem(WorldItem item) // 협동: 다른 대원이 넣은 아이템을 내 보관함에도 넣기
+        {
+            if (item == null || storedItems.Contains(item)) // 중복
+            {
+                return; // 생략
+            }
+
+            EnsureStorageRoot(); // 루트
+            item.Store(storageRoot); // 숨김 보관
+            storedItems.Add(item); // 목록
+        }
+
+        public void ReleaseNetworkItem(WorldItem item) // 협동: 다른 대원이 꺼낸 아이템을 목록에서 빼기
+        {
+            storedItems.Remove(item); // 제거
         }
 
         private void EnsureStorageRoot() // 프리팹 내부 숨김 보관 루트 확보

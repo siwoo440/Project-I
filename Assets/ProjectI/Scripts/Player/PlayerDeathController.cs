@@ -359,6 +359,9 @@ namespace ProjectI.Player // 플레이어 기능 네임스페이스
             {
                 item.transform.position = targetPosition; // Transform 기준 위치 보정
             }
+
+            item.transform.SetPositionAndRotation(targetPosition, Quaternion.Euler(0f, angle, 0f)); // 협동 알림용 위치 확정
+            ProjectI.Net.NetItemSync.NotifyDropped(item, direction * 0.55f + Vector3.up * 0.20f); // 협동: 흩뿌린 위치로 다시 알림
         }
 
         private void DisableLiveControls() // 생존 상태에서만 필요한 기능 정지

@@ -101,6 +101,7 @@ namespace ProjectI.Economy // 사무소 경제 기능 네임스페이스
             storedItem.transform.localPosition = Vector3.zero; // 표시 위치 중심에 회수품 배치
             storedItem.transform.localRotation = Quaternion.identity; // 단상 기준 기본 회전 적용
             SetItemRenderers(storedItem, true); // WorldItem.Store가 숨긴 실제 회수품 외형을 단상 위에 다시 표시
+            ProjectI.Net.NetItemSync.NotifyStored(storedItem, ProjectI.Net.NetItemPlace.Pedestal, ProjectI.Persistence.Day23SnapshotBridge.BuildTransformPath(transform)); // 협동: 모두의 단상에 올리기
         }
 
         private void RetrieveStoredItem(PlayerInventory inventory) // 단상 보관품을 기존 빠른 슬롯으로 다시 회수
@@ -162,6 +163,23 @@ namespace ProjectI.Economy // 사무소 경제 기능 네임스페이스
             }
 
             displayPoint = transform.Find("DisplayPoint"); // 공통 프리팹 자식 표시 위치 조회
+        }
+
+        public void ReleaseNetworkItem(WorldItem item) // 협동: 다른 대원이 가져간 단상 아이템 비우기
+        {
+            if (item == null || storedItem != item) // 다른 아이템
+            {
+                return; // 생략
+            }
+
+            OfficeStoredItemState state = item.GetComponent<OfficeStoredItemState>(); // 보호 상태
+
+            if (state != null) // 있음
+            {
+                state.SetStored(null, false); // 해제
+            }
+
+            storedItem = null; // 비우기
         }
 
         private static void SetItemRenderers(WorldItem item, bool enabled) // Store 상태의 실제 아이템 외형 표시 여부 제어

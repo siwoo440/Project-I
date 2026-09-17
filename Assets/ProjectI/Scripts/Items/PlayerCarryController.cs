@@ -87,6 +87,11 @@ namespace ProjectI.Items
             itemToStore.Store(storageRoot);
         }
 
+        public void ForgetHeldItem()
+        {
+            heldItem = null;
+        }
+
         public WorldItem DropHeldItem()
         {
             if (heldItem == null || viewTransform == null)
@@ -101,6 +106,7 @@ namespace ProjectI.Items
             heldItem = null;
             itemToRelease.Release(releasePosition, releaseRotation, Vector3.zero);
             dropProfile?.ApplyDropStability();
+            ProjectI.Net.NetItemSync.NotifyDropped(itemToRelease, Vector3.zero);
             return itemToRelease;
         }
 
@@ -119,6 +125,7 @@ namespace ProjectI.Items
             heldItem = null;
             dropProfile?.RestoreThrowConstraints();
             itemToRelease.Release(releasePosition, releaseRotation, velocityChange);
+            ProjectI.Net.NetItemSync.NotifyDropped(itemToRelease, velocityChange);
             return itemToRelease;
         }
 

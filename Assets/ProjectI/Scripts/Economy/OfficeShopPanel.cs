@@ -73,6 +73,14 @@ namespace ProjectI.Economy // 사무소 경제 기능 네임스페이스
                 return ShopPurchaseResult.InvalidEntry; // 실패
             }
 
+            if (ProjectI.Net.NetItemSync.RequestPurchase(shelf, entry, Quantity)) // 협동 참가자: 방장에게 구매 요청
+            {
+                LastResult = ShopPurchaseResult.Success; // 요청됨 (결과는 방장 알림)
+                LastDelivered = new List<WorldItem>(); // 수령품은 방장 방송으로 생김
+                Close(); // 닫기
+                return LastResult; // 대기
+            }
+
             LastResult = shelf.Purchase(entry, Quantity, out List<WorldItem> delivered); // 구매
             cachedMaxFrame = -1; // 자금·자리 변화 반영
             LastDelivered = delivered; // 기록

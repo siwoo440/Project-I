@@ -61,6 +61,7 @@ namespace ProjectI.Economy // 사무소 경제 기능 네임스페이스
 
             Quaternion rotation = Quaternion.Euler(0f, transform.eulerAngles.y, 0f); // 판매대 방향에 맞춤
             placedItem.Release(slot + (Vector3.up * PlaceDropHeight), rotation, Vector3.zero); // 판매대 위 월드 물체로 내려놓음 (F로 다시 집을 수 있음)
+            ProjectI.Net.NetItemSync.NotifyDropped(placedItem, Vector3.zero); // 협동: 모두의 판매대에 올리기
             Debug.Log($"[Project I] {placedItem.DisplayName} 판매대에 올림 / 예상 {PriceOf(placedItem)} / 판매대 {CollectPlacedItems().Count}개", this); // 개발용 로그
         }
 
@@ -113,6 +114,7 @@ namespace ProjectI.Economy // 사무소 경제 기능 네임스페이스
                 total += price; // 합계
                 Debug.Log($"[Project I] {item.DisplayName} 판매 완료 / +{price} / 공동 자금 {economy.SharedFunds}", this); // 개발용 판매 결과 로그
                 StartCoroutine(VanishRoutine(item)); // 줄어들며 사라지는 연출
+                ProjectI.Net.NetItemSync.NotifySold(item); // 협동: 모두의 화면에서 사라짐
             }
 
             if (total > 0) // 판매됨
@@ -126,6 +128,21 @@ namespace ProjectI.Economy // 사무소 경제 기능 네임스페이스
         public bool IsOnCounter(Vector3 worldPosition) // 위치가 판매대 윗면 위인지 확인
         {
             return OfficeSurfaceSlots.IsOnSurface(transform, worldPosition, ZoneHeight); // 공용 계산
+        }
+
+        public void PlayNetworkSold(WorldItem item) // 협동: 방장이 판매한 아이템 연출 (자금은 방장 값으로 맞춤)
+        {
+            RecoverableValue recoverable = item == null ? null : item.GetComponent<RecoverableValue>(); // 가격
+
+            if (recoverable == null || recoverable.IsSold) // 이미 처리
+            {
+                return; // 생략
+            }
+
+            ResolveReferences(); // 참조
+            recoverable.MarkSold(); // 판매 표시
+            SoundPlayer.PlayAt(SoundId.Sale, transform.position, 0.9f); // 소리
+            StartCoroutine(VanishRoutine(item)); // 사라짐
         }
 
         private IEnumerator VanishRoutine(WorldItem item) // 판매된 아이템이 줄어들며 사라짐

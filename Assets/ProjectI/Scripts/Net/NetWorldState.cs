@@ -22,6 +22,9 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
         private readonly NetworkVariable<byte> destination = new NetworkVariable<byte>(0); // 마차 목적지
         private readonly NetworkVariable<bool> failureTravel = new NetworkVariable<bool>(false); // 원정 실패 귀환 여부
         private readonly NetworkVariable<int> funds = new NetworkVariable<int>(-1); // 공동 자금 (-1 = 모름)
+        private readonly NetworkVariable<int> debtPhase = new NetworkVariable<int>(-1); // 채무 단계 (-1 = 모름)
+        private readonly NetworkVariable<int> debtPaid = new NetworkVariable<int>(0); // 현재 단계 납부액
+        private DebtLedger ledger; // 채무 장부
         private float nextServerWrite; // 다음 갱신
         private GameTimeController clock; // 시각
         private CampaignEconomy economy; // 공동 자금
@@ -110,6 +113,12 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
                 funds.Value = economy.SharedFunds; // 자금
             }
 
+            if (ledger != null) // 채무 장부
+            {
+                debtPhase.Value = ledger.PhaseIndex; // 단계
+                debtPaid.Value = ledger.PaidInCurrentPhase; // 납부액
+            }
+
             PersistentMapLoader loader = PersistentMapLoader.Instance; // 맵 로더
 
             if (loader != null && !loader.IsTransitioning) // 이동 중이 아니면 현재 맵을 기준으로
@@ -137,7 +146,12 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
 
             if (economy != null && funds.Value >= 0 && economy.SharedFunds != funds.Value) // 다름
             {
-                economy.Configure(funds.Value, economy.SaleMultiplier); // 표시용으로 맞춤 (판매·구매 동기화는 38일차)
+                economy.Configure(funds.Value, economy.SaleMultiplier); // 방장 자금 (판매·구매·상환은 방장이 처리)
+            }
+
+            if (ledger != null && debtPhase.Value >= 0 && (ledger.PhaseIndex != debtPhase.Value || ledger.PaidInCurrentPhase != debtPaid.Value)) // 다름
+            {
+                ledger.ApplyNetworkState(debtPhase.Value, debtPaid.Value); // 방장 장부
             }
 
             PersistentMapLoader loader = PersistentMapLoader.Instance; // 맵 로더
@@ -150,7 +164,7 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
 
         private void LookupWorldObjects() // 없을 때만 1초마다 찾기 (사무소가 내려가면 자금 오브젝트가 사라짐)
         {
-            if ((clock != null && economy != null) || Time.unscaledTime < nextLookup) // 충분하거나 대기
+            if ((clock != null && economy != null && ledger != null) || Time.unscaledTime < nextLookup) // 충분하거나 대기
             {
                 return; // 생략
             }
@@ -158,6 +172,7 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
             nextLookup = Time.unscaledTime + 1f; // 다음
             clock = clock != null ? clock : FindAnyObjectByType<GameTimeController>(); // 시각
             economy = economy != null ? economy : FindAnyObjectByType<CampaignEconomy>(); // 공동 자금 (사무소에 있을 때)
+            ledger = ledger != null ? ledger : FindAnyObjectByType<DebtLedger>(); // 채무 장부
         }
 
         public static void RequestTravel() // 참가자가 마차 종을 울림 → 방장에게 요청

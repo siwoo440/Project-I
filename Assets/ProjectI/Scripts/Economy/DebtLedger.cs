@@ -40,6 +40,11 @@ namespace ProjectI.Economy // 사무소 경제 기능 네임스페이스
 
         public void Interact(PlayerInteractor interactor) // F 입력으로 현재 가능한 최대 금액 상환
         {
+            if (ProjectI.Net.NetItemSync.RequestDebtPayment()) // 협동 참가자: 방장에게 상환 요청
+            {
+                return; // 결과는 방장 알림
+            }
+
             PayAvailableFunds(); // 현재 단계 남은 채무와 공동 자금 중 작은 금액을 자동 납부
         }
 
@@ -71,6 +76,15 @@ namespace ProjectI.Economy // 사무소 경제 기능 네임스페이스
             }
 
             return payment; // 실제 공동 자금에서 납부한 금액 반환
+        }
+
+        public int PhaseIndex => currentPhaseIndex; // 협동 동기화용 단계 번호
+
+        public void ApplyNetworkState(int phaseIndex, int paid) // 협동 참가자: 방장 장부 상태 적용
+        {
+            currentPhaseIndex = phaseIndex; // 단계
+            paidInCurrentPhase = paid; // 납부액
+            NormalizeState(); // 범위 보정
         }
 
         private string BuildPrompt() // 현재 장부 상태의 F 안내 문구 생성

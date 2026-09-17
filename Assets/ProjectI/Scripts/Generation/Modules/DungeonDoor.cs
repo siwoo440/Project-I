@@ -128,6 +128,7 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
                 return false; // 실패
             }
 
+            NetItemSync.NotifyDestroyed(key); // 협동: 모두의 화면에서 열쇠 제거
             Destroy(key.gameObject); // 열쇠 소모
             return true; // 성공
         }

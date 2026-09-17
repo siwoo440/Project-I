@@ -1059,6 +1059,12 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
             }
 
             WorldItem item = instance.GetComponent<WorldItem>(); // WorldItem
+            WorldItemIdentity identity = instance.GetComponent<WorldItemIdentity>(); // 식별자
+
+            if (identity != null) // 38일차 협동: 같은 시드면 모든 대원의 아이템 ID가 같도록 고정
+            {
+                identity.Configure(identity.Definition != null ? identity.Definition : definition, $"g{ResolveSeed():x8}-{spawnedLoot.Count:000}"); // 시드 + 순번
+            }
 
             if (item != null) // 확인
             {

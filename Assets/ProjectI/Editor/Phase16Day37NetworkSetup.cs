@@ -19,6 +19,12 @@ namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
         private const string PrefabListPath = Folder + "/ProjectINetworkPrefabs.asset"; // 네트워크 프리팹 목록
         private const string ManagerPath = Folder + "/ProjectINetwork.prefab"; // 네트워크 관리자
 
+        [MenuItem("Project I/Day 38/Rebuild Network Prefabs (Item Sync)")] // 38일차: 아이템 동기화 포함 다시 만들기
+        public static void RebuildForDay38() // 같은 구성 (월드 상태에 아이템 동기화 포함)
+        {
+            Build(); // 구성
+        }
+
         [MenuItem("Project I/Day 37/Build Network Prefabs")] // 메뉴
         public static void Build() // 구성
         {
@@ -33,7 +39,7 @@ namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
             StringBuilder report = new StringBuilder("[Project I] 37일차 협동 네트워크 프리팹 구성 완료"); // 보고
             report.AppendLine(); // 줄
             report.AppendLine($"원정대원 몸체 {AvatarPath} · 고유 번호 {HashOf(avatar)}"); // 몸체
-            report.AppendLine($"월드 상태 {WorldStatePath} · 고유 번호 {HashOf(worldState)}"); // 월드
+            report.AppendLine($"월드 상태 {WorldStatePath} · 고유 번호 {HashOf(worldState)} · 아이템 동기화 {(worldState.GetComponent<NetItemSync>() != null ? "포함" : "없음")}"); // 월드
             report.AppendLine($"프리팹 목록 {PrefabListPath} · {list.PrefabList.Count}개"); // 목록
             report.Append($"관리자 {ManagerPath} · 씬 관리 {manager.GetComponent<NetworkManager>().NetworkConfig.EnableSceneManagement} · 접속 확인 {manager.GetComponent<NetworkManager>().NetworkConfig.ConnectionApproval}"); // 관리자
 
@@ -73,6 +79,7 @@ namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
             GameObject root = new GameObject("NetWorldState"); // 루트
             root.AddComponent<NetworkObject>(); // 네트워크 오브젝트
             root.AddComponent<NetWorldState>(); // 월드 상태
+            root.AddComponent<NetItemSync>(); // 38일차 아이템·경제 동기화
             return SavePrefab(root, WorldStatePath); // 저장
         }
 

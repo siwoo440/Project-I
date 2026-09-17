@@ -1,4 +1,5 @@
 using ProjectI.Audio; // 효과음
+using ProjectI.Net; // 38일차 협동 아이템 동기화
 using ProjectI.Player; // 플레이어 입력 기능 참조
 using UnityEngine; // 유니티 기본 기능 참조
 
@@ -114,6 +115,7 @@ namespace ProjectI.Items // 아이템 기능 네임스페이스
             slots[emptyIndex].SetItem(item); // 첫 빈 슬롯에 아이템 저장
             SelectSlot(emptyIndex); // 새로 획득한 슬롯을 즉시 선택하여 손에 표시
             SoundPlayer.PlayAt(SoundId.ItemPickup, transform.position + Vector3.up, 0.7f); // 줍기 소리
+            NetItemSync.NotifyPickedUp(item); // 협동: 다른 대원 화면에서도 가져감
             return true; // 획득 성공 반환
         }
 
@@ -161,6 +163,7 @@ namespace ProjectI.Items // 아이템 기능 네임스페이스
             item.Store(storageRoot); // 공동 보관함에서 플레이어 내부 보관 루트로 이동
             slots[emptyIndex].SetItem(item); // 첫 빈 슬롯에 아이템 등록
             SelectSlot(emptyIndex); // 회수한 아이템을 즉시 선택하여 손에 표시
+            NetItemSync.NotifyPickedUp(item); // 협동: 보관함·단상에서 꺼냄
             return true; // 공동 보관함 아이템 회수 성공
         }
 
@@ -212,6 +215,7 @@ namespace ProjectI.Items // 아이템 기능 네임스페이스
             }
 
             slots[selectedIndex].Clear(); // 현재 빠른 슬롯 비우기
+            NetItemSync.NotifyEquipped(SelectedItem); // 협동: 빈손
             SoundPlayer.PlayAt(SoundId.ItemDrop, droppedItem.transform.position, 0.7f); // 내려놓기 소리
             return true; // 내려놓기 성공 반환
         }
@@ -273,7 +277,37 @@ namespace ProjectI.Items // 아이템 기능 네임스페이스
             SelectSlot(targetIndex); // 계산된 슬롯 선택 시도
         }
 
-        private void RefreshSelectedItem() // 현재 선택 슬롯의 화면 표시 상태 동기화
+        public bool RemoveItemForNetwork(WorldItem item) // 협동: 방장 판정에 따라 내 슬롯에서 아이템을 뺌 (아이템 위치는 호출한 쪽이 정함)
+        {
+            EnsureSlots(); // 슬롯 확보
+
+            for (int index = 0; index < Capacity; index++) // 슬롯 순회
+            {
+                if (slots[index].Item != item) // 다른 아이템
+                {
+                    continue; // 다음
+                }
+
+                if (carryController != null && carryController.HeldItem == item) // 손에 든 상태
+                {
+                    carryController.ForgetHeldItem(); // 손 참조만 해제
+                }
+
+                slots[index].Clear(); // 슬롯 비우기
+                RefreshSelectedItem(); // 손 표시 갱신
+                return true; // 제거
+            }
+
+            return false; // 없음
+        }
+
+        private void RefreshSelectedItem() // 현재 선택 슬롯의 화면 표시 상태 동기화 (협동 손 아이템 알림 포함)
+        {
+            RefreshSelectedItemView(); // 표시
+            NetItemSync.NotifyEquipped(SelectedItem); // 협동: 다른 대원 화면의 손 아이템
+        }
+
+        private void RefreshSelectedItemView() // 현재 선택 슬롯의 화면 표시 상태 동기화
         {
             EnsureStorageRoot(); // 숨김 보관 루트 확보
             WorldItem selectedItem = SelectedItem; // 현재 선택 아이템 조회

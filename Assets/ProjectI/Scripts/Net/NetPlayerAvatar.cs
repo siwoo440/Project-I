@@ -23,6 +23,8 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
         [SerializeField] private Transform visualRoot; // 몸체 묶음
         [SerializeField] private Transform body; // 몸통 (웅크림 표시)
         [SerializeField] private TextMesh nameTag; // 이름표
+        private Transform handPoint; // 손 (다른 대원이 든 아이템 표시)
+        private Transform pocketPoint; // 주머니 (소지품 숨김)
         private Renderer[] renderers; // 표시 전환용
         private float nextSend; // 다음 전송
         private Vector3 shownPosition; // 보이는 위치
@@ -36,6 +38,21 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
         public bool IsDeadRemote => dead.Value; // 쓰러짐
         public int PlayerNumber => (int)OwnerClientId + 1; // 표시 번호
         public string DisplayName => $"원정대원 {PlayerNumber}"; // 표시 이름
+        public Transform HandPoint => handPoint; // 손
+        public Transform PocketPoint => pocketPoint; // 주머니
+
+        public static NetPlayerAvatar Find(ulong clientId) // 대원 번호로 찾기
+        {
+            foreach (NetPlayerAvatar avatar in All) // 목록
+            {
+                if (avatar != null && avatar.IsSpawned && avatar.OwnerClientId == clientId) // 일치
+                {
+                    return avatar; // 반환
+                }
+            }
+
+            return null; // 없음
+        }
 
         public void Configure(Transform visual, Transform bodyTransform, TextMesh tag) // 에디터 구성용
         {
@@ -46,8 +63,10 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
 
         private void Awake() // 준비
         {
-            renderers = GetComponentsInChildren<Renderer>(true); // 표시 대상
+            renderers = GetComponentsInChildren<Renderer>(true); // 표시 대상 (아이템을 붙이기 전의 몸체만)
             bodyScale = body == null ? Vector3.one : body.localScale; // 기본 크기
+            handPoint = CreatePoint("Hand", new Vector3(0.32f, 1.05f, 0.42f)); // 손 (몸 앞 오른쪽)
+            pocketPoint = CreatePoint("Pocket", new Vector3(0f, 1f, 0f)); // 주머니
         }
 
         public override void OnNetworkSpawn() // 생성
@@ -70,7 +89,16 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
 
         public override void OnNetworkDespawn() // 제거
         {
+            NetItemSync.ReleaseCarriedItems(this); // 가진 아이템을 그 자리에 떨어뜨림 (몸체와 함께 사라지지 않게)
             All.Remove(this); // 목록 정리
+        }
+
+        private Transform CreatePoint(string pointName, Vector3 localPosition) // 몸체 기준 점
+        {
+            Transform point = new GameObject(pointName).transform; // 점
+            point.SetParent(visualRoot != null ? visualRoot : transform, false); // 몸체 아래 (쓰러지면 함께 눕기)
+            point.localPosition = localPosition; // 위치
+            return point; // 반환
         }
 
         public override void OnDestroy() // 파괴
@@ -206,6 +234,11 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
             }
 
             visible = show; // 기록
+
+            if (handPoint != null) // 손에 든 아이템도 함께 숨김
+            {
+                handPoint.localScale = show ? Vector3.one : Vector3.zero; // 크기로 숨김 (비활성화하면 아이템 검색에서 빠짐)
+            }
 
             foreach (Renderer part in renderers) // 표시 대상
             {

@@ -28,6 +28,7 @@ namespace ProjectI.Persistence // 일차 저장·복구 네임스페이스
         private int campaignSeed; // 절차적 던전 시드 기준값 (캠페인마다 고정)
 
         public static DailySnapshotService Instance => instance; // 전역 저장 서비스 공개
+        public static event Action OfficeStateReloaded; // 38일차: 하루 마감·복구로 사무소 상태가 바뀜 (협동 참가자 전체 목록 다시 받기)
         public int CurrentDay => currentDay; // UI·다음 날 시스템용 현재 일차 공개
         public bool IsInitialized => initialized; // 저장 시스템 준비 완료 여부 공개
         public bool IsRestoreInProgress => restoreInProgress; // 복구 진행 여부 공개
@@ -420,6 +421,7 @@ namespace ProjectI.Persistence // 일차 저장·복구 네임스페이스
 
             nextOfficeAutosaveTime = Time.unscaledTime + officeAutosaveInterval; // 다음 Office 자동 저장 시각 재설정
             dayCompletionInProgress = false; // 일차 완료 절차 종료
+            OfficeStateReloaded?.Invoke(); // 협동 알림
             Debug.Log($"[Project I] 일차 완료 확정 / CompletedDay={completedDay} / RestartSafePoint=Office / NextDay={currentDay}", this); // 완료 결과 로그
             yield return null; // Coroutine 정상 종료 프레임 반환
         }
@@ -649,6 +651,7 @@ namespace ProjectI.Persistence // 일차 저장·복구 네임스페이스
 
             restoreInProgress = false; // 저장·복구 잠금 해제
             nextOfficeAutosaveTime = Time.unscaledTime + officeAutosaveInterval; // 복구 직후 자동 저장 타이머 재설정
+            OfficeStateReloaded?.Invoke(); // 협동 알림
             onCompleted?.Invoke(success); // 초기화 호출자에게 최종 결과 전달
         }
 

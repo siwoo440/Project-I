@@ -53,6 +53,7 @@ namespace ProjectI.Economy // 사무소 경제 기능 네임스페이스
 
                 if (item != null) // 확인
                 {
+                    ProjectI.Net.NetItemSync.NotifySpawned(item); // 협동: 모두의 수령대에 생성
                     delivered.Add(item); // 등록
                 }
             }

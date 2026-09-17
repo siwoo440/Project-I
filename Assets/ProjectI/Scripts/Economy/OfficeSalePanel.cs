@@ -84,6 +84,13 @@ namespace ProjectI.Economy // 사무소 경제 기능 네임스페이스
                 }
             }
 
+            if (ProjectI.Net.NetItemSync.RequestSale(toSell)) // 협동 참가자: 방장에게 판매 요청
+            {
+                LastSaleTotal = 0; // 결과는 방장 알림
+                Close(); // 닫기
+                return 0; // 대기
+            }
+
             LastSaleTotal = counter == null ? 0 : counter.Sell(toSell); // 판매
             Close(); // 닫기
             return LastSaleTotal; // 합계
