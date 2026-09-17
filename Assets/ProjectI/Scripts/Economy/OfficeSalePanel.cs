@@ -1,7 +1,6 @@
 using System.Collections.Generic; // 선택 목록 사용
 using ProjectI.Interaction; // 플레이어 상호작용 참조
 using ProjectI.Items; // WorldItem·인벤토리 참조
-using ProjectI.Player; // 플레이어 이동·시점 참조
 using UnityEngine; // 유니티 기본 기능 참조
 
 namespace ProjectI.Economy // 사무소 경제 기능 네임스페이스
@@ -15,10 +14,6 @@ namespace ProjectI.Economy // 사무소 경제 기능 네임스페이스
         private readonly List<bool> selected = new List<bool>(); // 선택 여부
         private OfficeSaleCounter counter; // 대상 판매대
         private PlayerInteractor interactor; // 연 플레이어
-        private PlayerInventory inventory; // 잠시 끌 인벤토리 입력
-        private PlayerMovement movement; // 잠시 멈출 이동
-        private float savedSpeed = 1f; // 원래 이동 배율
-        private bool savedSprint = true; // 원래 달리기 허용
         private Vector2 scroll; // 목록 스크롤
         private int openedFrame = -1; // 연 프레임 (같은 프레임 Esc 판정 방지)
 
@@ -45,6 +40,11 @@ namespace ProjectI.Economy // 사무소 경제 기능 네임스페이스
             }
 
             if (items.Count == 0) // 팔 물건 없음
+            {
+                return; // 열지 않음
+            }
+
+            if (PlayerControlLock.IsLocked) // 다른 창이 열려 있음
             {
                 return; // 열지 않음
             }
@@ -204,37 +204,15 @@ namespace ProjectI.Economy // 사무소 경제 기능 네임스페이스
             }
         }
 
-        private void BlockPlayer(bool block) // 창이 열린 동안 플레이어 조작 정지
+        private void BlockPlayer(bool block) // 창이 열린 동안 플레이어 조작 정지 (공용 잠금)
         {
-            if (block) // 정지
+            if (block) // 잠그기
             {
-                inventory = interactor == null ? null : interactor.GetComponent<PlayerInventory>(); // 인벤토리
-                movement = interactor == null ? null : interactor.GetComponent<PlayerMovement>(); // 이동
-
-                if (movement != null) // 이동 정지
-                {
-                    savedSpeed = movement.ExternalSpeedMultiplier; // 원래 배율
-                    savedSprint = movement.ExternalSprintAllowed; // 원래 달리기
-                    movement.SetExternalMovementModifier(0f, false); // 정지 (중력은 유지)
-                }
-            }
-            else if (movement != null) // 이동 복구
-            {
-                movement.SetExternalMovementModifier(savedSpeed, savedSprint); // 원래 값
+                PlayerControlLock.Acquire(this, interactor); // 잠금
+                return; // 종료
             }
 
-            if (inventory != null) // 슬롯 전환·버리기 입력
-            {
-                inventory.enabled = !block; // 켜고 끔
-            }
-
-            if (interactor != null) // F 입력
-            {
-                interactor.enabled = !block; // 켜고 끔
-            }
-
-            Cursor.lockState = block ? CursorLockMode.None : CursorLockMode.Locked; // 창이 열린 동안 커서 표시 (시점 회전도 멈춤)
-            Cursor.visible = block; // 표시
+            PlayerControlLock.Release(this); // 해제
         }
     }
 }

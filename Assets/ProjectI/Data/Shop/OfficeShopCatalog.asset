@@ -1,0 +1,47 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 08fcdd2bc659d5e4490ac7b00b7735ab, type: 3}
+  m_Name: OfficeShopCatalog
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectI.Economy.ShopCatalog
+  entries:
+  - item: {fileID: 11400000, guid: 9b503bdbde2fa8a4caf0d83ccd09b59e, type: 2}
+    price: 120
+    maxPerPurchase: 5
+    tier: 1
+  - item: {fileID: 11400000, guid: 2b8a6a6fcf292d6479f27f03cd088430, type: 2}
+    price: 200
+    maxPerPurchase: 5
+    tier: 1
+  - item: {fileID: 11400000, guid: 70ee4bd6f55eb1747b55b915b36b2a5f, type: 2}
+    price: 150
+    maxPerPurchase: 5
+    tier: 1
+  - item: {fileID: 11400000, guid: 3b78fd340b8721b42a298ed1a45bb4a4, type: 2}
+    price: 60
+    maxPerPurchase: 5
+    tier: 1
+  - item: {fileID: 11400000, guid: d65dde1f6bcf88a4a9d8f2d4e0b1bf0d, type: 2}
+    price: 180
+    maxPerPurchase: 3
+    tier: 0
+  - item: {fileID: 11400000, guid: ea4b1e7f671e2f846a9c9eb078976a20, type: 2}
+    price: 250
+    maxPerPurchase: 3
+    tier: 0
+  - item: {fileID: 11400000, guid: 1e2b5cf04242e564c879575641d15e7d, type: 2}
+    price: 400
+    maxPerPurchase: 3
+    tier: 0
+  - item: {fileID: 11400000, guid: 0af464310e0e8e34598b3944155d732c, type: 2}
+    price: 650
+    maxPerPurchase: 3
+    tier: 0

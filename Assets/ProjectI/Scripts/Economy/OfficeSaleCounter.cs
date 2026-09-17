@@ -18,7 +18,6 @@ namespace ProjectI.Economy // 사무소 경제 기능 네임스페이스
 
         [SerializeField] private CampaignEconomy economy; // 판매 수익을 반영할 공동 경제 상태
         [SerializeField] private Transform soldItemsRoot; // 판매 완료 아이템을 숨겨둘 내부 루트
-        private readonly List<WorldItem> itemBuffer = new List<WorldItem>(); // 판매대 위 아이템 조회 버퍼
         private Transform placeBuffer; // 올려두기 직전 잠시 거치는 루트 (판매대 크기 배율을 물려받지 않게 씬 최상위)
 
         public string Prompt => BuildPrompt(); // 현재 선택 회수품 올려두기 안내 문구
@@ -66,19 +65,7 @@ namespace ProjectI.Economy // 사무소 경제 기능 네임스페이스
 
         public List<WorldItem> CollectPlacedItems() // 판매대 위에 놓인 미판매 회수품 목록
         {
-            itemBuffer.Clear(); // 버퍼 초기화
-            WorldItem[] items = Object.FindObjectsByType<WorldItem>(FindObjectsSortMode.None); // 활성 WorldItem 전체
-
-            foreach (WorldItem item in items) // 아이템 순회
-            {
-                if (item != null && item.gameObject.scene == gameObject.scene && !item.IsHeld && !item.IsStored && IsSellable(item) && IsOnCounter(item.transform.position)) // 판매대 위 미판매 회수품
-                {
-                    itemBuffer.Add(item); // 등록
-                }
-            }
-
-            itemBuffer.Sort((a, b) => transform.InverseTransformPoint(a.transform.position).x.CompareTo(transform.InverseTransformPoint(b.transform.position).x)); // 판매대 왼쪽부터 정렬
-            return new List<WorldItem>(itemBuffer); // 사본 반환
+            return OfficeSurfaceSlots.CollectItems(transform, ZoneHeight, IsSellable); // 공용 계산
         }
 
         public int PriceOf(WorldItem item) // 현재 판매 금액
@@ -132,15 +119,7 @@ namespace ProjectI.Economy // 사무소 경제 기능 네임스페이스
 
         public bool IsOnCounter(Vector3 worldPosition) // 위치가 판매대 윗면 위인지 확인
         {
-            if (!TryGetTop(out Vector3 localMin, out Vector3 localMax)) // 판매대 윗면
-            {
-                return false; // 판정 불가
-            }
-
-            Vector3 local = transform.InverseTransformPoint(worldPosition); // 판매대 로컬 좌표
-            float worldY = worldPosition.y; // 월드 높이
-            float topY = transform.TransformPoint(new Vector3(0f, localMax.y, 0f)).y; // 윗면 월드 높이
-            return local.x >= localMin.x && local.x <= localMax.x && local.z >= localMin.z && local.z <= localMax.z && worldY >= topY - 0.05f && worldY <= topY + ZoneHeight; // 윗면 영역 안
+            return OfficeSurfaceSlots.IsOnSurface(transform, worldPosition, ZoneHeight); // 공용 계산
         }
 
         private IEnumerator VanishRoutine(WorldItem item) // 판매된 아이템이 줄어들며 사라짐
@@ -210,80 +189,9 @@ namespace ProjectI.Economy // 사무소 경제 기능 네임스페이스
 
         private bool TryFindFreeSlot(out Vector3 slot) // 비어 있는 올려둘 자리
         {
-            slot = Vector3.zero; // 초기화
-
-            if (!TryGetTop(out Vector3 localMin, out Vector3 localMax)) // 판매대 윗면
-            {
-                return false; // 자리 없음
-            }
-
-            List<WorldItem> placed = CollectPlacedItems(); // 이미 올린 아이템
-            float minX = localMin.x + LocalLength(SlotEdgeMargin, Vector3.right); // 왼쪽 끝
-            float maxX = localMax.x - LocalLength(SlotEdgeMargin, Vector3.right); // 오른쪽 끝
-            float minZ = localMin.z + LocalLength(SlotEdgeMargin, Vector3.forward); // 앞쪽 끝
-            float maxZ = localMax.z - LocalLength(SlotEdgeMargin, Vector3.forward); // 뒤쪽 끝
-            float stepX = LocalLength(SlotSpacing, Vector3.right); // 가로 간격
-            float stepZ = LocalLength(SlotSpacing, Vector3.forward); // 세로 간격
-
-            for (float z = minZ; z <= maxZ + 0.0001f; z += stepZ) // 줄 순회
-            {
-                for (float x = minX; x <= maxX + 0.0001f; x += stepX) // 칸 순회
-                {
-                    Vector3 candidate = transform.TransformPoint(new Vector3(x, localMax.y, z)); // 후보 자리 (윗면 높이)
-                    bool occupied = false; // 사용 여부
-
-                    foreach (WorldItem item in placed) // 올린 아이템과 거리 비교
-                    {
-                        Vector3 offset = item.transform.position - candidate; // 차이
-                        offset.y = 0f; // 수평 거리만
-
-                        if (offset.magnitude < OccupiedRadius) // 가까움
-                        {
-                            occupied = true; // 사용 중
-                            break; // 중단
-                        }
-                    }
-
-                    if (!occupied) // 빈 자리
-                    {
-                        slot = candidate; // 반환
-                        return true; // 성공
-                    }
-                }
-            }
-
-            return false; // 판매대가 가득 참
-        }
-
-        private float LocalLength(float worldLength, Vector3 localAxis) // 월드 길이 → 판매대 로컬 길이
-        {
-            float scale = transform.TransformVector(localAxis).magnitude; // 축 배율
-            return scale <= 0.0001f ? worldLength : worldLength / scale; // 변환
-        }
-
-        private bool TryGetTop(out Vector3 localMin, out Vector3 localMax) // 판매대 콜라이더 로컬 범위
-        {
-            BoxCollider box = GetComponent<BoxCollider>(); // 상자 콜라이더
-
-            if (box != null) // 상자 기준
-            {
-                localMin = box.center - (box.size * 0.5f); // 최소
-                localMax = box.center + (box.size * 0.5f); // 최대
-                return true; // 성공
-            }
-
-            Collider anyCollider = GetComponent<Collider>(); // 다른 콜라이더
-
-            if (anyCollider == null) // 없음
-            {
-                localMin = localMax = Vector3.zero; // 초기화
-                return false; // 실패
-            }
-
-            Bounds bounds = anyCollider.bounds; // 월드 범위
-            localMin = transform.InverseTransformPoint(bounds.min); // 근사 최소
-            localMax = transform.InverseTransformPoint(bounds.max); // 근사 최대
-            return true; // 성공
+            List<Vector3> slots = OfficeSurfaceSlots.FindFreeSlots(transform, CollectPlacedItems(), 1, SlotSpacing, SlotEdgeMargin, OccupiedRadius); // 공용 계산
+            slot = slots.Count > 0 ? slots[0] : Vector3.zero; // 첫 자리
+            return slots.Count > 0; // 결과
         }
 
         private static bool IsSellable(WorldItem item) // 판매대에 올릴 수 있는 회수품인지
