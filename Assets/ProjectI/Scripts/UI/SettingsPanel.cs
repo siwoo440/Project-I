@@ -1,5 +1,6 @@
 using System; // 콜백
 using System.Collections.Generic; // 해상도 목록
+using ProjectI.Net.Voice; // 43일차: 마이크 시험
 using ProjectI.Settings; // 게임 설정
 using UnityEngine; // 유니티 기본 기능 참조
 using UnityEngine.UI; // uGUI
@@ -22,7 +23,21 @@ namespace ProjectI.UI // 메뉴·창 UI 네임스페이스
         private RetroHover fullscreenHover; // 전체 화면
         private RetroHover resolutionHover; // 해상도
         private RetroHover vSyncHover; // 수직 동기화
+        private RetroHover voiceHover; // 43일차: 음성 켜기
+        private RetroHover talkModeHover; // 말하기 방식
+        private Slider voiceVolumeSlider; // 음성 음량
+        private Text voiceVolumeValue; // 값
+        private Slider micGainSlider; // 마이크 음량
+        private Text micGainValue; // 값
+        private Slider thresholdSlider; // 감지 기준
+        private Text thresholdValue; // 값
+        private RetroHover deviceHover; // 마이크 장치
+        private RetroHover testHover; // 마이크 시험
+        private RectTransform meterFill; // 입력 크기 막대
+        private Image meterImage; // 막대 색
+        private Text voiceNote; // 음성 안내
         private Action onClosed; // 닫힘 콜백
+        private const float RightColumn = 800f; // 오른쪽 칸 시작
 
         public bool IsOpen => gameObject.activeSelf; // 열림 여부
 
@@ -51,6 +66,7 @@ namespace ProjectI.UI // 메뉴·창 UI 네임스페이스
             }
 
             GameSettings.Save(); // 저장
+            VoiceCapture.LoopbackTest = false; // 43일차: 마이크 시험 종료
             gameObject.SetActive(false); // 숨김
             Action callback = onClosed; // 콜백
             onClosed = null; // 정리
@@ -61,7 +77,7 @@ namespace ProjectI.UI // 메뉴·창 UI 네임스페이스
         {
             RetroUi.Solid(root, "Shade", RetroUi.Shade, true); // 뒤 화면 어둡게 (클릭 차단)
             RectTransform window = RetroUi.Rect(root, "Window"); // 창
-            RetroUi.Place(window, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(860f, 800f)); // 가운데
+            RetroUi.Place(window, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1640f, 800f)); // 가운데 (43일차: 오른쪽 음성 칸)
             RetroUi.Solid(window, "Fill", RetroUi.Backdrop, true); // 바탕
             RetroUi.Frame(window, RetroUi.Orange, 3f); // 테두리
 
@@ -89,6 +105,7 @@ namespace ProjectI.UI // 메뉴·창 UI 네임스페이스
             resolutionHover = ButtonRow(window, "해상도", y, CycleResolution); // 해상도
             y -= RowHeight; // 다음 줄
             vSyncHover = ButtonRow(window, "수직 동기화", y, () => { GameSettings.VSync = !GameSettings.VSync; RefreshValues(); }); // 수직 동기화
+            BuildVoiceColumn(window); // 43일차: 음성 칸
 
             Text note = RetroUi.Label(window, "Note", "해상도·전체 화면은 빌드한 게임에서만 바뀝니다.", 18, RetroUi.OrangeDim, TextAnchor.MiddleLeft); // 안내
             RetroUi.Place(note.rectTransform, new Vector2(0f, 0f), new Vector2(0f, 0.5f), new Vector2(40f, 110f), new Vector2(700f, 30f)); // 아래
@@ -99,28 +116,101 @@ namespace ProjectI.UI // 메뉴·창 UI 네임스페이스
             RetroUi.Place((RectTransform)close.transform, new Vector2(1f, 0f), new Vector2(1f, 0.5f), new Vector2(-40f, 50f), new Vector2(180f, 50f)); // 오른쪽 아래
         }
 
-        private static Slider SliderRow(RectTransform window, string label, float y, float min, float max, out Text value) // 슬라이더 줄
+        private static Slider SliderRow(RectTransform window, string label, float y, float min, float max, out Text value, float column = 0f) // 슬라이더 줄 (column: 칸 시작 x)
         {
-            RowLabel(window, label, y); // 이름
+            RowLabel(window, label, y, column); // 이름
             Slider slider = RetroUi.SliderBar(window, label, min, max, min); // 슬라이더
-            RetroUi.Place((RectTransform)slider.transform, new Vector2(0f, 1f), new Vector2(0f, 0.5f), new Vector2(300f, y), new Vector2(360f, 40f)); // 위치
+            RetroUi.Place((RectTransform)slider.transform, new Vector2(0f, 1f), new Vector2(0f, 0.5f), new Vector2(column + 300f, y), new Vector2(360f, 40f)); // 위치
             value = RetroUi.Label(window, label + "_Value", string.Empty, 24, RetroUi.OrangeBright, TextAnchor.MiddleRight); // 값
-            RetroUi.Place(value.rectTransform, new Vector2(1f, 1f), new Vector2(1f, 0.5f), new Vector2(-40f, y), new Vector2(140f, 40f)); // 오른쪽
+            RetroUi.Place(value.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 0.5f), new Vector2(column + 820f, y), new Vector2(140f, 40f)); // 칸 오른쪽
             return slider; // 반환
         }
 
-        private static RetroHover ButtonRow(RectTransform window, string label, float y, Action onClick) // 누르면 바뀌는 줄
+        private static RetroHover ButtonRow(RectTransform window, string label, float y, Action onClick, float column = 0f) // 누르면 바뀌는 줄
         {
-            RowLabel(window, label, y); // 이름
+            RowLabel(window, label, y, column); // 이름
             Button button = RetroUi.BoxButton(window, label, string.Empty, 22, onClick); // 버튼
-            RetroUi.Place((RectTransform)button.transform, new Vector2(0f, 1f), new Vector2(0f, 0.5f), new Vector2(300f, y), new Vector2(360f, 46f)); // 위치
+            RetroUi.Place((RectTransform)button.transform, new Vector2(0f, 1f), new Vector2(0f, 0.5f), new Vector2(column + 300f, y), new Vector2(360f, 46f)); // 위치
             return button.GetComponent<RetroHover>(); // 글자 변경용
         }
 
-        private static void RowLabel(RectTransform window, string label, float y) // 줄 이름
+        private static void RowLabel(RectTransform window, string label, float y, float column = 0f) // 줄 이름
         {
             Text text = RetroUi.Label(window, label + "_Label", label, 26, RetroUi.Orange, TextAnchor.MiddleLeft); // 이름
-            RetroUi.Place(text.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 0.5f), new Vector2(40f, y), new Vector2(240f, 40f)); // 왼쪽
+            RetroUi.Place(text.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 0.5f), new Vector2(column + 40f, y), new Vector2(240f, 40f)); // 왼쪽
+        }
+
+        private void BuildVoiceColumn(RectTransform window) // 43일차: 음성 채팅 설정 칸
+        {
+            Image divider = RetroUi.Solid(window, "Divider", RetroUi.OrangeDim); // 칸 구분선
+            RetroUi.Place(divider.rectTransform, new Vector2(0f, 1f), new Vector2(0.5f, 1f), new Vector2(RightColumn, -100f), new Vector2(2f, 560f)); // 세로선
+            Text header = RetroUi.Label(window, "VoiceHeader", "음성 채팅", 30, RetroUi.Orange, TextAnchor.MiddleLeft); // 제목
+            RetroUi.Place(header.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 0.5f), new Vector2(RightColumn + 40f, -50f), new Vector2(400f, 60f)); // 위치
+
+            float y = -130f; // 첫 줄
+            voiceHover = ButtonRow(window, "음성 채팅", y, ToggleVoice, RightColumn); // 켜기
+            y -= RowHeight; // 다음 줄
+            talkModeHover = ButtonRow(window, "말하기 방식", y, () => { GameSettings.PushToTalk = !GameSettings.PushToTalk; RefreshValues(); }, RightColumn); // 방식
+            y -= RowHeight; // 다음 줄
+            voiceVolumeSlider = SliderRow(window, "음성 음량", y, 0f, GameSettings.MaxVoiceVolume, out voiceVolumeValue, RightColumn); // 재생 음량
+            voiceVolumeSlider.onValueChanged.AddListener(value => { GameSettings.VoiceVolume = value; RefreshValues(); }); // 적용
+            y -= RowHeight; // 다음 줄
+            micGainSlider = SliderRow(window, "마이크 음량", y, 0f, GameSettings.MaxMicGain, out micGainValue, RightColumn); // 입력 음량
+            micGainSlider.onValueChanged.AddListener(value => { GameSettings.MicGain = value; RefreshValues(); }); // 적용
+            y -= RowHeight; // 다음 줄
+            thresholdSlider = SliderRow(window, "감지 기준", y, 0f, GameSettings.MaxVoiceThreshold, out thresholdValue, RightColumn); // 항상 켜기 기준
+            thresholdSlider.onValueChanged.AddListener(value => { GameSettings.VoiceThreshold = value; RefreshValues(); }); // 적용
+            y -= RowHeight; // 다음 줄
+            deviceHover = ButtonRow(window, "마이크", y, CycleDevice, RightColumn); // 장치
+            y -= RowHeight; // 다음 줄
+            testHover = ButtonRow(window, "마이크 시험", y, () => { VoiceCapture.LoopbackTest = !VoiceCapture.LoopbackTest; RefreshValues(); }, RightColumn); // 내 목소리 듣기
+            y -= RowHeight; // 다음 줄
+            RowLabel(window, "입력 크기", y, RightColumn); // 크기 막대
+            RectTransform meter = RetroUi.Rect(window, "MicMeter"); // 막대
+            RetroUi.Place(meter, new Vector2(0f, 1f), new Vector2(0f, 0.5f), new Vector2(RightColumn + 300f, y), new Vector2(360f, 22f)); // 위치
+            RetroUi.Solid(meter, "Back", new Color(0f, 0f, 0f, 0.55f)); // 바탕
+            meterImage = RetroUi.Solid(meter, "Fill", RetroUi.Green); // 채움
+            meterFill = meterImage.rectTransform; // 크기 조절
+            meterFill.anchorMax = new Vector2(0f, 1f); // 처음엔 0
+            RetroUi.Frame(meter, RetroUi.OrangeDim, 2f); // 테두리
+
+            voiceNote = RetroUi.Label(window, "VoiceNote", string.Empty, 18, RetroUi.OrangeDim, TextAnchor.UpperLeft); // 안내
+            RetroUi.Place(voiceNote.rectTransform, new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(RightColumn + 40f, 90f), new Vector2(760f, 60f)); // 아래
+            voiceNote.horizontalOverflow = HorizontalWrapMode.Wrap; // 줄바꿈
+        }
+
+        private void ToggleVoice() // 음성 켜기·끄기
+        {
+            GameSettings.VoiceEnabled = !GameSettings.VoiceEnabled; // 전환
+
+            if (!GameSettings.VoiceEnabled) // 끔
+            {
+                VoiceCapture.LoopbackTest = false; // 시험도 끔
+            }
+
+            RefreshValues(); // 표시
+        }
+
+        private void CycleDevice() // 다음 마이크 장치 (빈칸 = 기본)
+        {
+            string[] devices = VoiceCapture.Devices; // 목록
+            string current = GameSettings.MicDevice; // 현재
+            int index = Array.IndexOf(devices, current); // 위치 (기본이면 -1)
+            GameSettings.MicDevice = index + 1 < devices.Length ? devices[index + 1] : string.Empty; // 다음 (끝이면 기본)
+            RefreshValues(); // 표시
+        }
+
+        private void Update() // 43일차: 마이크 입력 크기 막대
+        {
+            if (meterFill == null) // 준비 전
+            {
+                return; // 생략
+            }
+
+            float level = Mathf.Clamp01(VoiceCapture.InputLevel); // 크기
+            meterFill.anchorMax = new Vector2(level, 1f); // 막대
+            bool pass = GameSettings.PushToTalk || level / 3f >= GameSettings.VoiceThreshold; // 항상 켜기: 기준을 넘는지 (표시 크기는 3배)
+            meterImage.color = pass ? RetroUi.Green : RetroUi.OrangeDim; // 색
         }
 
         private void CycleResolution() // 다음 해상도
@@ -163,6 +253,19 @@ namespace ProjectI.UI // 메뉴·창 UI 네임스페이스
             Vector2Int size = GameSettings.Resolution; // 해상도
             resolutionHover.SetText($"{size.x} x {size.y} ▸"); // 해상도
             vSyncHover.SetText(GameSettings.VSync ? "[ 켜짐 ]" : "[ 꺼짐 ]"); // 수직 동기화
+            voiceHover.SetText(GameSettings.VoiceEnabled ? "[ 켜짐 ]" : "[ 꺼짐 ]"); // 43일차: 음성
+            talkModeHover.SetText(GameSettings.PushToTalk ? "누르고 말하기 (V)" : "항상 켜기 (말소리 감지)"); // 방식
+            voiceVolumeSlider.SetValueWithoutNotify(GameSettings.VoiceVolume); // 음성 음량
+            voiceVolumeValue.text = Percent(GameSettings.VoiceVolume); // 값
+            micGainSlider.SetValueWithoutNotify(GameSettings.MicGain); // 마이크 음량
+            micGainValue.text = Percent(GameSettings.MicGain); // 값
+            thresholdSlider.SetValueWithoutNotify(GameSettings.VoiceThreshold); // 감지 기준
+            thresholdValue.text = GameSettings.PushToTalk ? "—" : Percent(GameSettings.VoiceThreshold * 5f); // 값 (0.2 = 100%)
+            string device = string.IsNullOrEmpty(GameSettings.MicDevice) ? "기본 장치" : GameSettings.MicDevice; // 장치
+            deviceHover.SetText((device.Length > 18 ? device.Substring(0, 18) + "…" : device) + " ▸"); // 장치 이름
+            testHover.SetText(VoiceCapture.LoopbackTest ? "[ 시험 중 — 끄기 ]" : "[ 내 목소리 듣기 ]"); // 시험
+            string engine = VoiceCapture.UsingSteam ? "Steam 음성 사용 — 마이크 장치·말소리 감지는 Steam 설정을 따릅니다." : "유니티 마이크 사용 (Steam 미연결)."; // 방식
+            voiceNote.text = GameSettings.VoiceEnabled ? engine + "\n마이크 소리는 같은 방 가까운 원정대원에게만 전송되며 저장하지 않습니다." : "음성 채팅이 꺼져 있습니다. 켜면 마이크를 사용합니다 (녹음은 저장하지 않음)."; // 안내
         }
     }
 

@@ -4,7 +4,7 @@ using UnityEngine; // 유니티 기본 기능 참조
 
 namespace ProjectI.Settings // 게임 설정 네임스페이스
 {
-    public static class GameSettings // 감도·음량·화면 설정 (PlayerPrefs 저장)
+    public static class GameSettings // 감도·음량·화면·음성 설정 (PlayerPrefs 저장)
     {
         private const string Prefix = "ProjectI.Settings."; // 저장 키 접두사
         public const float DefaultLookSensitivity = 1f; // 기본 감도 배율
@@ -20,6 +20,15 @@ namespace ProjectI.Settings // 게임 설정 네임스페이스
         private static bool vSync = true; // 수직 동기화
         private static int resolutionWidth; // 해상도 폭 (0 = 현재 화면)
         private static int resolutionHeight; // 해상도 높이
+        private static bool voiceEnabled; // 43일차: 음성 채팅 (기본 꺼짐)
+        private static bool pushToTalk = true; // 누르고 말하기 (V)
+        private static float voiceVolume = 1f; // 음성 재생 음량
+        private static float micGain = 1f; // 마이크 입력 음량
+        private static float voiceThreshold = 0.02f; // 항상 켜기 감지 기준
+        private static string micDevice = string.Empty; // 마이크 장치 (빈칸 = 기본)
+        public const float MaxVoiceVolume = 2f; // 음성 음량 최대
+        public const float MaxMicGain = 3f; // 마이크 입력 최대
+        public const float MaxVoiceThreshold = 0.2f; // 감지 기준 최대
 
         public static event Action Changed; // 값 변경
 
@@ -28,6 +37,12 @@ namespace ProjectI.Settings // 게임 설정 네임스페이스
         public static float MusicVolume { get { EnsureLoaded(); return musicVolume; } set { EnsureLoaded(); musicVolume = Mathf.Clamp01(value); Changed?.Invoke(); } } // 음악 음량
         public static float SfxVolume { get { EnsureLoaded(); return sfxVolume; } set { EnsureLoaded(); sfxVolume = Mathf.Clamp01(value); Changed?.Invoke(); } } // 효과음 음량
         public static float AmbienceVolume { get { EnsureLoaded(); return ambienceVolume; } set { EnsureLoaded(); ambienceVolume = Mathf.Clamp01(value); Changed?.Invoke(); } } // 환경음 음량
+        public static bool VoiceEnabled { get { EnsureLoaded(); return voiceEnabled; } set { EnsureLoaded(); voiceEnabled = value; Changed?.Invoke(); } } // 43일차: 음성 채팅
+        public static bool PushToTalk { get { EnsureLoaded(); return pushToTalk; } set { EnsureLoaded(); pushToTalk = value; Changed?.Invoke(); } } // 누르고 말하기
+        public static float VoiceVolume { get { EnsureLoaded(); return voiceVolume; } set { EnsureLoaded(); voiceVolume = Mathf.Clamp(value, 0f, MaxVoiceVolume); Changed?.Invoke(); } } // 음성 재생 음량
+        public static float MicGain { get { EnsureLoaded(); return micGain; } set { EnsureLoaded(); micGain = Mathf.Clamp(value, 0f, MaxMicGain); Changed?.Invoke(); } } // 마이크 입력 음량
+        public static float VoiceThreshold { get { EnsureLoaded(); return voiceThreshold; } set { EnsureLoaded(); voiceThreshold = Mathf.Clamp(value, 0f, MaxVoiceThreshold); Changed?.Invoke(); } } // 항상 켜기 감지 기준
+        public static string MicDevice { get { EnsureLoaded(); return micDevice; } set { EnsureLoaded(); micDevice = value ?? string.Empty; Changed?.Invoke(); } } // 마이크 장치
         public static bool Fullscreen { get { EnsureLoaded(); return fullscreen; } set { EnsureLoaded(); fullscreen = value; ApplyDisplay(); Changed?.Invoke(); } } // 전체 화면
         public static bool VSync { get { EnsureLoaded(); return vSync; } set { EnsureLoaded(); vSync = value; ApplyDisplay(); Changed?.Invoke(); } } // 수직 동기화
         public static Vector2Int Resolution // 해상도
@@ -68,6 +83,12 @@ namespace ProjectI.Settings // 게임 설정 네임스페이스
             PlayerPrefs.SetInt(Prefix + "VSync", vSync ? 1 : 0); // 수직 동기화
             PlayerPrefs.SetInt(Prefix + "ResolutionWidth", resolutionWidth); // 폭
             PlayerPrefs.SetInt(Prefix + "ResolutionHeight", resolutionHeight); // 높이
+            PlayerPrefs.SetInt(Prefix + "VoiceEnabled", voiceEnabled ? 1 : 0); // 음성
+            PlayerPrefs.SetInt(Prefix + "PushToTalk", pushToTalk ? 1 : 0); // 말하기 방식
+            PlayerPrefs.SetFloat(Prefix + "VoiceVolume", voiceVolume); // 음성 음량
+            PlayerPrefs.SetFloat(Prefix + "MicGain", micGain); // 마이크 음량
+            PlayerPrefs.SetFloat(Prefix + "VoiceThreshold", voiceThreshold); // 감지 기준
+            PlayerPrefs.SetString(Prefix + "MicDevice", micDevice); // 장치
             PlayerPrefs.Save(); // 디스크 기록
         }
 
@@ -83,6 +104,11 @@ namespace ProjectI.Settings // 게임 설정 네임스페이스
             vSync = true; // 수직 동기화
             resolutionWidth = 0; // 현재 화면
             resolutionHeight = 0; // 현재 화면
+            pushToTalk = true; // 누르고 말하기 (음성 켜기 여부는 유지)
+            voiceVolume = 1f; // 음성 음량
+            micGain = 1f; // 마이크 음량
+            voiceThreshold = 0.02f; // 감지 기준
+            micDevice = string.Empty; // 기본 장치
             ApplyAll(); // 적용
             Changed?.Invoke(); // 알림
         }
@@ -127,6 +153,12 @@ namespace ProjectI.Settings // 게임 설정 네임스페이스
             vSync = PlayerPrefs.GetInt(Prefix + "VSync", 1) == 1; // 수직 동기화
             resolutionWidth = PlayerPrefs.GetInt(Prefix + "ResolutionWidth", 0); // 폭
             resolutionHeight = PlayerPrefs.GetInt(Prefix + "ResolutionHeight", 0); // 높이
+            voiceEnabled = PlayerPrefs.GetInt(Prefix + "VoiceEnabled", 0) == 1; // 음성 (기본 꺼짐)
+            pushToTalk = PlayerPrefs.GetInt(Prefix + "PushToTalk", 1) == 1; // 말하기 방식
+            voiceVolume = Mathf.Clamp(PlayerPrefs.GetFloat(Prefix + "VoiceVolume", 1f), 0f, MaxVoiceVolume); // 음성 음량
+            micGain = Mathf.Clamp(PlayerPrefs.GetFloat(Prefix + "MicGain", 1f), 0f, MaxMicGain); // 마이크 음량
+            voiceThreshold = Mathf.Clamp(PlayerPrefs.GetFloat(Prefix + "VoiceThreshold", 0.02f), 0f, MaxVoiceThreshold); // 감지 기준
+            micDevice = PlayerPrefs.GetString(Prefix + "MicDevice", string.Empty); // 장치
         }
 
         private static void ApplyAll() // 모두 적용

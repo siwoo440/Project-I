@@ -15,6 +15,7 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
         Device, // 문·장치·함정
         Travel, // 마차 출발
         Snapshot, // 전체 목록 요청
+        Voice, // 43일차: 음성 조각
     }
 
     public static class NetGuard // 42일차: 방장이 참가자 요청을 검사 (값·거리·횟수) — 부정 요청이 쌓이면 자동으로 내보냄
@@ -79,7 +80,7 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
 
         // ───────────────────────── 횟수·경고 ─────────────────────────
 
-        public static bool Allow(ulong sender, NetChannel channel) // 초당 한도 안이면 true (방장 자신은 항상 허용)
+        public static bool Allow(ulong sender, NetChannel channel, float overStrike = 1f) // 초당 한도 안이면 true (방장 자신은 항상 허용 · 넘으면 overStrike 만큼 경고)
         {
             if (IsHostSelf(sender)) // 방장
             {
@@ -107,7 +108,7 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
 
             if (bucket.Tokens < 1f) // 초과
             {
-                Reject(sender, channel.ToString(), "횟수 초과", 1f); // 경고
+                Reject(sender, channel.ToString(), "횟수 초과", overStrike); // 경고
                 return false; // 거부
             }
 
@@ -190,6 +191,7 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
                 case NetChannel.Economy: rate = 2f; burst = 5f; return; // 판매·구매
                 case NetChannel.Device: rate = 5f; burst = 10f; return; // 문·스위치
                 case NetChannel.Travel: rate = 1f; burst = 3f; return; // 종
+                case NetChannel.Voice: rate = 40f; burst = 80f; return; // 음성 (보내는 쪽은 초당 20~25번)
                 default: rate = 0.5f; burst = 3f; return; // 전체 목록 (맵 이동 때만)
             }
         }

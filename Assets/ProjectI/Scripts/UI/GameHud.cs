@@ -36,6 +36,7 @@ namespace ProjectI.UI // 메뉴·창 UI 네임스페이스
         private Image staminaImage; // 기력 색
         private RectTransform noticeBox; // 알림
         private Text noticeLabel; // 알림 글자
+        private Text voiceLabel; // 43일차: 내 마이크 상태
         private float noticeUntil; // 알림 종료
         private float nextSearch; // 다음 참조 검색
         private PlayerInteractor interactor; // 플레이어
@@ -121,6 +122,43 @@ namespace ProjectI.UI // 메뉴·창 UI 네임스페이스
             UpdateCenter(); // 조준점·조사
             UpdateBars(); // 체력·기력
             UpdateNotice(); // 알림
+            UpdateVoice(); // 43일차: 마이크 상태
+        }
+
+        private void UpdateVoice() // 43일차: 왼쪽 아래 마이크 상태 (협동 중에만)
+        {
+            bool show = ProjectI.Net.NetworkSession.IsOnline; // 협동 중
+
+            if (voiceLabel.gameObject.activeSelf != show) // 바뀜
+            {
+                voiceLabel.gameObject.SetActive(show); // 표시
+            }
+
+            if (!show) // 혼자
+            {
+                return; // 종료
+            }
+
+            if (!ProjectI.Settings.GameSettings.VoiceEnabled) // 설정에서 끔
+            {
+                voiceLabel.text = "음성 꺼짐 (설정)"; // 글자
+                voiceLabel.color = RetroUi.Disabled; // 색
+            }
+            else if (ProjectI.Net.Voice.VoiceCapture.SelfMuted) // 마이크 끔
+            {
+                voiceLabel.text = "마이크 꺼짐 (Esc)"; // 글자
+                voiceLabel.color = RetroUi.Red; // 색
+            }
+            else if (ProjectI.Net.Voice.VoiceCapture.IsTransmitting) // 말하는 중
+            {
+                voiceLabel.text = "● 말하는 중"; // 글자
+                voiceLabel.color = RetroUi.Green; // 색
+            }
+            else // 대기
+            {
+                voiceLabel.text = ProjectI.Settings.GameSettings.PushToTalk ? "V 누르고 말하기" : "마이크 켜짐"; // 글자
+                voiceLabel.color = RetroUi.OrangeDim; // 색
+            }
         }
 
         private void ResolveReferences() // 필요한 참조 찾기 (없을 때만 가끔)
@@ -312,6 +350,10 @@ namespace ProjectI.UI // 메뉴·창 UI 네임스페이스
 
             healthFill = Bar(root, "Health", 118f, RetroUi.Red, out healthLabel, out _); // 체력
             staminaFill = Bar(root, "Stamina", 70f, RetroUi.OrangeBright, out staminaLabel, out staminaImage); // 기력
+            voiceLabel = RetroUi.Label(root, "Voice", string.Empty, 20, RetroUi.OrangeDim, TextAnchor.LowerLeft); // 43일차: 마이크 상태
+            RetroUi.Place(voiceLabel.rectTransform, Vector2.zero, Vector2.zero, new Vector2(32f, 164f), new Vector2(420f, 28f)); // 체력 막대 위
+            voiceLabel.gameObject.AddComponent<Shadow>().effectColor = new Color(0f, 0f, 0f, 0.9f); // 읽기 쉽게
+            voiceLabel.gameObject.SetActive(false); // 협동 중에만
 
             noticeBox = Panel(root, "Notice", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 1f), new Vector2(0f, -130f), new Vector2(640f, 48f)); // 알림
             noticeLabel = RetroUi.Label(noticeBox, "Text", string.Empty, 22, RetroUi.OrangeBright, TextAnchor.MiddleCenter); // 글자

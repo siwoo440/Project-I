@@ -7,7 +7,7 @@ using UnityEngine; // 유니티 기본 기능 참조
 
 namespace ProjectI.Net // 협동 네트워크 네임스페이스
 {
-    public sealed class NetPlayerAvatar : NetworkBehaviour // 다른 원정대원에게 보이는 몸체 (각자 자기 위치를 보냄 · 자신에게는 숨김)
+    public sealed partial class NetPlayerAvatar : NetworkBehaviour // 다른 원정대원에게 보이는 몸체 (각자 자기 위치를 보냄 · 자신에게는 숨김)
     {
         private const float SendInterval = 0.05f; // 전송 간격 (초당 20회)
         private const float SnapDistance = 4f; // 이 거리 이상 차이나면 즉시 이동
@@ -109,6 +109,7 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
             handPoint = CreatePoint("Hand", new Vector3(0.32f, 1.05f, 0.42f)); // 손 (몸 앞 오른쪽)
             pocketPoint = CreatePoint("Pocket", new Vector3(0f, 1f, 0f)); // 주머니
             gameObject.AddComponent<RemotePlayerTarget>(); // 39일차: 방장 몬스터가 보고 공격할 수 있는 대상
+            CreateVoice(); // 43일차: 목소리 재생기 (입 위치)
         }
 
         public override void OnNetworkSpawn() // 생성
@@ -124,6 +125,7 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
             if (IsOwner) // 내 몸체
             {
                 playerName.Value = ToFixedName(NetGuard.CleanName(NetworkSession.LocalPlayerName)); // Steam 이름 (정리 · 없으면 빈칸 → 번호)
+                InitializeVoiceOwner(); // 43일차: 음량 저장 키
             }
 
             playerName.OnValueChanged += HandleNameChanged; // 이름 바뀜
@@ -140,7 +142,7 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
         {
             if (nameTag != null) // 이름표
             {
-                nameTag.text = DisplayName; // 글자
+                nameTag.text = shownSpeaking ? $"{DisplayName}  ♪" : DisplayName; // 글자 (43일차: 말하는 중 ♪)
             }
         }
 
@@ -206,6 +208,11 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
 
         private void LateUpdate() // 이름표가 카메라를 봄
         {
+            if (IsSpawned) // 연결됨
+            {
+                UpdateVoice(); // 43일차: 음성 음량·말하기 표시
+            }
+
             if (nameTag == null || !visible) // 숨김
             {
                 return; // 생략

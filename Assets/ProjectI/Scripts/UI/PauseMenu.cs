@@ -9,7 +9,7 @@ using UnityEngine.UI; // uGUI
 
 namespace ProjectI.UI // 메뉴·창 UI 네임스페이스
 {
-    public sealed class PauseMenu : MonoBehaviour // 게임 중 Esc 창 (계속 · 설정 · 메인 메뉴로 · 종료) — 협동 게임이므로 시간은 멈추지 않음
+    public sealed class PauseMenu : MonoBehaviour // 게임 중 Esc 창 (왼쪽: 계속 · 설정 · 메인 메뉴로 · 종료 / 오른쪽: 원정대원 패널) — 협동 게임이므로 시간은 멈추지 않음
     {
         private Canvas canvas; // 캔버스
         private RectTransform menuRoot; // 버튼 묶음
@@ -19,8 +19,7 @@ namespace ProjectI.UI // 메뉴·창 UI 네임스페이스
         private Text hintLabel; // 제목 아래 안내
         private Button inviteButton; // 친구 초대 (Steam 방)
         private Button copyButton; // 41일차: 방 코드·주소 복사
-        private Button crewButton; // 42일차: 원정대원 관리
-        private CrewPanel crewPanel; // 42일차: 원정대원 관리 창
+        private CrewPanel crewPanel; // 43일차: 오른쪽 원정대원 패널 (협동 중 항상 표시)
         private Text codeLabel; // 41일차: 방 코드·주소
         private RetroHover copyHover; // 복사 버튼 글자
         private float copyFlashUntil; // "복사됨" 표시 시각
@@ -76,7 +75,8 @@ namespace ProjectI.UI // 메뉴·창 UI 네임스페이스
             leaveHover.SetText(NetworkSession.IsHost ? "방 닫고 메인 메뉴로" : NetworkSession.IsGuest ? "방 나가기" : "메인 메뉴로"); // 협동 상태별 글자
             copyFlashUntil = 0f; // 초기화
             RefreshCodeLabel(); // 코드
-            LayoutExtraRows(); // 42일차: 원정대원·초대·복사 줄 배치
+            LayoutExtraRows(); // 초대·복사 줄 배치
+            crewPanel.Show(); // 43일차: 오른쪽 원정대원 패널 (혼자면 숨김)
             hintLabel.text = NetworkSession.IsOnline ? $"게임은 계속 진행됩니다  ·  {(NetworkSession.IsHost ? "방장" : "참가")} {NetworkSession.PlayerCount}/{NetworkSession.MaxPlayers}명" : "게임은 계속 진행됩니다"; // 안내
             return true; // 성공
         }
@@ -94,11 +94,10 @@ namespace ProjectI.UI // 메뉴·창 UI 네임스페이스
 
         private void LayoutExtraRows() // 협동 버튼 줄 (보이는 것만 위에서부터)
         {
-            crewButton.gameObject.SetActive(NetworkSession.IsOnline); // 협동 중
             inviteButton.gameObject.SetActive(ProjectI.Net.Steam.SteamLobbyService.InLobby); // Steam 방
             float y = InviteRowY; // 첫 줄
 
-            foreach (Button button in new[] { crewButton, inviteButton, copyButton }) // 순서
+            foreach (Button button in new[] { copyButton, inviteButton }) // 순서 (코드 복사 → 친구 초대)
             {
                 if (button.gameObject.activeSelf) // 보임
                 {
@@ -106,12 +105,6 @@ namespace ProjectI.UI // 메뉴·창 UI 네임스페이스
                     y -= RowStep; // 다음 줄
                 }
             }
-        }
-
-        private void OpenCrew() // 원정대원 관리 창
-        {
-            menuRoot.gameObject.SetActive(false); // 버튼 숨김
-            crewPanel.Open(() => menuRoot.gameObject.SetActive(true)); // 닫히면 버튼
         }
 
         private void RefreshCodeLabel() // 방 코드·주소 줄
@@ -172,11 +165,7 @@ namespace ProjectI.UI // 메뉴·창 UI 네임스페이스
                 settingsPanel.Close(); // 저장하며 닫기
             }
 
-            if (crewPanel.IsOpen) // 42일차: 원정대원 창
-            {
-                crewPanel.Close(); // 닫기
-            }
-
+            crewPanel.Hide(); // 43일차: 원정대원 패널
             canvas.gameObject.SetActive(false); // 숨김
             PlayerControlLock.Release(this); // 조작 복구 (커서 잠금)
         }
@@ -190,10 +179,6 @@ namespace ProjectI.UI // 메뉴·창 UI 네임스페이스
             else if (settingsPanel.IsOpen) // 설정
             {
                 settingsPanel.Close(); // 버튼 목록으로
-            }
-            else if (crewPanel.IsOpen) // 42일차: 원정대원 창
-            {
-                crewPanel.Close(); // 버튼 목록으로
             }
             else
             {
@@ -242,10 +227,8 @@ namespace ProjectI.UI // 메뉴·창 UI 네임스페이스
             copyButton = RetroUi.TextButton(menuRoot, "Pause_CopyCode", "코드 복사", 36, CopyShareCode); // 코드·주소 복사
             RetroUi.Place((RectTransform)copyButton.transform, new Vector2(0f, 1f), new Vector2(0f, 0.5f), new Vector2(110f, InviteRowY - RowStep), new Vector2(460f, 60f)); // 초대 아래
             copyHover = copyButton.GetComponent<RetroHover>(); // 글자 변경용
-            crewButton = RetroUi.TextButton(menuRoot, "Pause_Crew", "원정대원", 36, OpenCrew); // 42일차: 원정대원 관리
-            RetroUi.Place((RectTransform)crewButton.transform, new Vector2(0f, 1f), new Vector2(0f, 0.5f), new Vector2(110f, InviteRowY), new Vector2(460f, 60f)); // 위치는 열 때 정함
             settingsPanel = SettingsPanel.Create(root); // 설정
-            crewPanel = CrewPanel.Create(root); // 42일차: 원정대원 관리
+            crewPanel = CrewPanel.Create(root); // 43일차: 오른쪽 원정대원 패널
             dialog = RetroDialog.Create(root); // 확인 창
             canvas.gameObject.SetActive(false); // 처음엔 닫힘
         }
@@ -253,7 +236,8 @@ namespace ProjectI.UI // 메뉴·창 UI 네임스페이스
         private void OpenSettings() // 설정
         {
             menuRoot.gameObject.SetActive(false); // 버튼 숨김
-            settingsPanel.Open(() => menuRoot.gameObject.SetActive(true)); // 닫히면 버튼
+            crewPanel.Hide(); // 43일차: 설정 중에는 원정대원 패널도 숨김
+            settingsPanel.Open(() => { menuRoot.gameObject.SetActive(true); crewPanel.Show(); }); // 닫히면 버튼·패널
         }
 
         private void AskMainMenu() // 메인 메뉴로
@@ -300,7 +284,7 @@ namespace ProjectI.UI // 메뉴·창 UI 네임스페이스
         {
             if (mode == LoadSceneMode.Single && IsOpen) // 단일 로드 (메뉴 이동 등)
             {
-                crewPanel.Close(); // 42일차: 원정대원 창 정리
+                crewPanel.Hide(); // 43일차: 원정대원 패널 정리
                 canvas.gameObject.SetActive(false); // 숨김
                 PlayerControlLock.Release(this); // 잠금 정리
             }
