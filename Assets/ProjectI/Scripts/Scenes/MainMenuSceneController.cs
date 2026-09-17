@@ -52,6 +52,35 @@ namespace ProjectI.Scenes // 씬 기능 네임스페이스
             {
                 noticeLabel.text = message; // 표시
             }
+
+            bool steamJoin = NetworkSession.TakePendingSteamJoin(out Steamworks.CSteamID lobby); // 게임 중 받은 친구 참가 요청
+
+            if (!steamJoin && ProjectI.Net.Steam.SteamLobbyService.TryGetLaunchLobby(out lobby) && !launchLobbyHandled) // 초대로 게임을 켬
+            {
+                launchLobbyHandled = true; // 한 번만
+                steamJoin = true; // 참가
+            }
+
+            if (steamJoin) // Steam 방 참가
+            {
+                OpenServers(); // 서버 창 (연결 상태 표시)
+
+                if (!NetworkSession.BeginSteamJoin(lobby, out string error)) // 시작
+                {
+                    noticeLabel.text = error; // 안내
+                }
+            }
+
+            noticeLabel.text = string.IsNullOrEmpty(noticeLabel.text) ? SteamStatusText() : noticeLabel.text; // Steam 상태
+        }
+
+        private static bool launchLobbyHandled; // 실행 인자 참가 처리 여부
+
+        private static string SteamStatusText() // Steam 연결 상태 안내
+        {
+            return NetworkSession.SteamReady
+                ? $"Steam 연결됨 · {ProjectI.Net.Steam.SteamService.PersonaName}"
+                : $"Steam 미연결 — 주소로만 참가할 수 있습니다 ({ProjectI.Net.Steam.SteamService.FailureReason})"; // 문구
         }
 
         private void OnDestroy() // 해제
@@ -87,7 +116,8 @@ namespace ProjectI.Scenes // 씬 기능 네임스페이스
 
             leaving = true; // 중복 방지
             serverPanel.SetConnecting(true); // 버튼 잠금
-            serverPanel.ShowStatus(continueButton.interactable ? $"{continueDay}일차 저장으로 방을 엽니다..." : "1일차부터 방을 엽니다..."); // 안내
+            string mode = NetworkSession.Transport == SessionTransport.Steam ? "Steam 방" : $"포트 {port} 방"; // 방식
+            serverPanel.ShowStatus(continueButton.interactable ? $"{continueDay}일차 저장으로 {mode}을 엽니다..." : $"1일차부터 {mode}을 엽니다..."); // 안내
             Flow().ContinueGame(); // 게임 월드 → 준비되면 방 열림
         }
 
@@ -193,7 +223,8 @@ namespace ProjectI.Scenes // 씬 기능 네임스페이스
             Text version = RetroUi.Label(root, "Version", $"v{Application.version}", 22, RetroUi.OrangeDim, TextAnchor.LowerLeft); // 버전
             RetroUi.Place(version.rectTransform, new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(40f, 40f), new Vector2(300f, 30f)); // 왼쪽 아래
 
-            serverPanel = ServerListPanel.Create(root, new SampleServerListProvider()); // 서버 목록
+            IServerListProvider provider = NetworkSession.SteamReady ? new ProjectI.Net.Steam.SteamServerListProvider() : new SampleServerListProvider(); // Steam 이 있으면 실제 방 목록
+            serverPanel = ServerListPanel.Create(root, provider); // 서버 목록
             serverPanel.Closed += ReturnFromServers; // 닫힘
             serverPanel.HostRequested += HostGame; // 방 만들기
             serverPanel.JoinRequested += JoinGame; // 참가

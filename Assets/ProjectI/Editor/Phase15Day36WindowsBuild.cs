@@ -10,7 +10,7 @@ namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
 {
     public static class Phase15Day36WindowsBuild // Windows 싱글 알파 빌드 (36일차)
     {
-        public const string AlphaVersion = "0.39.0-alpha"; // 알파 버전 표시
+        public const string AlphaVersion = "0.40.0-alpha"; // 알파 버전 표시
         private const string OutputFolder = "Builds/Windows"; // 출력 폴더 (git 제외)
         private const string ExecutableName = "ProjectI.exe"; // 실행 파일
         private const string TextMaterialPath = "Assets/ProjectI/Resources/Text/TextMeshDepth.mat"; // 빌드에 필요한 글자 재질
@@ -89,6 +89,7 @@ namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
             };
 
             BuildReport report = BuildPipeline.BuildPlayer(options); // 빌드
+            CopySteamAppId(output); // 40일차: 시험용 Steam 앱 ID (Steam 스토어 배포 시 제외)
             string text = Describe(report, scenes); // 보고
             File.WriteAllText(Path.Combine(ProjectRoot(), OutputFolder, "build_report.txt"), text, Encoding.UTF8); // 보고서 저장
 
@@ -102,6 +103,16 @@ namespace ProjectI.EditorTools // 에디터 도구 네임스페이스
             }
 
             return report; // 반환
+        }
+
+        private static void CopySteamAppId(string executablePath) // 실행 파일 옆에 steam_appid.txt 복사 (Steam 클라이언트 밖에서 실행해도 Steam 연결)
+        {
+            string source = Path.Combine(ProjectRoot(), "steam_appid.txt"); // 프로젝트 루트 파일
+
+            if (File.Exists(source)) // 있음
+            {
+                File.Copy(source, Path.Combine(Path.GetDirectoryName(executablePath) ?? OutputFolder, "steam_appid.txt"), true); // 복사
+            }
         }
 
         private static void ApplyPlayerSettings() // 알파 빌드 기본 설정

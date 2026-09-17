@@ -17,6 +17,7 @@ namespace ProjectI.UI // 메뉴·창 UI 네임스페이스
         private RetroDialog dialog; // 확인 창
         private RetroHover leaveHover; // 메인 메뉴로 / 방 나가기 글자
         private Text hintLabel; // 제목 아래 안내
+        private Button inviteButton; // 친구 초대 (Steam 방)
 
         public static PauseMenu Instance { get; private set; } // 전역 참조
         public bool IsOpen => canvas != null && canvas.gameObject.activeSelf; // 열림 여부
@@ -67,6 +68,7 @@ namespace ProjectI.UI // 메뉴·창 UI 네임스페이스
             canvas.gameObject.SetActive(true); // 표시
             menuRoot.gameObject.SetActive(true); // 버튼
             leaveHover.SetText(NetworkSession.IsHost ? "방 닫고 메인 메뉴로" : NetworkSession.IsGuest ? "방 나가기" : "메인 메뉴로"); // 협동 상태별 글자
+            inviteButton.gameObject.SetActive(ProjectI.Net.Steam.SteamLobbyService.InLobby); // Steam 방에서만 초대
             hintLabel.text = NetworkSession.IsOnline ? $"게임은 계속 진행됩니다  ·  {(NetworkSession.IsHost ? "방장" : "참가")} {NetworkSession.PlayerCount}/{NetworkSession.MaxPlayers}명" : "게임은 계속 진행됩니다"; // 안내
             return true; // 성공
         }
@@ -137,6 +139,8 @@ namespace ProjectI.UI // 메뉴·창 UI 네임스페이스
                 }
             }
 
+            inviteButton = RetroUi.TextButton(menuRoot, "Pause_Invite", "친구 초대 (Steam)", 36, ProjectI.Net.Steam.SteamLobbyService.OpenInviteOverlay); // 친구 초대
+            RetroUi.Place((RectTransform)inviteButton.transform, new Vector2(0f, 1f), new Vector2(0f, 0.5f), new Vector2(110f, y), new Vector2(460f, 60f)); // 마지막 줄
             settingsPanel = SettingsPanel.Create(root); // 설정
             dialog = RetroDialog.Create(root); // 확인 창
             canvas.gameObject.SetActive(false); // 처음엔 닫힘

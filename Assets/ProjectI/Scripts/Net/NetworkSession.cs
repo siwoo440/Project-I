@@ -1,9 +1,12 @@
 using System; // 이벤트
+using System.Collections; // 다시 연결
 using System.Text; // 접속 데이터
 using ProjectI.Core; // 씬 이동
 using ProjectI.Loop; // 맵 로더 준비 확인
+using ProjectI.Net.Steam; // 40일차 Steam 연결
 using ProjectI.Persistence; // 저장 준비 확인
 using ProjectI.UI; // 알림
+using Steamworks; // Steam ID
 using Unity.Netcode; // 넷코드
 using Unity.Netcode.Transports.UTP; // 직접 IP 연결
 using UnityEngine; // 유니티 기본 기능 참조
@@ -18,6 +21,12 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
         Guest, // 참가자
     }
 
+    public enum SessionTransport // 연결 방식
+    {
+        Direct, // 주소·포트 직접 연결 (개발·같은 네트워크)
+        Steam, // Steam 로비 + Steam 중계망 (포트 개방 불필요)
+    }
+
     [DisallowMultipleComponent] // 하나만
     [RequireComponent(typeof(NetworkManager))] // 넷코드 관리자
     [RequireComponent(typeof(UnityTransport))] // 직접 IP 연결
@@ -27,18 +36,27 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
         public const string WorldStateResourcePath = "Net/NetWorldState"; // 월드 상태 프리팹
         public const int MaxPlayers = 4; // 최대 인원
         public const ushort DefaultPort = 7777; // 기본 포트
-        public const string ProtocolTag = "ProjectI-0.39"; // 접속 확인용 버전 (다르면 거부, 39일차 전투·장치 동기화)
+        public const string ProtocolTag = "ProjectI-0.40"; // 접속 확인용 버전 (다르면 거부, 40일차 Steam 로비)
         private static NetworkSession instance; // 현재 세션
         private NetworkManager manager; // 넷코드 관리자
         private UnityTransport transport; // 연결 방식
         private bool pendingHost; // 게임 월드 준비 후 방 열기 대기
         private bool leaving; // 스스로 나가는 중
         private ushort hostPort; // 방 포트
+        private SteamNetworkTransport steamTransport; // Steam 연결 모듈
+        private int reconnectAttempts; // 다시 연결 시도 횟수
+        private bool reconnecting; // 다시 연결 중
+        private float nextLobbyUpdate; // 로비 정보 갱신 시각
+        private const int MaxReconnectAttempts = 3; // 다시 연결 최대 횟수
+        private static CSteamID pendingSteamJoin = CSteamID.Nil; // 메뉴로 돌아간 뒤 들어갈 Steam 방
 
         public static SessionMode Mode { get; private set; } = SessionMode.Offline; // 참여 방식
         public static bool IsOnline => Mode != SessionMode.Offline; // 협동 중
         public static bool IsHost => Mode == SessionMode.Host; // 방장
         public static bool IsGuest => Mode == SessionMode.Guest; // 참가자
+        public static SessionTransport Transport { get; private set; } = SessionTransport.Direct; // 현재 연결 방식
+        public static bool SteamReady => SteamService.EnsureInitialized(); // Steam 사용 가능
+        public static string LocalPlayerName => SteamService.Initialized ? SteamService.PersonaName : string.Empty; // 내 표시 이름 (Steam 이 없으면 번호로 표시)
         public static string PendingMessage { get; private set; } = string.Empty; // 메뉴로 돌아왔을 때 보여 줄 안내
         public static event Action<string> StatusChanged; // 연결 상태 문구
 
@@ -84,7 +102,12 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
             return created.GetComponent<NetworkSession>(); // 반환 (Awake 에서 instance 등록)
         }
 
-        public static bool BeginHost(ushort port, out string error) // 방 열기 예약 (게임 월드가 준비되면 실제로 열림)
+        public static bool BeginHost(ushort port, out string error) // 방 열기 예약 (Steam 이 있으면 Steam 방, 없으면 직접 IP)
+        {
+            return BeginHost(port, SteamReady, out error); // 방 열기
+        }
+
+        public static bool BeginHost(ushort port, bool useSteam, out string error) // 방 열기 예약 (게임 월드가 준비되면 실제로 열림)
         {
             error = null; // 기본값
             NetworkSession session = Ensure(); // 준비
@@ -102,10 +125,11 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
             }
 
             Mode = SessionMode.Host; // 방장
+            Transport = useSteam && SteamReady ? SessionTransport.Steam : SessionTransport.Direct; // 연결 방식
             session.hostPort = port; // 포트
             session.transport.SetConnectionData("127.0.0.1", port, "0.0.0.0"); // 모든 주소에서 접속 받음
             session.pendingHost = true; // 월드 준비 후 열기
-            Announce($"방을 여는 중 — 포트 {port}"); // 상태
+            Announce(Transport == SessionTransport.Steam ? "Steam 방을 여는 중..." : $"방을 여는 중 — 포트 {port}"); // 상태
             return true; // 성공
         }
 
@@ -127,6 +151,9 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
             }
 
             Mode = SessionMode.Guest; // 참가자
+            Transport = SessionTransport.Direct; // 직접 연결
+            session.reconnectAttempts = 0; // 초기화
+            session.manager.NetworkConfig.NetworkTransport = session.transport; // 연결 방식
             session.transport.SetConnectionData(string.IsNullOrWhiteSpace(address) ? "127.0.0.1" : address.Trim(), port); // 주소
             session.manager.NetworkConfig.ConnectionData = Encoding.UTF8.GetBytes(ProtocolTag); // 버전 확인 데이터
 
@@ -141,6 +168,76 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
             return true; // 성공
         }
 
+        public static bool BeginSteamJoin(CSteamID lobby, out string error) // Steam 방 참가 시작 (로비 → 방장 Steam ID → 연결)
+        {
+            error = null; // 기본값
+            NetworkSession session = Ensure(); // 준비
+
+            if (session == null || !SteamReady) // 준비 안 됨
+            {
+                error = session == null ? "네트워크 구성이 없습니다 (Day 37 메뉴 실행 필요)" : $"Steam 을 사용할 수 없습니다 — {SteamService.FailureReason}"; // 이유
+                return false; // 실패
+            }
+
+            if (session.manager.IsListening || IsOnline) // 이미 연결 중
+            {
+                error = "이미 방에 연결되어 있습니다"; // 이유
+                return false; // 실패
+            }
+
+            Mode = SessionMode.Guest; // 참가자
+            Transport = SessionTransport.Steam; // Steam
+            session.reconnectAttempts = 0; // 초기화
+            Announce("Steam 방에 들어가는 중..."); // 상태
+            SteamLobbyService.Enter(lobby, (ok, host, message) => session.HandleLobbyEntered(ok, host, message)); // 로비
+            return true; // 시작
+        }
+
+        public static void QueueSteamJoin(CSteamID lobby) // 친구 초대·게임 참가 요청 (게임 중이면 메뉴로 돌아간 뒤 참가)
+        {
+            if (SteamLobbyService.CurrentLobby == lobby && IsOnline) // 이미 그 방
+            {
+                return; // 생략
+            }
+
+            if (IsOnline) // 다른 방
+            {
+                Leave(); // 나가기
+            }
+
+            if (SceneManager.GetActiveScene().name == SceneFlowManager.MainMenuSceneName) // 메뉴
+            {
+                if (!BeginSteamJoin(lobby, out string error)) // 바로 참가
+                {
+                    PendingMessage = error; // 안내
+                    Announce(error); // 상태
+                }
+
+                return; // 종료
+            }
+
+            pendingSteamJoin = lobby; // 메뉴에서 참가
+            DailySnapshotService service = DailySnapshotService.Instance; // 저장
+            PersistentMapLoader loader = PersistentMapLoader.Instance; // 맵 로더
+
+            if (service != null && loader != null && !loader.IsTransitioning && loader.CurrentDestination == TravelDestination.Office) // 사무소
+            {
+                service.SaveSafeOfficeCheckpoint(); // 저장
+            }
+
+            if (ProjectServices.TryGet(out SceneFlowManager flow)) // 씬 관리자
+            {
+                flow.LoadMainMenu(); // 메뉴로
+            }
+        }
+
+        public static bool TakePendingSteamJoin(out CSteamID lobby) // 메뉴: 대기 중인 Steam 참가
+        {
+            lobby = pendingSteamJoin; // 방
+            pendingSteamJoin = CSteamID.Nil; // 비우기
+            return lobby.IsValid(); // 결과
+        }
+
         public static void Leave() // 방 나가기 (방장이면 방 닫기)
         {
             if (instance == null) // 세션 없음
@@ -150,6 +247,9 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
             }
 
             instance.pendingHost = false; // 예약 취소
+            instance.reconnecting = false; // 다시 연결 중단
+            instance.StopAllCoroutines(); // 진행 중인 다시 연결 중단
+            SteamLobbyService.Leave(); // Steam 방 나가기
 
             if (instance.manager != null && instance.manager.IsListening) // 연결 중
             {
@@ -205,6 +305,8 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
             instance = this; // 등록
             manager = GetComponent<NetworkManager>(); // 관리자
             transport = GetComponent<UnityTransport>(); // 연결 방식
+            steamTransport = GetComponent<SteamNetworkTransport>(); // Steam 연결 모듈
+            steamTransport = steamTransport != null ? steamTransport : gameObject.AddComponent<SteamNetworkTransport>(); // 없으면 추가
             manager.NetworkConfig.NetworkTransport = transport; // 연결 방식 지정
             manager.NetworkConfig.ConnectionApproval = true; // 접속 확인 사용
             manager.NetworkConfig.EnableSceneManagement = false; // 씬 교체는 Project I 맵 로더가 직접 맞춤
@@ -232,8 +334,15 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
             }
         }
 
-        private void Update() // 방 열기 예약 처리
+        private void Update() // 방 열기 예약 · Steam 로비 정보 갱신
         {
+            if (Mode == SessionMode.Host && Transport == SessionTransport.Steam && SteamLobbyService.InLobby && Time.unscaledTime >= nextLobbyUpdate) // Steam 방장
+            {
+                nextLobbyUpdate = Time.unscaledTime + 5f; // 5초마다
+                DailySnapshotService daily = DailySnapshotService.Instance; // 저장
+                SteamLobbyService.UpdateHostData(PlayerCount, daily == null ? 0 : daily.CurrentDay, false); // 인원·일차
+            }
+
             if (!pendingHost) // 예약 없음
             {
                 return; // 종료
@@ -254,11 +363,12 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
         private void StartHostNow() // 실제 방 열기
         {
             manager.NetworkConfig.ConnectionData = Encoding.UTF8.GetBytes(ProtocolTag); // 방장 자신의 접속 확인 데이터
+            manager.NetworkConfig.NetworkTransport = Transport == SessionTransport.Steam ? steamTransport : transport; // 연결 방식
 
             if (!manager.StartHost()) // 실패
             {
                 Mode = SessionMode.Offline; // 혼자 하기로
-                Announce($"방을 열지 못했습니다 — 포트 {hostPort} 가 사용 중인지 확인하세요"); // 안내
+                Announce(Transport == SessionTransport.Steam ? "Steam 방을 열지 못했습니다" : $"방을 열지 못했습니다 — 포트 {hostPort} 가 사용 중인지 확인하세요"); // 안내
                 GameHud.ShowNotice("방을 열지 못해 혼자 하기로 진행합니다", 4f); // 화면 안내
                 return; // 종료
             }
@@ -274,8 +384,45 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
                 Debug.LogError("[Project I] NetWorldState 프리팹이 없습니다 — Day 37 메뉴를 실행하세요."); // 오류
             }
 
+            if (Transport == SessionTransport.Steam) // Steam 방
+            {
+                SteamLobbyService.Create(null, MaxPlayers, false, (ok, message) => // 로비 만들기
+                {
+                    Announce(message); // 상태
+                    GameHud.ShowNotice(ok ? "Steam 방을 열었습니다 — Esc 창에서 친구를 초대하세요" : $"{message} (연결은 유지)", 4f); // 안내
+                });
+                return; // 종료
+            }
+
             Announce($"방 열림 — 포트 {hostPort}"); // 상태
             GameHud.ShowNotice($"방을 열었습니다 — 포트 {hostPort}", 4f); // 화면 안내
+        }
+
+        private void HandleLobbyEntered(bool ok, CSteamID host, string message) // Steam 로비에 들어감 → 방장에게 연결
+        {
+            Announce(message); // 상태
+
+            if (!ok || Mode != SessionMode.Guest) // 실패·취소
+            {
+                if (Mode == SessionMode.Guest) // 참가 중이었음
+                {
+                    Mode = SessionMode.Offline; // 되돌림
+                    SteamLobbyService.Leave(); // 정리
+                }
+
+                return; // 종료
+            }
+
+            steamTransport.HostId = host; // 방장
+            manager.NetworkConfig.NetworkTransport = steamTransport; // Steam 연결
+            manager.NetworkConfig.ConnectionData = Encoding.UTF8.GetBytes(ProtocolTag); // 버전 확인 데이터
+
+            if (!manager.StartClient()) // 시작 실패
+            {
+                Mode = SessionMode.Offline; // 되돌림
+                SteamLobbyService.Leave(); // 정리
+                Announce("방장에게 연결하지 못했습니다"); // 안내
+            }
         }
 
         private void ApproveConnection(NetworkManager.ConnectionApprovalRequest request, NetworkManager.ConnectionApprovalResponse response) // 접속 확인
@@ -305,6 +452,14 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
         {
             if (Mode == SessionMode.Guest && clientId == manager.LocalClientId) // 내가 참가 완료
             {
+                reconnectAttempts = 0; // 초기화
+
+                if (SceneManager.GetActiveScene().name != SceneFlowManager.MainMenuSceneName && PersistentMapLoader.Instance != null) // 게임 중 다시 연결됨
+                {
+                    GameHud.ShowNotice("다시 연결됨 — 방장 상태로 맞추는 중", 3f); // 안내
+                    return; // 월드 유지 (아이템·전투 상태는 전체 목록으로 다시 맞춤)
+                }
+
                 Announce("연결됨 — 원정 사무소로 이동합니다"); // 상태
 
                 if (ProjectServices.TryGet(out SceneFlowManager flow)) // 씬 관리자
@@ -317,7 +472,7 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
 
             if (Mode == SessionMode.Host && clientId != manager.LocalClientId) // 다른 대원 참가
             {
-                GameHud.ShowNotice($"원정대원 {clientId + 1} 참가 ({manager.ConnectedClientsIds.Count}/{MaxPlayers})", 3f); // 안내
+                GameHud.ShowNotice($"원정대원 참가 ({manager.ConnectedClientsIds.Count}/{MaxPlayers})", 3f); // 안내 (이름은 몸체 이름표)
             }
         }
 
@@ -327,7 +482,7 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
             {
                 if (clientId != manager.LocalClientId) // 다른 대원
                 {
-                    GameHud.ShowNotice($"원정대원 {clientId + 1} 나감", 3f); // 안내
+                    GameHud.ShowNotice($"원정대원 한 명이 나갔습니다 ({Mathf.Max(1, manager.ConnectedClientsIds.Count - 1)}/{MaxPlayers})", 3f); // 안내
                 }
 
                 return; // 종료
@@ -355,12 +510,29 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
             }
         }
 
-        private void LostConnection(string reason) // 연결을 잃음 → 메인 메뉴
+        private void LostConnection(string reason) // 연결을 잃음 → (게임 중이면 다시 연결) → 메인 메뉴
         {
             bool selfLeave = leaving; // 스스로 나감
             leaving = false; // 초기화
+
+            if (reconnecting) // 이미 다시 연결 처리 중
+            {
+                return; // 중복 무시
+            }
+
+            bool inGame = SceneManager.GetActiveScene().name != SceneFlowManager.MainMenuSceneName && PersistentMapLoader.Instance != null; // 게임 중
+            bool canRetry = !selfLeave && Mode == SessionMode.Guest && inGame && reconnectAttempts < MaxReconnectAttempts && (Transport == SessionTransport.Direct || SteamLobbyService.InLobby); // 다시 연결 가능
+
+            if (canRetry) // 다시 연결
+            {
+                reconnectAttempts++; // 횟수
+                StartCoroutine(ReconnectRoutine(reason)); // 시도
+                return; // 종료
+            }
+
             Mode = SessionMode.Offline; // 혼자 하기
             pendingHost = false; // 예약 취소
+            SteamLobbyService.Leave(); // Steam 방 정리
 
             if (selfLeave) // 스스로 나간 경우
             {
@@ -379,6 +551,41 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
             if (SceneManager.GetActiveScene().name != SceneFlowManager.MainMenuSceneName && ProjectServices.TryGet(out SceneFlowManager flow)) // 게임 중
             {
                 flow.LoadMainMenu(); // 메인 메뉴로
+            }
+        }
+
+        private IEnumerator ReconnectRoutine(string reason) // 참가자: 잠깐 끊긴 연결 다시 잇기
+        {
+            reconnecting = true; // 처리 중
+            Debug.LogWarning($"[Project I] 협동 연결 끊김 / {reason} / 다시 연결 {reconnectAttempts}/{MaxReconnectAttempts}"); // 기록
+            GameHud.ShowNotice($"연결 끊김 — 다시 연결 중 ({reconnectAttempts}/{MaxReconnectAttempts})", 4f); // 안내
+
+            if (manager.IsListening) // 정리
+            {
+                manager.Shutdown(); // 종료
+            }
+
+            float waitUntil = Time.unscaledTime + 4f; // 최대 대기
+
+            while (manager.ShutdownInProgress && Time.unscaledTime < waitUntil) // 종료 대기
+            {
+                yield return null; // 다음 프레임
+            }
+
+            yield return new WaitForSecondsRealtime(2f); // 잠시 뒤 시도
+            reconnecting = false; // 다음 끊김은 다시 판단
+
+            if (Mode != SessionMode.Guest) // 그사이 나감
+            {
+                yield break; // 종료
+            }
+
+            manager.NetworkConfig.NetworkTransport = Transport == SessionTransport.Steam ? steamTransport : transport; // 같은 연결 방식
+            manager.NetworkConfig.ConnectionData = Encoding.UTF8.GetBytes(ProtocolTag); // 버전 확인 데이터
+
+            if (!manager.StartClient()) // 시작 실패
+            {
+                LostConnection(reason); // 다음 판단 (횟수 초과면 메뉴로)
             }
         }
 

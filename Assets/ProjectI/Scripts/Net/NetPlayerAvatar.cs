@@ -1,6 +1,7 @@
 using System.Collections.Generic; // 원정대원 목록
 using ProjectI.Loop; // 맵 로더·마차
 using ProjectI.Player; // 사망·웅크리기
+using Unity.Collections; // 이름 (고정 길이 문자열)
 using Unity.Netcode; // 넷코드
 using UnityEngine; // 유니티 기본 기능 참조
 
@@ -19,6 +20,7 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
         private readonly NetworkVariable<bool> dead = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner); // 쓰러짐
         private readonly NetworkVariable<bool> crouching = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner); // 웅크림
         private readonly NetworkVariable<byte> destination = new NetworkVariable<byte>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner); // 있는 맵
+        private readonly NetworkVariable<FixedString64Bytes> playerName = new NetworkVariable<FixedString64Bytes>(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner); // 40일차: Steam 이름
 
         [SerializeField] private Transform visualRoot; // 몸체 묶음
         [SerializeField] private Transform body; // 몸통 (웅크림 표시)
@@ -37,7 +39,7 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
         public bool IsAboard => aboard.Value; // 탑승
         public bool IsDeadRemote => dead.Value; // 쓰러짐
         public int PlayerNumber => (int)OwnerClientId + 1; // 표시 번호
-        public string DisplayName => $"원정대원 {PlayerNumber}"; // 표시 이름
+        public string DisplayName => playerName.Value.Length > 0 ? playerName.Value.ToString() : $"원정대원 {PlayerNumber}"; // 표시 이름 (Steam 이름 우선)
         public Transform HandPoint => handPoint; // 손
         public Transform PocketPoint => pocketPoint; // 주머니
         public bool IsVisibleHere => IsSpawned && visible; // 내 화면과 같은 맵에 보이는 중
@@ -81,16 +83,55 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
                 All.Add(this); // 추가
             }
 
+            if (IsOwner) // 내 몸체
+            {
+                playerName.Value = ToFixedName(NetworkSession.LocalPlayerName); // Steam 이름 (없으면 빈칸 → 번호)
+            }
+
+            playerName.OnValueChanged += HandleNameChanged; // 이름 바뀜
+            RefreshNameTag(); // 이름표
+            SetVisible(!IsOwner); // 내 몸체는 숨김 (1인칭)
+        }
+
+        private void HandleNameChanged(FixedString64Bytes previous, FixedString64Bytes current) // 이름 바뀜
+        {
+            RefreshNameTag(); // 이름표
+        }
+
+        private void RefreshNameTag() // 이름표 글자
+        {
             if (nameTag != null) // 이름표
             {
                 nameTag.text = DisplayName; // 글자
             }
+        }
 
-            SetVisible(!IsOwner); // 내 몸체는 숨김 (1인칭)
+        private static FixedString64Bytes ToFixedName(string text) // 긴 이름은 글자 단위로 잘라 담기 (UTF-8 61바이트)
+        {
+            FixedString64Bytes result = default; // 결과
+
+            if (string.IsNullOrEmpty(text)) // 없음
+            {
+                return result; // 빈 이름
+            }
+
+            foreach (char character in text) // 글자
+            {
+                FixedString64Bytes next = result; // 시험
+                if (next.Append(character) != FormatError.None) // 공간 부족
+                {
+                    break; // 여기까지
+                }
+
+                result = next; // 적용
+            }
+
+            return result; // 반환
         }
 
         public override void OnNetworkDespawn() // 제거
         {
+            playerName.OnValueChanged -= HandleNameChanged; // 해제
             NetItemSync.ReleaseCarriedItems(this); // 가진 아이템을 그 자리에 떨어뜨림 (몸체와 함께 사라지지 않게)
             All.Remove(this); // 목록 정리
         }
