@@ -1,4 +1,5 @@
 using ProjectI.Diagnostics; // 프로젝트 로그 참조
+using ProjectI.UI; // 일시정지 창
 using UnityEngine; // 유니티 기본 기능 참조
 
 namespace ProjectI.Core // 프로젝트 공통 네임스페이스
@@ -21,6 +22,7 @@ namespace ProjectI.Core // 프로젝트 공통 네임스페이스
             Object.DontDestroyOnLoad(rootObject); // 씬 전환 유지 설정
             rootObject.AddComponent<GameManager>(); // 게임 관리자 추가
             rootObject.AddComponent<SceneFlowManager>(); // 씬 관리자 추가
+            rootObject.AddComponent<PauseMenu>(); // 게임 중 Esc 창 (플레이어가 있을 때만 열림)
             ProjectLog.Log("Project I 런타임 부트스트랩 완료"); // 부트스트랩 로그 출력
         }
     }

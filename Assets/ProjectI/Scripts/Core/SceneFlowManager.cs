@@ -1,4 +1,5 @@
 using ProjectI.Diagnostics; // 프로젝트 로그 참조
+using ProjectI.Persistence; // 저장 확인·새 게임 보관
 using UnityEngine; // 유니티 기본 기능 참조
 using UnityEngine.SceneManagement; // 씬 관리 기능 참조
 
@@ -49,6 +50,42 @@ namespace ProjectI.Core // 프로젝트 공통 네임스페이스
         public void LoadExplorationOffice() // 탐사 사무소 이동
         {
             LoadScene(WagonPersistentSceneName, GameState.ExplorationOffice); // 영구 마차 씬 진입 후 Office 맵을 Additive 로드
+        }
+
+        public bool TryGetContinueDay(out int day) // 이어하기 가능 여부와 시작 일차
+        {
+            return new DailySnapshotStore().TryGetContinueDay(out day); // 저장 파일 확인
+        }
+
+        public void ContinueGame() // 이어하기 (저장된 사무소 상태 자동 복원)
+        {
+            LoadExplorationOffice(); // 영구 마차 씬 → 사무소 → 저장 복원
+        }
+
+        public bool StartNewGame() // 새 게임 (기존 저장은 보관 폴더로 옮긴 뒤 1일차 시작)
+        {
+            if (!new DailySnapshotStore().ArchiveAllSaves(out string archivePath)) // 보관 실패
+            {
+                return false; // 기존 저장 유지
+            }
+
+            if (!string.IsNullOrEmpty(archivePath)) // 옮긴 저장
+            {
+                ProjectLog.Log($"새 게임 — 기존 저장 보관: {archivePath}"); // 기록
+            }
+
+            LoadExplorationOffice(); // 저장 없는 상태로 시작
+            return true; // 성공
+        }
+
+        public void QuitGame() // 게임 종료
+        {
+            ProjectLog.Log("게임 종료 요청"); // 기록
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false; // 에디터 플레이 종료
+#else
+            Application.Quit(); // 종료
+#endif
         }
 
         private void LoadScene(string sceneName, GameState state) // 공통 씬 이동

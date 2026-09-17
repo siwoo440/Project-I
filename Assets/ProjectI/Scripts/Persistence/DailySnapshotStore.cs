@@ -109,6 +109,61 @@ namespace ProjectI.Persistence // 일차 저장·복구 네임스페이스
             return false; // 사용할 수 있는 정상 백업 없음
         }
 
+        public bool HasAnySave() // 이어하기 가능한 저장이 있는지 (Current 또는 완료 일차)
+        {
+            return TryGetContinueDay(out _); // 읽을 수 있는 저장 기준
+        }
+
+        public bool TryGetContinueDay(out int day) // 이어하기 시 시작 일차
+        {
+            day = 0; // 기본값
+
+            if (TryReadCurrent(out DailySnapshotData current, out _) && IsOfficeSnapshot(current)) // 정상 Current
+            {
+                day = Mathf.Max(1, current.currentDay); // 현재 일차
+                return true; // 있음
+            }
+
+            if (TryReadLatestValidDailySnapshot(out DailySnapshotData latest, out _)) // 완료 일차 백업
+            {
+                day = latest.completedDay + 1; // 다음 날부터
+                return true; // 있음
+            }
+
+            return false; // 없음
+        }
+
+        public bool ArchiveAllSaves(out string archivePath) // 새 게임: 기존 저장을 지우지 않고 보관 폴더로 옮김
+        {
+            archivePath = string.Empty; // 기본값
+
+            if (!Directory.Exists(rootPath)) // 저장 없음
+            {
+                return true; // 옮길 것 없음
+            }
+
+            try
+            {
+                string archiveRoot = Path.Combine(Path.GetDirectoryName(rootPath) ?? rootPath, "SavesArchive"); // 보관 루트
+                Directory.CreateDirectory(archiveRoot); // 생성
+                archivePath = Path.Combine(archiveRoot, DateTime.Now.ToString("yyyyMMdd_HHmmss")); // 시각별 폴더
+                int suffix = 1; // 같은 초 중복 방지
+
+                while (Directory.Exists(archivePath)) // 이미 있음
+                {
+                    archivePath = Path.Combine(archiveRoot, $"{DateTime.Now:yyyyMMdd_HHmmss}_{suffix++}"); // 다른 이름
+                }
+
+                Directory.Move(rootPath, archivePath); // 옮기기
+                return true; // 성공
+            }
+            catch (Exception exception) // 파일 잠김 등
+            {
+                Debug.LogError($"[Project I] 새 게임 준비 실패 / 기존 저장 보관 불가: {exception.Message}"); // 오류
+                return false; // 실패
+            }
+        }
+
         public string ReadEnvelopeTextForRemote(int completedDay) // 향후 서버 업로드에 사용할 검증 포함 원문 조회
         {
             string path = GetDailyPath(completedDay); // 완료 일차 파일 경로 계산

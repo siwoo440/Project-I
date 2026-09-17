@@ -1,3 +1,5 @@
+using ProjectI.Settings; // 감도 설정
+using ProjectI.UI; // 일시정지 창
 using UnityEngine; // 유니티 기본 기능 참조
 
 namespace ProjectI.Player // 플레이어 기능 네임스페이스
@@ -35,7 +37,12 @@ namespace ProjectI.Player // 플레이어 기능 네임스페이스
         {
             if (inputReader != null && inputReader.PausePressed) // 재바인딩 가능한 Pause 액션 입력 확인
             {
-                SetCursorLocked(!IsCursorLocked); // 커서 잠금 상태 전환
+                PauseMenu pauseMenu = PauseMenu.Instance; // 일시정지 창
+
+                if (pauseMenu == null || !pauseMenu.HandlePausePressed()) // 일시정지 창이 처리하지 않음 (판매·구매 창은 커서 잠금으로 닫힘)
+                {
+                    SetCursorLocked(!IsCursorLocked); // 커서 잠금 상태 전환
+                }
             }
 
             if (!IsCursorLocked || viewTransform == null) // 시점 입력 처리 가능 여부 확인
@@ -44,8 +51,9 @@ namespace ProjectI.Player // 플레이어 기능 네임스페이스
             }
 
             Vector2 lookInput = inputReader == null ? Vector2.zero : inputReader.Look; // 현재 시점 입력 읽기
-            float yawDelta = lookInput.x * horizontalSensitivity; // 좌우 회전량 계산
-            float pitchDelta = lookInput.y * verticalSensitivity; // 상하 회전량 계산
+            float sensitivityScale = GameSettings.LookSensitivity; // 설정 감도 배율
+            float yawDelta = lookInput.x * horizontalSensitivity * sensitivityScale; // 좌우 회전량 계산
+            float pitchDelta = lookInput.y * verticalSensitivity * sensitivityScale; // 상하 회전량 계산
             transform.Rotate(Vector3.up, yawDelta, Space.Self); // 플레이어 몸체 좌우 회전
             pitch = Mathf.Clamp(pitch - pitchDelta, minimumPitch, maximumPitch); // 상하 회전값 제한
             viewTransform.localRotation = Quaternion.Euler(pitch, 0f, 0f); // 카메라 상하 회전 적용
