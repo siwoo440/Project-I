@@ -1,6 +1,7 @@
 using System.Collections.Generic; // 목록
 using ProjectI.Combat; // 피해
 using ProjectI.Dungeon; // 던전 장치
+using ProjectI.Items; // 42일차: 든 무기 확인
 using ProjectI.Loop; // 맵 로더
 using ProjectI.Monsters; // 몬스터
 using ProjectI.Persistence; // 저장 서비스
@@ -214,7 +215,7 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
             }
         }
 
-        [Rpc(SendTo.NotServer, Delivery = RpcDelivery.Unreliable)]
+        [Rpc(SendTo.NotServer, Delivery = RpcDelivery.Unreliable, InvokePermission = RpcInvokePermission.Server)]
         private void MonsterStatesRpc(MonsterNetState[] states) // 참가자: 몬스터 목표 상태 수신
         {
             foreach (MonsterNetState state in states) // 몬스터
@@ -282,7 +283,7 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
             Instance.MonsterMeleeRpc(PathHash(root)); // 방송
         }
 
-        [Rpc(SendTo.NotServer)]
+        [Rpc(SendTo.NotServer, InvokePermission = RpcInvokePermission.Server)]
         private void MonsterMeleeRpc(int id) // 참가자: 휘두르기 연출 (피해 없음)
         {
             RefreshRegistry(false); // 목록
@@ -321,7 +322,7 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
             Instance.ArrowRpc(PathHash(brain != null ? brain.transform : archer.transform), position, velocity); // 방송
         }
 
-        [Rpc(SendTo.NotServer)]
+        [Rpc(SendTo.NotServer, InvokePermission = RpcInvokePermission.Server)]
         private void ArrowRpc(int id, Vector3 position, Vector3 velocity) // 참가자: 보이기만 하는 화살
         {
             MonoBehaviour mover = Lookup(monsters, id); // 몬스터
@@ -373,15 +374,74 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
         [Rpc(SendTo.Server)]
         private void DamageRequestRpc(int id, float damage, byte damageType, Vector3 hitPoint, Vector3 hitNormal, float stagger, Vector3 force, int attackId, RpcParams rpcParams = default) // 방장: 참가자 공격 적용
         {
-            IDamageable target = Lookup(damageables, id); // 대상
+            ulong sender = rpcParams.Receive.SenderClientId; // 대원
 
-            if (target == null) // 없음
+            if (!NetGuard.Allow(sender, NetChannel.Damage)) // 42일차: 횟수
             {
                 return; // 무시
             }
 
-            NetPlayerAvatar attacker = NetPlayerAvatar.Find(rpcParams.Receive.SenderClientId); // 공격한 대원 몸체
-            GameObject attackerObject = attacker == null ? null : attacker.gameObject; // 공격자 (몬스터가 이 대원을 쫓음)
+            if (!NetGuard.Finite(damage) || damage < 0f || !NetGuard.InWorld(hitPoint) || !NetGuard.Finite(hitNormal) || !NetGuard.Finite(stagger) || !NetGuard.Finite(force) || !System.Enum.IsDefined(typeof(CombatDamageType), (int)damageType)) // 잘못된 값
+            {
+                NetGuard.Reject(sender, "피해", "잘못된 값", 5f); // 경고
+                return; // 무시
+            }
+
+            IDamageable target = Lookup(damageables, id); // 대상
+
+            if (target == null || target.DamageTransform == null) // 없음 (다른 맵·이미 파괴)
+            {
+                return; // 무시
+            }
+
+            NetPlayerAvatar attacker = NetPlayerAvatar.Find(sender); // 공격한 대원 몸체
+
+            if (attacker == null || attacker.IsDeadRemote || !attacker.TryGetNetworkWorldPosition(out Vector3 attackerPosition)) // 몸체 없음·쓰러짐·다른 맵
+            {
+                NetGuard.Reject(sender, "피해", "공격자 상태", 1f); // 경고
+                return; // 무시
+            }
+
+            WorldItem weapon = NetItemSync.EquippedItemOf(sender, out string weaponId); // 든 무기
+
+            if (!NetGuard.TryWeaponProfile(weapon, out float maxDamage, out float reach, out float minInterval)) // 무기가 아님 → 방금 바꾼 무기 확인 (날아가는 화살)
+            {
+                weapon = NetItemSync.RecentEquippedItemOf(sender, out weaponId); // 이전 무기
+
+                if (!NetGuard.TryWeaponProfile(weapon, out maxDamage, out reach, out minInterval)) // 무기 없음
+                {
+                    NetGuard.Reject(sender, "피해", "무기 없음", 1f); // 경고
+                    return; // 무시
+                }
+            }
+
+            Vector3 targetPosition = target.DamageTransform.position; // 대상 위치
+
+            if ((attackerPosition - targetPosition).sqrMagnitude > reach * reach) // 사거리 밖
+            {
+                NetGuard.Reject(sender, "피해", "거리", 1f); // 경고
+                return; // 무시
+            }
+
+            if (!NetGuard.AcceptAttack(sender, weaponId, attackId, id, minInterval)) // 중복·너무 빠름
+            {
+                return; // 무시
+            }
+
+            if (damage > maxDamage * 1.01f + 0.01f) // 무기보다 센 피해
+            {
+                NetGuard.Reject(sender, "피해", "최대치 초과", 2f); // 경고
+                damage = maxDamage; // 무기 최대치로 자름
+            }
+
+            if ((hitPoint - targetPosition).sqrMagnitude > NetGuard.HitPointSlack * NetGuard.HitPointSlack) // 맞은 지점이 대상과 동떨어짐
+            {
+                hitPoint = targetPosition; // 대상 위치로 고침
+            }
+
+            stagger = Mathf.Clamp(stagger, 0f, NetGuard.MaxStagger); // 경직 제한
+            force = Vector3.ClampMagnitude(force, NetGuard.MaxForce); // 넉백 제한
+            GameObject attackerObject = attacker.gameObject; // 공격자 (몬스터가 이 대원을 쫓음)
             DamageInfo info = new DamageInfo(attackerObject, attackerObject, CombatFaction.Player, (CombatDamageType)damageType, damage, hitPoint, hitNormal, stagger, force, attackId); // 피해
             DamagePipeline.TryApply(info, target, out _); // 적용 (체력 방송은 CombatHealth 에서)
         }
@@ -396,7 +456,7 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
             Instance.PlayerDamageRpc(damageInfo.BaseDamage, (byte)damageInfo.DamageType, damageInfo.HitPoint, damageInfo.HitNormal, damageInfo.StaggerPower, damageInfo.Force, damageInfo.AttackId, Instance.RpcTarget.Single(clientId, RpcTargetUse.Temp)); // 전송
         }
 
-        [Rpc(SendTo.SpecifiedInParams)]
+        [Rpc(SendTo.SpecifiedInParams, InvokePermission = RpcInvokePermission.Server)]
         private void PlayerDamageRpc(float damage, byte damageType, Vector3 hitPoint, Vector3 hitNormal, float stagger, Vector3 force, int attackId, RpcParams rpcParams) // 대원: 방장 몬스터의 공격을 내 플레이어에 적용
         {
             PersistentMapLoader loader = PersistentMapLoader.Instance; // 맵 로더
@@ -421,7 +481,7 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
             Instance.HealthRpc(PathHash(health.transform), health.CurrentHealth); // 방송
         }
 
-        [Rpc(SendTo.NotServer)]
+        [Rpc(SendTo.NotServer, InvokePermission = RpcInvokePermission.Server)]
         private void HealthRpc(int id, float value) // 참가자: 체력 적용
         {
             ApplyHealth(id, value); // 적용
@@ -463,9 +523,22 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
         }
 
         [Rpc(SendTo.Server)]
-        private void TrapRequestRpc(int id) // 방장: 참가자 함정 요청
+        private void TrapRequestRpc(int id, RpcParams rpcParams = default) // 방장: 참가자 함정 요청
         {
+            ulong sender = rpcParams.Receive.SenderClientId; // 대원
+
+            if (!NetGuard.Allow(sender, NetChannel.Device)) // 42일차: 횟수
+            {
+                return; // 무시
+            }
+
             TrapControllerBase trap = Lookup(traps, id); // 함정
+
+            if (trap != null && !NetGuard.Near(sender, trap.transform.position, NetGuard.TrapReach)) // 함정에서 멂
+            {
+                NetGuard.Reject(sender, "함정", "거리", 1f); // 경고
+                return; // 무시
+            }
 
             if (trap != null && trap.CanTrigger) // 작동 가능
             {
@@ -473,7 +546,7 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
             }
         }
 
-        [Rpc(SendTo.NotServer)]
+        [Rpc(SendTo.NotServer, InvokePermission = RpcInvokePermission.Server)]
         private void TrapFiredRpc(int id) // 참가자: 함정 작동 연출
         {
             TrapControllerBase trap = Lookup(traps, id); // 함정
@@ -519,11 +592,59 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
         [Rpc(SendTo.Server)]
         private void DeviceChangedRpc(int id, int state, RpcParams rpcParams = default) // 방장: 참가자 장치 조작 적용 후 방송
         {
+            ulong sender = rpcParams.Receive.SenderClientId; // 대원
+
+            if (!NetGuard.Allow(sender, NetChannel.Device)) // 42일차: 횟수
+            {
+                return; // 무시
+            }
+
+            if (state < 0 || state > MaxDeviceState) // 잘못된 상태 번호
+            {
+                NetGuard.Reject(sender, "장치", "잘못된 값", 5f); // 경고
+                return; // 무시
+            }
+
+            INetworkDevice device = Lookup(devices, id); // 장치
+            MonoBehaviour behaviour = device as MonoBehaviour; // 컴포넌트
+
+            if (device == null || behaviour == null) // 없음
+            {
+                return; // 무시
+            }
+
+            float reach = behaviour is DungeonElevator ? NetGuard.ElevatorReach : NetGuard.InteractReach; // 승강기는 다른 층 버튼
+            string denied = null; // 거절 이유
+
+            if (!NetGuard.Near(sender, behaviour.transform.position, reach)) // 멂
+            {
+                denied = "거리"; // 이유
+            }
+            else if (behaviour is LockedRoomDoor lockedDoor && !lockedDoor.IsOpen && state == 1 && !NetItemSync.ConsumeKeyCredit(sender, lockedDoor.KeyItemId)) // 열쇠 없이 잠긴 방 열기
+            {
+                denied = "열쇠 없음"; // 이유
+            }
+
+            if (denied != null) // 거절
+            {
+                NetGuard.Reject(sender, "장치", denied, denied == "거리" ? 1f : 2f); // 경고
+                DeviceCorrectionRpc(id, device.NetworkState, RpcTarget.Single(sender, RpcTargetUse.Temp)); // 그 대원 화면을 방장 상태로 되돌림
+                return; // 종료
+            }
+
             ApplyDevice(id, state); // 적용
-            DeviceStateRpc(id, state, rpcParams.Receive.SenderClientId); // 방송
+            DeviceStateRpc(id, state, sender); // 방송
         }
 
-        [Rpc(SendTo.NotServer)]
+        private const int MaxDeviceState = 64; // 장치 상태 번호 상한 (승강기 층 포함)
+
+        [Rpc(SendTo.SpecifiedInParams, InvokePermission = RpcInvokePermission.Server)]
+        private void DeviceCorrectionRpc(int id, int state, RpcParams rpcParams) // 참가자: 거절된 조작을 방장 상태로 되돌림
+        {
+            ApplyDevice(id, state); // 적용 (잠긴 문은 다시 잠기지 않음)
+        }
+
+        [Rpc(SendTo.NotServer, InvokePermission = RpcInvokePermission.Server)]
         private void DeviceStateRpc(int id, int state, ulong actor) // 참가자: 장치 상태 적용
         {
             if (actor == NetworkManager.LocalClientId) // 내가 조작함
@@ -593,6 +714,11 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
         [Rpc(SendTo.Server)]
         private void FullStateRequestRpc(RpcParams rpcParams = default) // 방장: 체력·장치 상태 전체 전송
         {
+            if (!NetGuard.Allow(rpcParams.Receive.SenderClientId, NetChannel.Snapshot)) // 42일차: 횟수 (목록 만들기는 무거움)
+            {
+                return; // 무시
+            }
+
             RefreshRegistry(true); // 목록
             List<NetValueEntry> health = new List<NetValueEntry>(); // 체력
             List<NetValueEntry> deviceStates = new List<NetValueEntry>(); // 장치
@@ -618,7 +744,7 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
             FullStateRpc(health.ToArray(), deviceStates.ToArray(), RpcTarget.Single(rpcParams.Receive.SenderClientId, RpcTargetUse.Temp)); // 전송
         }
 
-        [Rpc(SendTo.SpecifiedInParams)]
+        [Rpc(SendTo.SpecifiedInParams, InvokePermission = RpcInvokePermission.Server)]
         private void FullStateRpc(NetValueEntry[] health, NetValueEntry[] deviceStates, RpcParams rpcParams) // 참가자: 전체 상태 적용
         {
             RefreshRegistry(true); // 목록

@@ -22,6 +22,7 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
 
         public bool IsOpen => isOpen; // 열림 여부 공개
         public bool IsLocked => isLocked; // 잠김 여부 공개
+        public string RequiredKeyId => requiredKeyId; // 42일차: 방장이 참가자 열쇠 사용을 확인
         public Transform Leaf => leaf; // 문짝 공개
 
         public string Prompt => isLocked ? "잠긴 문 — 열쇠 필요" : isOpen ? "문 닫기" : "문 열기"; // 안내 문구

@@ -29,13 +29,14 @@ namespace ProjectI.UI // 메뉴·창 UI 네임스페이스
         private RetroHover visibilityHover; // 공개 범위 표시
         private bool publicRoom = true; // 공개 방 (끄면 코드 전용)
         private InputField portField; // 포트
+        private InputField passwordField; // 42일차: 주소 방 암호 (방 만들기·입장 공용)
         private Button hostButton; // 방 만들기
         private Button joinButton; // 참가
         private bool connecting; // 연결 진행 중
 
         public event Action Closed; // 닫힘 (메뉴로 돌아가기)
-        public event Action<ushort, bool> HostRequested; // 방 만들기 (포트, 공개 방 여부)
-        public event Action<string, ushort> JoinRequested; // 입장 (코드 또는 주소, 포트 칸)
+        public event Action<ushort, bool, string> HostRequested; // 방 만들기 (포트, 공개 방 여부, 주소 방 암호)
+        public event Action<string, ushort, string> JoinRequested; // 입장 (코드 또는 주소, 포트 칸, 주소 방 암호)
         public bool IsOpen => gameObject.activeSelf; // 열림 여부
         public int ShownCount => content == null ? 0 : content.childCount; // 표시된 서버 수 (검증용)
         public string StatusText => statusLabel == null ? string.Empty : statusLabel.text; // 상태 줄 (검증용)
@@ -121,13 +122,18 @@ namespace ProjectI.UI // 메뉴·창 UI 네임스페이스
         {
             if (!connecting) // 대기 중 아님
             {
-                HostRequested?.Invoke(ReadPort(), publicRoom); // 알림
+                HostRequested?.Invoke(ReadPort(), publicRoom, passwordField.text); // 알림
             }
         }
 
         public void SetJoinInput(string text) // 코드·주소 입력 지정 (검증용)
         {
             addressField.text = text ?? string.Empty; // 입력
+        }
+
+        public void SetPassword(string text) // 암호 입력 지정 (검증용)
+        {
+            passwordField.text = text ?? string.Empty; // 입력
         }
 
         private void ToggleVisibility() // 공개 ↔ 코드 전용
@@ -140,7 +146,7 @@ namespace ProjectI.UI // 메뉴·창 UI 네임스페이스
         {
             if (!connecting) // 대기 중 아님
             {
-                JoinRequested?.Invoke(addressField.text, ReadPort()); // 알림
+                JoinRequested?.Invoke(addressField.text, ReadPort(), passwordField.text); // 알림
             }
         }
 
@@ -282,6 +288,12 @@ namespace ProjectI.UI // 메뉴·창 UI 네임스페이스
             portField.characterLimit = 5; // 길이
             joinButton = RetroUi.BoxButton(root, "Join", "[ 입장 ]", 24, RequestJoin); // 코드·주소 입장
             RetroUi.Place((RectTransform)joinButton.transform, new Vector2(0f, 0f), new Vector2(0f, 0.5f), new Vector2(1205f, 170f), new Vector2(180f, 54f)); // 위치
+            Text passwordTitle = RetroUi.Label(root, "PasswordTitle", "암호", 22, RetroUi.Orange, TextAnchor.MiddleRight); // 42일차: 주소 방 암호
+            RetroUi.Place(passwordTitle.rectTransform, new Vector2(0f, 0f), new Vector2(0f, 0.5f), new Vector2(1400f, 170f), new Vector2(70f, 54f)); // 위치
+            passwordField = RetroUi.InputBox(root, "Password", "주소 방만 (선택)", 20, RetroUi.Green); // 암호
+            RetroUi.Place((RectTransform)passwordField.transform, new Vector2(0f, 0f), new Vector2(0f, 0.5f), new Vector2(1480f, 170f), new Vector2(250f, 54f)); // 위치
+            passwordField.contentType = InputField.ContentType.Password; // 가림
+            passwordField.characterLimit = 32; // 길이
 
             Button back = RetroUi.TextButton(root, "Back", "메뉴로 돌아가기", 26, Close); // 돌아가기
             RetroUi.Place((RectTransform)back.transform, new Vector2(0f, 0f), new Vector2(0f, 0.5f), new Vector2(120f, 90f), new Vector2(360f, 50f)); // 왼쪽 아래

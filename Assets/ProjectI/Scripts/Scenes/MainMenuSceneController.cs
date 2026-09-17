@@ -101,7 +101,7 @@ namespace ProjectI.Scenes // 씬 기능 네임스페이스
             }
         }
 
-        private void HostGame(ushort port, bool publicRoom) // 방 만들기 (현재 저장으로 방장 시작, 저장이 없으면 1일차)
+        private void HostGame(ushort port, bool publicRoom, string password) // 방 만들기 (현재 저장으로 방장 시작, 저장이 없으면 1일차 · 42일차: 주소 방 암호)
         {
             if (leaving || Flow() == null) // 이동 중
             {
@@ -110,7 +110,7 @@ namespace ProjectI.Scenes // 씬 기능 네임스페이스
 
             RoomVisibility visibility = publicRoom ? RoomVisibility.Public : RoomVisibility.CodeOnly; // 공개 범위
 
-            if (!NetworkSession.BeginHost(port, visibility, out string error)) // 실패
+            if (!NetworkSession.BeginHost(port, visibility, password, out string error)) // 실패
             {
                 serverPanel.ShowStatus(error); // 이유
                 return; // 종료
@@ -118,12 +118,12 @@ namespace ProjectI.Scenes // 씬 기능 네임스페이스
 
             leaving = true; // 중복 방지
             serverPanel.SetConnecting(true); // 버튼 잠금
-            string mode = NetworkSession.Transport == SessionTransport.Steam ? (publicRoom ? "공개 Steam 방" : "코드 전용 Steam 방") : $"포트 {port} 방"; // 방식
+            string mode = NetworkSession.Transport == SessionTransport.Steam ? (publicRoom ? "공개 Steam 방" : "코드 전용 Steam 방") : $"포트 {port}{(NetworkSession.HasPassword ? " 암호" : string.Empty)} 방"; // 방식
             serverPanel.ShowStatus(continueButton.interactable ? $"{continueDay}일차 저장으로 {mode}을 엽니다..." : $"1일차부터 {mode}을 엽니다..."); // 안내
             Flow().ContinueGame(); // 게임 월드 → 준비되면 방 열림
         }
 
-        private void JoinGame(string input, ushort port) // 41일차: 코드면 Steam 방 찾기, 아니면 주소(주소:포트)로 참가
+        private void JoinGame(string input, ushort port, string password) // 41일차: 코드면 Steam 방 찾기, 아니면 주소(주소:포트)로 참가 (42일차: 주소 방 암호)
         {
             if (leaving) // 이동 중
             {
@@ -145,7 +145,7 @@ namespace ProjectI.Scenes // 씬 기능 네임스페이스
                 serverPanel.ShowStatus($"코드({RoomCode.Length}자리) 또는 주소(예: 192.168.0.5:7777)를 입력하세요"); // 안내
                 return; // 종료
             }
-            else if (!NetworkSession.BeginJoin(host, targetPort, out error)) // 실패
+            else if (!NetworkSession.BeginJoin(host, targetPort, password, out error)) // 실패
             {
                 serverPanel.ShowStatus(error); // 이유
                 return; // 종료

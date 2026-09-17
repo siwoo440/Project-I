@@ -142,6 +142,31 @@ namespace ProjectI.Net.Steam // Steam 연결 네임스페이스
             codeResult.Set(SteamMatchmaking.RequestLobbyList()); // 요청
         }
 
+        public static bool IsMember(CSteamID user) // 42일차: 현재 로비 멤버인지 (방장 확인용)
+        {
+            if (!InLobby || !SteamService.Initialized || !user.IsValid()) // 로비 없음
+            {
+                return false; // 아님
+            }
+
+            int count = SteamMatchmaking.GetNumLobbyMembers(CurrentLobby); // 인원
+
+            for (int index = 0; index < count; index++) // 멤버
+            {
+                if (SteamMatchmaking.GetLobbyMemberByIndex(CurrentLobby, index) == user) // 일치
+                {
+                    return true; // 멤버
+                }
+            }
+
+            return false; // 아님
+        }
+
+        public static bool HostLeft(CSteamID host) // 42일차: 참가자 — 방장이 로비를 떠났는지 (로비 주인이 바뀜)
+        {
+            return InLobby && SteamService.Initialized && host.IsValid() && SteamMatchmaking.GetLobbyOwner(CurrentLobby) != host; // 결과
+        }
+
         public static void UpdateHostData(int players, int day, bool challenge) // 방장: 로비 정보 갱신
         {
             if (!IsLobbyOwner) // 방장 아님
@@ -151,7 +176,7 @@ namespace ProjectI.Net.Steam // Steam 연결 네임스페이스
 
             SteamMatchmaking.SetLobbyData(CurrentLobby, DayKey, day.ToString()); // 일차
             SteamMatchmaking.SetLobbyData(CurrentLobby, ChallengeKey, challenge ? "1" : "0"); // 도전 원정
-            SteamMatchmaking.SetLobbyJoinable(CurrentLobby, players < NetworkSession.MaxPlayers); // 가득 차면 목록에서 숨김
+            SteamMatchmaking.SetLobbyJoinable(CurrentLobby, players < NetworkSession.MaxPlayers && !NetworkSession.RoomLocked); // 가득 찼거나 잠그면 검색에서 숨김
         }
 
         public static void OpenInviteOverlay() // 친구 초대 창

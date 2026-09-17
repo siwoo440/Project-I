@@ -68,6 +68,11 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
         private int incomingRequest = -1; // 받는 중인 요청
         private float nextSyncCheck; // 다음 확인
         private string lastEquippedSent = "-"; // 마지막으로 보낸 손 아이템 ("-" = 아직 안 보냄)
+        private readonly Dictionary<string, (ulong sender, float time)> recentRelease = new Dictionary<string, (ulong, float)>(); // 42일차: 방금 내려놓은 대원 (사망 흩뿌림 등 다시 알림 허용)
+        private readonly Dictionary<ulong, (string id, float time)> previousEquipped = new Dictionary<ulong, (string, float)>(); // 42일차: 직전에 든 무기 (날아가는 화살 인정)
+        private readonly Dictionary<ulong, List<(ItemDefinition definition, float time)>> keyCredits = new Dictionary<ulong, List<(ItemDefinition, float)>>(); // 42일차: 방금 소모한 열쇠 (문 열기 확인)
+        private const float ReleaseMemorySeconds = 3f; // 내려놓은 뒤 다시 알림 허용 시간
+        private const float KeyCreditSeconds = 6f; // 열쇠 소모 후 문을 열 수 있는 시간
 
         public static NetItemSync Instance { get; private set; } // 현재 동기화
         public static bool Applying { get; private set; } // 받은 변경 적용 중 (다시 보내지 않음)
@@ -272,6 +277,96 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
             Instance.SpawnedRpc(JsonUtility.ToJson(state)); // 방송
         }
 
+        public static WorldItem EquippedItemOf(ulong clientId, out string id) // 42일차: 방장이 아는 그 대원의 손 아이템
+        {
+            id = string.Empty; // 기본
+
+            if (Instance == null || !Instance.equipped.TryGetValue(clientId, out string held) || string.IsNullOrEmpty(held)) // 빈손
+            {
+                return null; // 없음
+            }
+
+            id = held; // 아이디
+            return Find(held); // 아이템
+        }
+
+        public static WorldItem RecentEquippedItemOf(ulong clientId, out string id) // 42일차: 몇 초 안에 들고 있던 이전 아이템
+        {
+            id = string.Empty; // 기본
+
+            if (Instance == null || !Instance.previousEquipped.TryGetValue(clientId, out (string id, float time) previous) || Time.unscaledTime - previous.time > NetGuard.WeaponMemorySeconds || string.IsNullOrEmpty(previous.id)) // 없음·오래됨
+            {
+                return null; // 없음
+            }
+
+            id = previous.id; // 아이디
+            return Find(previous.id); // 아이템
+        }
+
+        public static bool ConsumeKeyCredit(ulong clientId, string requiredKeyId) // 42일차: 그 대원이 방금 맞는 열쇠를 소모했는지 확인하고 사용
+        {
+            if (clientId == NetworkManager.ServerClientId) // 방장 (자기 화면에서 이미 확인)
+            {
+                return true; // 허용
+            }
+
+            if (Instance == null || !Instance.keyCredits.TryGetValue(clientId, out List<(ItemDefinition definition, float time)> credits)) // 기록 없음
+            {
+                return false; // 거부
+            }
+
+            for (int index = credits.Count - 1; index >= 0; index--) // 최근부터
+            {
+                (ItemDefinition definition, float time) credit = credits[index]; // 기록
+
+                if (Time.unscaledTime - credit.time > KeyCreditSeconds) // 오래됨
+                {
+                    credits.RemoveAt(index); // 정리
+                    continue; // 다음
+                }
+
+                if (credit.definition != null && credit.definition.Matches(requiredKeyId)) // 맞는 열쇠
+                {
+                    credits.RemoveAt(index); // 사용
+                    return true; // 허용
+                }
+            }
+
+            return false; // 없음
+        }
+
+        public static void ForgetClient(ulong clientId) // 42일차: 나간 대원 기록 정리
+        {
+            if (Instance == null) // 없음
+            {
+                return; // 생략
+            }
+
+            Instance.previousEquipped.Remove(clientId); // 정리
+            Instance.keyCredits.Remove(clientId); // 정리
+        }
+
+        private bool HeldBy(string id, ulong sender) // 방장 기록상 그 대원이 가진 아이템 (방금 내려놓은 것 포함)
+        {
+            if (sender == NetworkManager.ServerClientId) // 방장
+            {
+                return true; // 허용
+            }
+
+            if (holders.TryGetValue(id, out ulong holder)) // 소지 기록
+            {
+                return holder == sender; // 결과
+            }
+
+            return recentRelease.TryGetValue(id, out (ulong sender, float time) release) && release.sender == sender && Time.unscaledTime - release.time <= ReleaseMemorySeconds; // 방금 내려놓음
+        }
+
+        private static bool TryWorldPosition(WorldItem item, out Vector3 position) // 방장 화면 아이템 위치
+        {
+            position = item == null ? Vector3.zero : item.transform.position; // 위치
+            return item != null; // 결과
+        }
+
         // ───────────────────────── 참가자 경제 요청 ─────────────────────────
 
         public static bool RequestSale(IList<WorldItem> items) // 참가자: 판매 요청 (처리했으면 true)
@@ -344,12 +439,39 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
         {
             ulong sender = rpcParams.Receive.SenderClientId; // 대원
 
+            if (!NetGuard.Allow(sender, NetChannel.Item)) // 42일차: 횟수
+            {
+                return; // 무시
+            }
+
+            if (!NetGuard.ValidId(id)) // 잘못된 ID
+            {
+                NetGuard.Reject(sender, "줍기", "잘못된 ID", 5f); // 경고
+                return; // 무시
+            }
+
             if (holders.TryGetValue(id, out ulong holder) && holder != sender) // 다른 대원이 먼저 가짐
             {
                 RevokeRpc(id, RpcTarget.Single(sender, RpcTargetUse.Temp)); // 되돌리기
                 return; // 종료
             }
 
+            WorldItem target = Find(id); // 방장 화면 아이템
+
+            if (target == null) // 방장이 모르는 아이템 (다음 전체 목록에서 맞춤)
+            {
+                NetGuard.Reject(sender, "줍기", "없는 아이템", 0f); // 기록만
+                return; // 무시
+            }
+
+            if (holder != sender && TryWorldPosition(target, out Vector3 itemPosition) && !NetGuard.Near(sender, itemPosition, NetGuard.InteractReach)) // 손이 닿지 않음
+            {
+                NetGuard.Reject(sender, "줍기", "거리", 1f); // 경고
+                RevokeRpc(id, RpcTarget.Single(sender, RpcTargetUse.Temp)); // 되돌리기
+                return; // 종료
+            }
+
+            recentRelease.Remove(id); // 정리
             holders[id] = sender; // 기록
             ApplyEvent(EventPickedUp, sender, id, Vector3.zero, Quaternion.identity, Vector3.zero, false, string.Empty); // 방장 화면 적용
             ItemEventRpc(EventPickedUp, sender, id, Vector3.zero, Quaternion.identity, Vector3.zero, false, string.Empty); // 방송
@@ -360,12 +482,43 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
         {
             ulong sender = rpcParams.Receive.SenderClientId; // 대원
 
-            if (holders.TryGetValue(id, out ulong holder) && holder != sender) // 다른 대원 소지
+            if (!NetGuard.Allow(sender, NetChannel.Item)) // 42일차: 횟수
             {
                 return; // 무시
             }
 
+            if (!NetGuard.ValidId(id) || !NetGuard.InWorld(pos) || !NetGuard.Finite(rot) || !NetGuard.Finite(velocity)) // 잘못된 값
+            {
+                NetGuard.Reject(sender, "내려놓기", "잘못된 값", 5f); // 경고
+                return; // 무시
+            }
+
+            if (!HeldBy(id, sender)) // 가진 적 없는 아이템
+            {
+                NetGuard.Reject(sender, "내려놓기", "소지 아님", 0f); // 기록만 (순서 어긋남 가능)
+                return; // 무시
+            }
+
+            Transform wagon = PersistentMapLoader.Instance == null ? null : PersistentMapLoader.Instance.WagonRoot; // 마차
+            Vector3 worldPosition = inWagon && wagon != null ? wagon.TransformPoint(pos) : pos; // 월드 위치
+
+            if (!NetGuard.Near(sender, worldPosition, NetGuard.DropReach)) // 먼 곳에 내려놓음 (순간이동)
+            {
+                NetGuard.Reject(sender, "내려놓기", "거리", 1f); // 경고
+
+                if (!NetGuard.TryGetPosition(sender, out Vector3 body)) // 몸체 위치 모름
+                {
+                    return; // 무시
+                }
+
+                inWagon = false; // 월드 좌표
+                pos = body + Vector3.up * 0.5f; // 대원 발밑으로 고침
+                velocity = Vector3.zero; // 던지기 취소
+            }
+
+            velocity = Vector3.ClampMagnitude(velocity, NetGuard.MaxThrowSpeed); // 던지기 속도 제한
             holders.Remove(id); // 해제
+            recentRelease[id] = (sender, Time.unscaledTime); // 기록
             ApplyEvent(EventDropped, sender, id, pos, rot, velocity, inWagon, string.Empty); // 적용
             ItemEventRpc(EventDropped, sender, id, pos, rot, velocity, inWagon, string.Empty); // 방송
         }
@@ -374,6 +527,25 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
         private void EquippedRpc(string id, RpcParams rpcParams = default) // 방장: 참가자가 손에 든 아이템
         {
             ulong sender = rpcParams.Receive.SenderClientId; // 대원
+
+            if (!NetGuard.Allow(sender, NetChannel.Item)) // 42일차: 횟수
+            {
+                return; // 무시
+            }
+
+            id ??= string.Empty; // 빈손
+
+            if (id.Length > 0 && (!NetGuard.ValidId(id) || !HeldBy(id, sender))) // 가지지 않은 아이템을 손에 듦
+            {
+                NetGuard.Reject(sender, "손", "소지 아님", id.Length > NetGuard.MaxIdLength ? 5f : 0f); // 기록
+                return; // 무시
+            }
+
+            if (equipped.TryGetValue(sender, out string before) && before != id) // 바뀜
+            {
+                previousEquipped[sender] = (before, Time.unscaledTime); // 이전 무기 기억
+            }
+
             ApplyEvent(EventEquipped, sender, id, Vector3.zero, Quaternion.identity, Vector3.zero, false, string.Empty); // 적용
             ItemEventRpc(EventEquipped, sender, id, Vector3.zero, Quaternion.identity, Vector3.zero, false, string.Empty); // 방송
         }
@@ -382,7 +554,36 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
         private void StoredRpc(string id, byte place, string key, RpcParams rpcParams = default) // 방장: 참가자가 보관
         {
             ulong sender = rpcParams.Receive.SenderClientId; // 대원
+
+            if (!NetGuard.Allow(sender, NetChannel.Item)) // 42일차: 횟수
+            {
+                return; // 무시
+            }
+
+            key ??= string.Empty; // 경로
+
+            if (!NetGuard.ValidId(id) || (place != (byte)NetItemPlace.WagonStorage && place != (byte)NetItemPlace.Pedestal) || !NetGuard.ValidPath(key, true)) // 잘못된 값
+            {
+                NetGuard.Reject(sender, "보관", "잘못된 값", 5f); // 경고
+                return; // 무시
+            }
+
+            if (!HeldBy(id, sender)) // 가지지 않은 아이템
+            {
+                NetGuard.Reject(sender, "보관", "소지 아님", 0f); // 기록
+                return; // 무시
+            }
+
+            Component container = place == (byte)NetItemPlace.Pedestal ? (Component)FindPedestal(key) : FindAnyObjectByType<WagonSharedStorage>(); // 보관 장소
+
+            if (container == null || !NetGuard.Near(sender, container.transform.position, NetGuard.InteractReach)) // 없음·멂
+            {
+                NetGuard.Reject(sender, "보관", container == null ? "장소 없음" : "거리", container == null ? 0f : 1f); // 경고
+                return; // 무시 (방장 기록상 계속 소지)
+            }
+
             holders.Remove(id); // 해제
+            recentRelease.Remove(id); // 정리
             string packed = (char)('0' + place) + key; // 위치 + 경로
             ApplyEvent(EventStored, sender, id, Vector3.zero, Quaternion.identity, Vector3.zero, false, packed); // 적용
             ItemEventRpc(EventStored, sender, id, Vector3.zero, Quaternion.identity, Vector3.zero, false, packed); // 방송
@@ -392,7 +593,39 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
         private void DestroyedRpc(string id, RpcParams rpcParams = default) // 방장: 참가자 아이템 사라짐
         {
             ulong sender = rpcParams.Receive.SenderClientId; // 대원
+
+            if (!NetGuard.Allow(sender, NetChannel.Item)) // 42일차: 횟수
+            {
+                return; // 무시
+            }
+
+            if (!NetGuard.ValidId(id) || !HeldBy(id, sender)) // 가지지 않은 아이템을 없앰
+            {
+                NetGuard.Reject(sender, "소모", NetGuard.ValidId(id) ? "소지 아님" : "잘못된 ID", NetGuard.ValidId(id) ? 1f : 5f); // 경고
+                return; // 무시
+            }
+
+            WorldItem consumed = Find(id); // 소모한 아이템
+            WorldItemIdentity identity = consumed == null ? null : consumed.GetComponent<WorldItemIdentity>(); // 식별
+
+            if (identity != null && identity.Definition != null) // 종류 확인
+            {
+                if (!keyCredits.TryGetValue(sender, out List<(ItemDefinition definition, float time)> credits)) // 처음
+                {
+                    credits = new List<(ItemDefinition, float)>(); // 생성
+                    keyCredits[sender] = credits; // 등록
+                }
+
+                credits.Add((identity.Definition, Time.unscaledTime)); // 문 열기 확인용
+
+                if (credits.Count > 8) // 너무 많음
+                {
+                    credits.RemoveAt(0); // 오래된 것 제거
+                }
+            }
+
             holders.Remove(id); // 해제
+            recentRelease.Remove(id); // 정리
             ApplyEvent(EventDestroyed, sender, id, Vector3.zero, Quaternion.identity, Vector3.zero, false, string.Empty); // 적용
             ItemEventRpc(EventDestroyed, sender, id, Vector3.zero, Quaternion.identity, Vector3.zero, false, string.Empty); // 방송
         }
@@ -400,16 +633,39 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
         [Rpc(SendTo.Server)]
         private void SaleRequestRpc(string ids, RpcParams rpcParams = default) // 방장: 참가자 판매 요청
         {
+            ulong sender = rpcParams.Receive.SenderClientId; // 대원
+
+            if (!NetGuard.Allow(sender, NetChannel.Economy)) // 42일차: 횟수
+            {
+                return; // 무시
+            }
+
+            ids ??= string.Empty; // 목록
+
+            if (ids.Length > (NetGuard.MaxIdLength + 1) * NetGuard.MaxSaleItems) // 너무 김
+            {
+                NetGuard.Reject(sender, "판매", "목록 길이", 5f); // 경고
+                return; // 무시
+            }
+
             OfficeSaleCounter counter = FindAnyObjectByType<OfficeSaleCounter>(); // 판매대
+
+            if (counter == null || !NetGuard.Near(sender, counter.transform.position, NetGuard.CounterReach)) // 판매대에서 멂
+            {
+                NetGuard.Reject(sender, "판매", "거리", 1f); // 경고
+                NoticeRpc("판매대 가까이에서 판매할 수 있습니다", RpcTarget.Single(sender, RpcTargetUse.Temp)); // 안내
+                return; // 무시
+            }
+
             List<WorldItem> items = new List<WorldItem>(); // 대상
 
-            foreach (string id in (ids ?? string.Empty).Split('|')) // 아이디
+            foreach (string id in ids.Split('|')) // 아이디
             {
                 WorldItem item = Find(id); // 아이템
 
-                if (item != null) // 있음
+                if (item != null && items.Count < NetGuard.MaxSaleItems) // 있음 (최대 수)
                 {
-                    items.Add(item); // 추가
+                    items.Add(item); // 추가 (판매대 위 여부는 Sell 에서 확인)
                 }
             }
 
@@ -420,8 +676,22 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
         [Rpc(SendTo.Server)]
         private void PurchaseRequestRpc(int entryIndex, int quantity, RpcParams rpcParams = default) // 방장: 참가자 구매 요청
         {
+            ulong sender = rpcParams.Receive.SenderClientId; // 대원
+
+            if (!NetGuard.Allow(sender, NetChannel.Economy)) // 42일차: 횟수
+            {
+                return; // 무시
+            }
+
             OfficeShopShelf shelf = FindAnyObjectByType<OfficeShopShelf>(); // 진열대
             ShopPurchaseResult result = ShopPurchaseResult.InvalidEntry; // 결과
+
+            if (shelf != null && !NetGuard.Near(sender, shelf.transform.position, NetGuard.CounterReach)) // 진열대에서 멂
+            {
+                NetGuard.Reject(sender, "구매", "거리", 1f); // 경고
+                NoticeRpc("진열대 가까이에서 구매할 수 있습니다", RpcTarget.Single(sender, RpcTargetUse.Temp)); // 안내
+                return; // 무시
+            }
 
             if (shelf != null && shelf.Catalog != null && entryIndex >= 0 && entryIndex < shelf.Catalog.Entries.Count) // 상품 확인
             {
@@ -434,7 +704,21 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
         [Rpc(SendTo.Server)]
         private void DebtPaymentRequestRpc(RpcParams rpcParams = default) // 방장: 참가자 채무 상환 요청
         {
+            ulong sender = rpcParams.Receive.SenderClientId; // 대원
+
+            if (!NetGuard.Allow(sender, NetChannel.Economy)) // 42일차: 횟수
+            {
+                return; // 무시
+            }
+
             DebtLedger ledger = FindAnyObjectByType<DebtLedger>(); // 장부
+
+            if (ledger != null && !NetGuard.Near(sender, ledger.transform.position, NetGuard.CounterReach)) // 장부에서 멂
+            {
+                NetGuard.Reject(sender, "상환", "거리", 1f); // 경고
+                return; // 무시
+            }
+
             int paid = ledger == null ? 0 : ledger.PayAvailableFunds(); // 상환 (상태는 월드 상태로 전달)
             NoticeRpc(paid > 0 ? $"채무 {paid:N0} 상환" : "상환할 수 없습니다", RpcTarget.Single(rpcParams.Receive.SenderClientId, RpcTargetUse.Temp)); // 결과
         }
@@ -442,8 +726,14 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
         [Rpc(SendTo.Server)]
         private void RequestSnapshotRpc(int request, RpcParams rpcParams = default) // 방장: 참가자에게 현재 아이템 목록 전송
         {
-            List<NetItemState> states = BuildSnapshot(); // 목록
             ulong receiver = rpcParams.Receive.SenderClientId; // 받을 대원
+
+            if (!NetGuard.Allow(receiver, NetChannel.Snapshot)) // 42일차: 횟수 (목록 만들기는 무거움)
+            {
+                return; // 무시
+            }
+
+            List<NetItemState> states = BuildSnapshot(); // 목록
             int index = 0; // 위치
 
             do
@@ -465,7 +755,7 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
 
         // ───────────────────────── 참가자 수신 ─────────────────────────
 
-        [Rpc(SendTo.NotServer)]
+        [Rpc(SendTo.NotServer, InvokePermission = RpcInvokePermission.Server)]
         private void ItemEventRpc(byte kind, ulong actor, string id, Vector3 pos, Quaternion rot, Vector3 velocity, bool inWagon, string key) // 참가자: 아이템 변경 적용
         {
             if (actor == NetworkManager.LocalClientId) // 내가 한 일
@@ -476,7 +766,7 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
             ApplyEvent(kind, actor, id, pos, rot, velocity, inWagon, key); // 적용
         }
 
-        [Rpc(SendTo.NotServer)]
+        [Rpc(SendTo.NotServer, InvokePermission = RpcInvokePermission.Server)]
         private void SpawnedRpc(string json) // 참가자: 새 아이템 생성
         {
             NetItemState state = JsonUtility.FromJson<NetItemState>(json); // 상태
@@ -503,7 +793,7 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
             }
         }
 
-        [Rpc(SendTo.SpecifiedInParams)]
+        [Rpc(SendTo.SpecifiedInParams, InvokePermission = RpcInvokePermission.Server)]
         private void RevokeRpc(string id, RpcParams rpcParams) // 참가자: 다른 대원이 먼저 가져간 아이템 되돌리기
         {
             WorldItem item = Find(id); // 아이템
@@ -519,13 +809,13 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
             GameHud.ShowNotice("다른 원정대원이 먼저 가져갔습니다", 2f); // 안내
         }
 
-        [Rpc(SendTo.SpecifiedInParams)]
+        [Rpc(SendTo.SpecifiedInParams, InvokePermission = RpcInvokePermission.Server)]
         private void NoticeRpc(string text, RpcParams rpcParams) // 특정 대원 알림
         {
             GameHud.ShowNotice(text, 2.5f); // 표시
         }
 
-        [Rpc(SendTo.SpecifiedInParams)]
+        [Rpc(SendTo.SpecifiedInParams, InvokePermission = RpcInvokePermission.Server)]
         private void SnapshotBatchRpc(string json, RpcParams rpcParams) // 참가자: 목록 조각 수신
         {
             NetItemBatch batch = JsonUtility.FromJson<NetItemBatch>(json); // 조각

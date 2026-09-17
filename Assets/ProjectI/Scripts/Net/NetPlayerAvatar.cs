@@ -39,10 +39,48 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
         public bool IsAboard => aboard.Value; // 탑승
         public bool IsDeadRemote => dead.Value; // 쓰러짐
         public int PlayerNumber => (int)OwnerClientId + 1; // 표시 번호
-        public string DisplayName => playerName.Value.Length > 0 ? playerName.Value.ToString() : $"원정대원 {PlayerNumber}"; // 표시 이름 (Steam 이름 우선)
+        public string DisplayName // 표시 이름 (Steam 이름 우선 · 42일차: 받은 이름도 다시 정리)
+        {
+            get
+            {
+                string cleaned = playerName.Value.Length > 0 ? NetGuard.CleanName(playerName.Value.ToString()) : string.Empty; // 정리
+                return cleaned.Length > 0 ? cleaned : $"원정대원 {PlayerNumber}"; // 없으면 번호
+            }
+        }
         public Transform HandPoint => handPoint; // 손
         public Transform PocketPoint => pocketPoint; // 주머니
         public bool IsVisibleHere => IsSpawned && visible; // 내 화면과 같은 맵에 보이는 중
+
+        public bool TryGetNetworkWorldPosition(out Vector3 worldPosition) // 42일차: 받은 위치를 내 화면 월드 좌표로 (같은 맵이고 값이 정상일 때만)
+        {
+            worldPosition = transform.position; // 기본
+            PersistentMapLoader loader = PersistentMapLoader.Instance; // 맵 로더
+            Transform wagon = loader == null ? null : loader.WagonRoot; // 마차
+
+            if (!IsSpawned || loader == null || !NetGuard.InWorld(position.Value)) // 준비 전·잘못된 값
+            {
+                return false; // 모름
+            }
+
+            if (riding.Value) // 마차 기준 좌표
+            {
+                if (wagon == null) // 마차 없음
+                {
+                    return false; // 모름
+                }
+
+                worldPosition = wagon.TransformPoint(position.Value); // 변환
+                return true; // 결과
+            }
+
+            if ((byte)loader.CurrentDestination != destination.Value || loader.IsTransitioning) // 다른 맵·이동 중
+            {
+                return false; // 비교 불가
+            }
+
+            worldPosition = position.Value; // 월드 좌표
+            return true; // 결과
+        }
 
         public static NetPlayerAvatar Find(ulong clientId) // 대원 번호로 찾기
         {
@@ -85,7 +123,7 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
 
             if (IsOwner) // 내 몸체
             {
-                playerName.Value = ToFixedName(NetworkSession.LocalPlayerName); // Steam 이름 (없으면 빈칸 → 번호)
+                playerName.Value = ToFixedName(NetGuard.CleanName(NetworkSession.LocalPlayerName)); // Steam 이름 (정리 · 없으면 빈칸 → 번호)
             }
 
             playerName.OnValueChanged += HandleNameChanged; // 이름 바뀜
@@ -237,6 +275,11 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
             {
                 hasShown = false; // 다음에 즉시 이동
                 return; // 종료
+            }
+
+            if (!NetGuard.InWorld(position.Value) || !NetGuard.Finite(yaw.Value)) // 42일차: 잘못된 값 (조작된 게임) → 마지막 위치 유지
+            {
+                return; // 무시
             }
 
             Vector3 target = riding.Value ? wagon.TransformPoint(position.Value) : position.Value; // 목표 위치

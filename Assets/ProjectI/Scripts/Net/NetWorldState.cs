@@ -194,6 +194,11 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
         [Rpc(SendTo.Server)]
         private void RequestTravelRpc(RpcParams rpcParams = default) // 방장: 참가자의 출발 요청 처리
         {
+            if (!NetGuard.Allow(rpcParams.Receive.SenderClientId, NetChannel.Travel)) // 42일차: 횟수
+            {
+                return; // 무시
+            }
+
             PersistentMapLoader loader = PersistentMapLoader.Instance; // 맵 로더
             string reason = loader == null ? "방장의 게임이 준비되지 않았습니다" : loader.RequestNetworkTravel(); // 출발 시도
 
@@ -206,7 +211,7 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
             BellRangRpc(); // 모두에게 종소리
         }
 
-        [Rpc(SendTo.Everyone)]
+        [Rpc(SendTo.Everyone, InvokePermission = RpcInvokePermission.Server)]
         private void BellRangRpc() // 모두: 마차 종 연출
         {
             PersistentMapLoader loader = PersistentMapLoader.Instance; // 맵 로더
@@ -214,13 +219,13 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
             bell?.PlayRemoteRing(); // 연출 (이미 울리는 중이면 생략)
         }
 
-        [Rpc(SendTo.SpecifiedInParams)]
+        [Rpc(SendTo.SpecifiedInParams, InvokePermission = RpcInvokePermission.Server)]
         private void NoticeRpc(string text, RpcParams rpcParams) // 특정 대원에게 알림
         {
             GameHud.ShowNotice(text, 3f); // 표시
         }
 
-        [Rpc(SendTo.Everyone)]
+        [Rpc(SendTo.Everyone, InvokePermission = RpcInvokePermission.Server)]
         private void AnnounceRpc(string text) // 모두에게 알림
         {
             GameHud.ShowNotice(text, 3f); // 표시
@@ -246,19 +251,44 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
         }
 
         [Rpc(SendTo.Server)]
-        private void RequestDoorRpc(string path, bool open, bool unlocked) // 방장: 문 요청 확인
+        private void RequestDoorRpc(string path, bool open, bool unlocked, RpcParams rpcParams = default) // 방장: 문 요청 확인
         {
+            ulong sender = rpcParams.Receive.SenderClientId; // 대원
+
+            if (!NetGuard.Allow(sender, NetChannel.Device)) // 42일차: 횟수
+            {
+                return; // 무시
+            }
+
+            if (!NetGuard.ValidPath(path)) // 잘못된 경로
+            {
+                NetGuard.Reject(sender, "문", "잘못된 값", 5f); // 경고
+                return; // 무시
+            }
+
             DungeonDoor door = FindDoor(path); // 문
 
-            if (door == null || (door.IsLocked && !unlocked)) // 없음·잠김
+            if (door == null) // 없음
             {
+                return; // 무시
+            }
+
+            if (!NetGuard.Near(sender, door.transform.position, NetGuard.InteractReach)) // 문에서 멂
+            {
+                NetGuard.Reject(sender, "문", "거리", 1f); // 경고
+                return; // 무시
+            }
+
+            if (door.IsLocked && (!unlocked || !NetItemSync.ConsumeKeyCredit(sender, door.RequiredKeyId))) // 42일차: 잠긴 문은 방장이 열쇠 소모를 직접 확인
+            {
+                NetGuard.Reject(sender, "문", "열쇠 없음", 2f); // 경고
                 return; // 무시
             }
 
             SetDoorRpc(path, open); // 모두에게 적용
         }
 
-        [Rpc(SendTo.Everyone)]
+        [Rpc(SendTo.Everyone, InvokePermission = RpcInvokePermission.Server)]
         private void SetDoorRpc(string path, bool open) // 모두: 문 상태 적용
         {
             FindDoor(path)?.ApplyNetworkState(open); // 적용

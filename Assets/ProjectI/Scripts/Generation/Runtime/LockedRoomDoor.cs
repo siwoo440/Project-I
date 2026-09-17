@@ -13,6 +13,7 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
         private bool isOpen; // 열림 여부
 
         public bool IsOpen => isOpen; // 열림 여부 공개
+        public string KeyItemId => keyItemId; // 42일차: 방장이 참가자 열쇠 사용을 확인
         public string Prompt => BuildPrompt(); // 안내 문구
         public InteractionType InteractionType => InteractionType.Press; // F 한 번
         public float HoldDuration => 0f; // 길게 누르기 없음

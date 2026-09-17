@@ -1,5 +1,6 @@
 using System; // 이벤트
 using System.Collections; // 다시 연결
+using System.Collections.Generic; // 42일차: 차단·원정대원 목록
 using System.Text; // 접속 데이터
 using ProjectI.Core; // 씬 이동
 using ProjectI.Loop; // 맵 로더 준비 확인
@@ -36,7 +37,7 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
         public const string WorldStateResourcePath = "Net/NetWorldState"; // 월드 상태 프리팹
         public const int MaxPlayers = 4; // 최대 인원
         public const ushort DefaultPort = 7777; // 기본 포트
-        public const string ProtocolTag = "ProjectI-0.41"; // 접속 확인용 버전 (다르면 거부, 41일차 방 코드)
+        public const string ProtocolTag = "ProjectI-0.42"; // 접속 확인용 버전 (다르면 거부, 42일차 보안)
         private static NetworkSession instance; // 현재 세션
         private NetworkManager manager; // 넷코드 관리자
         private UnityTransport transport; // 연결 방식
@@ -50,6 +51,20 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
         private const int MaxReconnectAttempts = 3; // 다시 연결 최대 횟수
         private static CSteamID pendingSteamJoin = CSteamID.Nil; // 메뉴로 돌아간 뒤 들어갈 Steam 방
         private static string directAddress = string.Empty; // 41일차: 직접 IP 방 주소 (방장 내 IP:포트 / 참가자 들어간 주소)
+        private const int MaxConnectionPayload = 256; // 42일차: 접속 데이터 최대 크기
+        private const int MaxPasswordLength = 32; // 42일차: 방 암호 길이
+        private const char PayloadSeparator = '\n'; // 버전과 암호 구분
+        public const string ReasonClosed = "방장이 방을 닫았습니다"; // 42일차: 방장이 나감
+        public const string ReasonKicked = "방장이 방에서 내보냈습니다"; // 42일차: 내보내기
+        public const string ReasonBanned = "방장이 이 방에서 차단했습니다"; // 42일차: 차단
+        public const string ReasonLocked = "방이 잠겨 있어 들어갈 수 없습니다"; // 42일차: 잠금
+        public const string ReasonPassword = "방 암호가 맞지 않습니다"; // 42일차: 암호
+        public const string ReasonHostLeft = "방장이 방을 떠났습니다"; // 42일차: Steam 로비 주인이 바뀜
+        private static readonly HashSet<string> bannedKeys = new HashSet<string>(); // 42일차: 이번 방에서 차단한 대원 (steam:ID / ip:주소)
+        private static readonly HashSet<string> knownKeys = new HashSet<string>(); // 42일차: 이번 방에 들어온 적 있는 대원 (잠가도 다시 연결 허용)
+        private static readonly Dictionary<ulong, string> clientKeys = new Dictionary<ulong, string>(); // 42일차: 대원 번호 → 식별 키
+        private static string hostPassword = string.Empty; // 42일차: 직접 IP 방 암호
+        private static string joinPassword = string.Empty; // 42일차: 참가할 때 보낼 암호
 
         public static SessionMode Mode { get; private set; } = SessionMode.Offline; // 참여 방식
         public static bool IsOnline => Mode != SessionMode.Offline; // 협동 중
@@ -60,6 +75,92 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
         public static string LocalPlayerName => SteamService.Initialized ? SteamService.PersonaName : string.Empty; // 내 표시 이름 (Steam 이 없으면 번호로 표시)
         public static string PendingMessage { get; private set; } = string.Empty; // 메뉴로 돌아왔을 때 보여 줄 안내
         public static RoomVisibility HostVisibility { get; private set; } = RoomVisibility.Public; // 41일차: 방 공개 범위
+        public static bool RoomLocked { get; private set; } // 42일차: 새 입장 막기 (이미 들어왔던 대원의 다시 연결은 허용)
+        public static bool HasPassword => !string.IsNullOrEmpty(hostPassword); // 42일차: 직접 IP 방 암호 사용
+        public static event Action CrewChanged; // 42일차: 원정대원 목록·잠금 바뀜 (관리 창 갱신)
+
+        public struct CrewEntry // 42일차: 관리 창 한 줄
+        {
+            public ulong ClientId; // 대원 번호
+            public string Name; // 표시 이름
+            public int PingMs; // 지연
+            public bool IsHost; // 방장
+            public bool IsSelf; // 나
+        }
+
+        public static List<CrewEntry> GetCrew() // 42일차: 현재 원정대원 목록
+        {
+            List<CrewEntry> result = new List<CrewEntry>(); // 결과
+
+            if (!IsConnected) // 연결 전
+            {
+                return result; // 빈 목록
+            }
+
+            NetworkManager manager = instance.manager; // 관리자
+
+            foreach (NetPlayerAvatar avatar in NetPlayerAvatar.All) // 몸체
+            {
+                if (avatar == null || !avatar.IsSpawned) // 정리 중
+                {
+                    continue; // 다음
+                }
+
+                ulong id = avatar.OwnerClientId; // 번호
+                int ping = 0; // 지연
+
+                if (manager.IsServer && id != NetworkManager.ServerClientId) // 방장이 본 참가자 지연
+                {
+                    ping = (int)manager.NetworkConfig.NetworkTransport.GetCurrentRtt(id); // 조회
+                }
+                else if (!manager.IsServer && id == NetworkManager.ServerClientId) // 참가자가 본 방장 지연
+                {
+                    ping = (int)manager.NetworkConfig.NetworkTransport.GetCurrentRtt(NetworkManager.ServerClientId); // 조회
+                }
+
+                result.Add(new CrewEntry { ClientId = id, Name = avatar.DisplayName, PingMs = ping, IsHost = id == NetworkManager.ServerClientId, IsSelf = id == manager.LocalClientId }); // 추가
+            }
+
+            result.Sort((a, b) => a.ClientId.CompareTo(b.ClientId)); // 번호 순
+            return result; // 반환
+        }
+
+        public static void SetRoomLocked(bool locked) // 42일차: 방 잠그기 (방장)
+        {
+            if (!IsHost || RoomLocked == locked) // 방장 아님·같음
+            {
+                return; // 생략
+            }
+
+            RoomLocked = locked; // 기록
+            DailySnapshotService daily = DailySnapshotService.Instance; // 저장
+            SteamLobbyService.UpdateHostData(PlayerCount, daily == null ? 0 : daily.CurrentDay, false); // Steam 검색에서 숨김·표시
+            NetWorldState.Announce(locked ? "방장이 방을 잠갔습니다 (새 입장 불가)" : "방장이 방 잠금을 풀었습니다"); // 모두에게
+            CrewChanged?.Invoke(); // 관리 창
+        }
+
+        public static bool Kick(ulong clientId, bool ban, string reason = null) // 42일차: 대원 내보내기·차단 (방장)
+        {
+            if (!IsHost || instance == null || !instance.manager.IsServer || clientId == NetworkManager.ServerClientId || !instance.manager.ConnectedClients.ContainsKey(clientId)) // 불가
+            {
+                return false; // 실패
+            }
+
+            NetPlayerAvatar avatar = NetPlayerAvatar.Find(clientId); // 몸체
+            string name = avatar == null ? $"원정대원 {clientId + 1}" : avatar.DisplayName; // 이름
+
+            if (ban && clientKeys.TryGetValue(clientId, out string key)) // 차단
+            {
+                bannedKeys.Add(key); // 기록
+            }
+
+            string message = reason ?? (ban ? ReasonBanned : ReasonKicked); // 이유
+            Debug.LogWarning($"[Project I] 협동 {(ban ? "차단" : "내보내기")} / {name} / {message}"); // 기록
+            instance.manager.DisconnectClient(clientId, message); // 이유를 보낸 뒤 끊기
+            NetWorldState.Announce($"{name} — {(ban ? "차단" : "내보냄")}"); // 모두에게
+            CrewChanged?.Invoke(); // 관리 창
+            return true; // 성공
+        }
 
         public static string ShareCode // 41일차: 친구에게 알려 줄 값 (Steam 방 코드 K7Q-2MX 또는 직접 IP 주소:포트, 없으면 빈칸)
         {
@@ -134,6 +235,25 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
             return BeginHost(port, visibility, SteamReady, out error); // 방 열기
         }
 
+        public static bool BeginHost(ushort port, RoomVisibility visibility, string password, out string error) // 42일차: 직접 IP 방 암호 지정 (Steam 방은 로비 멤버 확인으로 대신)
+        {
+            hostPassword = CleanPassword(password); // 암호
+            bool started = BeginHost(port, visibility, SteamReady, out error); // 방 열기
+            hostPassword = started ? hostPassword : string.Empty; // 실패하면 정리
+            return started; // 결과
+        }
+
+        private static string CleanPassword(string password) // 암호 정리 (앞뒤 공백 제거 · 길이 제한)
+        {
+            string text = string.IsNullOrWhiteSpace(password) ? string.Empty : password.Trim(); // 정리
+            return text.Length > MaxPasswordLength ? text.Substring(0, MaxPasswordLength) : text; // 길이
+        }
+
+        private static byte[] BuildPayload(string password) // 접속 데이터 (버전 + 암호)
+        {
+            return Encoding.UTF8.GetBytes(string.IsNullOrEmpty(password) ? ProtocolTag : ProtocolTag + PayloadSeparator + password); // 데이터
+        }
+
         public static bool BeginHost(ushort port, RoomVisibility visibility, bool useSteam, out string error) // 방 열기 예약 (게임 월드가 준비되면 실제로 열림)
         {
             error = null; // 기본값
@@ -155,6 +275,7 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
             Transport = useSteam && SteamReady ? SessionTransport.Steam : SessionTransport.Direct; // 연결 방식
             session.hostPort = port; // 포트
             HostVisibility = visibility; // 공개 범위
+            ResetRoomSecurity(); // 42일차: 차단·잠금·기록 초기화
             directAddress = string.Empty; // 방이 열리면 기록
             session.transport.SetConnectionData("127.0.0.1", port, "0.0.0.0"); // 모든 주소에서 접속 받음
             session.pendingHost = true; // 월드 준비 후 열기
@@ -162,7 +283,12 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
             return true; // 성공
         }
 
-        public static bool BeginJoin(string address, ushort port, out string error) // 방 참가 시작 (연결되면 게임 월드를 불러옴)
+        public static bool BeginJoin(string address, ushort port, out string error) // 방 참가 시작 (암호 없음)
+        {
+            return BeginJoin(address, port, string.Empty, out error); // 참가
+        }
+
+        public static bool BeginJoin(string address, ushort port, string password, out string error) // 방 참가 시작 (연결되면 게임 월드를 불러옴)
         {
             error = null; // 기본값
             NetworkSession session = Ensure(); // 준비
@@ -186,7 +312,8 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
             string host = string.IsNullOrWhiteSpace(address) ? "127.0.0.1" : address.Trim(); // 주소
             directAddress = $"{host}:{port}"; // 다른 대원에게 알려 줄 주소
             session.transport.SetConnectionData(host, port); // 주소
-            session.manager.NetworkConfig.ConnectionData = Encoding.UTF8.GetBytes(ProtocolTag); // 버전 확인 데이터
+            joinPassword = CleanPassword(password); // 42일차: 암호
+            session.manager.NetworkConfig.ConnectionData = BuildPayload(joinPassword); // 버전·암호 확인 데이터
 
             if (!session.manager.StartClient()) // 시작 실패
             {
@@ -219,6 +346,7 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
             Mode = SessionMode.Guest; // 참가자
             Transport = SessionTransport.Steam; // Steam
             session.reconnectAttempts = 0; // 초기화
+            joinPassword = string.Empty; // Steam 방은 암호 없음
             Announce("Steam 방에 들어가는 중..."); // 상태
             SteamLobbyService.Enter(lobby, (ok, host, message) => session.HandleLobbyEntered(ok, host, message)); // 로비
             return true; // 시작
@@ -251,6 +379,7 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
             Mode = SessionMode.Guest; // 참가자 (찾는 동안 Esc 로 취소 가능)
             Transport = SessionTransport.Steam; // Steam
             session.reconnectAttempts = 0; // 초기화
+            joinPassword = string.Empty; // Steam 방은 암호 없음
             Announce($"방 {RoomCode.Format(code)} 을 찾는 중..."); // 상태
             SteamLobbyService.FindByCode(code, (found, lobby, message) => session.HandleCodeFound(found, lobby, message)); // 찾기
             return true; // 시작
@@ -317,10 +446,28 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
             if (instance.manager != null && instance.manager.IsListening) // 연결 중
             {
                 instance.leaving = true; // 스스로 나감
-                instance.manager.Shutdown(); // 종료 (생성된 네트워크 오브젝트 정리)
+
+                if (instance.manager.IsServer && instance.manager.ConnectedClientsIds.Count > 1) // 42일차: 방장 — 참가자에게 이유를 보낸 뒤 종료
+                {
+                    foreach (ulong clientId in new List<ulong>(instance.manager.ConnectedClientsIds)) // 참가자
+                    {
+                        if (clientId != NetworkManager.ServerClientId) // 방장 제외
+                        {
+                            instance.manager.DisconnectClient(clientId, ReasonClosed); // 이유 전송 (프레임 끝에 끊김)
+                        }
+                    }
+
+                    instance.StartCoroutine(instance.ShutdownAfterFarewell()); // 두 프레임 뒤 종료
+                }
+                else
+                {
+                    instance.manager.Shutdown(); // 종료 (생성된 네트워크 오브젝트 정리)
+                }
             }
 
             Mode = SessionMode.Offline; // 혼자 하기
+            RoomLocked = false; // 잠금 해제
+            hostPassword = string.Empty; // 암호 정리
             Announce("연결을 종료했습니다"); // 상태
         }
 
@@ -357,6 +504,77 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
             return true; // 모두 쓰러짐 (자신의 상태는 호출한 쪽이 확인)
         }
 
+        private IEnumerator ShutdownAfterFarewell() // 42일차: 방장 — 내보낸 이유가 전달될 시간을 준 뒤 종료
+        {
+            yield return null; // 이유 메시지·끊기 처리 (넷코드 프레임 끝)
+            yield return null; // 전송
+            leaving = true; // 스스로 나감
+
+            if (manager.IsListening) // 아직 열림
+            {
+                manager.Shutdown(); // 종료
+            }
+        }
+
+        private static void ResetRoomSecurity() // 42일차: 새 방 — 차단·잠금·기록 초기화
+        {
+            bannedKeys.Clear(); // 차단
+            knownKeys.Clear(); // 기록
+            clientKeys.Clear(); // 기록
+            RoomLocked = false; // 잠금
+            NetGuard.Reset(); // 요청 검사
+        }
+
+        private string ClientKey(ulong clientId) // 대원 식별 키 (Steam ID 또는 IP 주소)
+        {
+            if (manager.NetworkConfig.NetworkTransport == steamTransport) // Steam
+            {
+                return steamTransport.TryGetPeer(clientId, out CSteamID peer) ? $"steam:{peer.m_SteamID}" : null; // Steam ID
+            }
+
+            string endpoint = transport.GetEndpoint(clientId).Address; // "주소:포트"
+            int colon = endpoint == null ? -1 : endpoint.LastIndexOf(':'); // 포트 구분
+            return colon > 0 ? $"ip:{endpoint.Substring(0, colon)}" : null; // 주소
+        }
+
+        private string SteamAdmission(CSteamID peer) // 42일차: Steam 연결 들어오기 전 판정 (null 허용)
+        {
+            if (Mode != SessionMode.Host || !manager.IsServer) // 방장 아님
+            {
+                return "Not hosting"; // 거절
+            }
+
+            string key = $"steam:{peer.m_SteamID}"; // 키
+
+            if (bannedKeys.Contains(key)) // 차단
+            {
+                return "Banned"; // 거절
+            }
+
+            if (RoomLocked && !knownKeys.Contains(key)) // 잠금 (처음 오는 대원)
+            {
+                return "Room locked"; // 거절
+            }
+
+            if (!SteamLobbyService.InLobby) // 로비 준비 전
+            {
+                return SteamTransportWait(); // 잠시 대기
+            }
+
+            return SteamLobbyService.IsMember(peer) ? null : SteamTransportWait(); // 로비 멤버만 (입장 반영 대기)
+        }
+
+        private string ServerReason() // 42일차: 방장이 보낸 끊김 이유 (넷코드가 만든 일반 끊김 문구는 제외, 없으면 null)
+        {
+            string reason = manager == null ? null : manager.DisconnectReason; // 이유
+            return string.IsNullOrEmpty(reason) || reason.StartsWith("[Disconnect Event]") ? null : reason; // 결과
+        }
+
+        private static string SteamTransportWait() // 대기 판정
+        {
+            return SteamNetworkTransport.AdmissionWait; // 대기
+        }
+
         private void Awake() // 등록
         {
             if (instance != null && instance != this) // 중복
@@ -370,6 +588,7 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
             transport = GetComponent<UnityTransport>(); // 연결 방식
             steamTransport = GetComponent<SteamNetworkTransport>(); // Steam 연결 모듈
             steamTransport = steamTransport != null ? steamTransport : gameObject.AddComponent<SteamNetworkTransport>(); // 없으면 추가
+            steamTransport.Admission = SteamAdmission; // 42일차: 로비 멤버·차단·잠금 확인
             manager.NetworkConfig.NetworkTransport = transport; // 연결 방식 지정
             manager.NetworkConfig.ConnectionApproval = true; // 접속 확인 사용
             manager.NetworkConfig.EnableSceneManagement = false; // 씬 교체는 Project I 맵 로더가 직접 맞춤
@@ -399,6 +618,11 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
 
         private void Update() // 방 열기 예약 · Steam 로비 정보 갱신
         {
+            if (Mode == SessionMode.Host) // 42일차: 거절 요약 기록
+            {
+                NetGuard.Tick(); // 요약
+            }
+
             if (Mode == SessionMode.Host && Transport == SessionTransport.Steam && SteamLobbyService.InLobby && Time.unscaledTime >= nextLobbyUpdate) // Steam 방장
             {
                 nextLobbyUpdate = Time.unscaledTime + 5f; // 5초마다
@@ -425,8 +649,14 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
 
         private void StartHostNow() // 실제 방 열기
         {
-            manager.NetworkConfig.ConnectionData = Encoding.UTF8.GetBytes(ProtocolTag); // 방장 자신의 접속 확인 데이터
+            manager.NetworkConfig.ConnectionData = BuildPayload(hostPassword); // 방장 자신의 접속 확인 데이터
             manager.NetworkConfig.NetworkTransport = Transport == SessionTransport.Steam ? steamTransport : transport; // 연결 방식
+
+            if (Transport == SessionTransport.Steam) // 42일차: Steam 방은 암호 대신 로비 멤버 확인
+            {
+                hostPassword = string.Empty; // 사용 안 함
+                manager.NetworkConfig.ConnectionData = BuildPayload(string.Empty); // 버전만
+            }
 
             if (!manager.StartHost()) // 실패
             {
@@ -461,7 +691,7 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
 
             directAddress = $"{RoomCode.LocalIPv4()}:{hostPort}"; // 같은 네트워크 주소
             Announce($"방 열림 — {directAddress}"); // 상태
-            GameHud.ShowNotice($"방을 열었습니다 — 주소 {directAddress} (Esc 창에서 복사)", 6f); // 화면 안내
+            GameHud.ShowNotice($"방을 열었습니다 — 주소 {directAddress}{(HasPassword ? " · 암호 사용" : string.Empty)} (Esc 창에서 복사)", 6f); // 화면 안내
         }
 
         private void HandleCodeFound(bool found, CSteamID lobby, string message) // 코드로 로비를 찾음 → 들어가기
@@ -504,7 +734,7 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
 
             steamTransport.HostId = host; // 방장
             manager.NetworkConfig.NetworkTransport = steamTransport; // Steam 연결
-            manager.NetworkConfig.ConnectionData = Encoding.UTF8.GetBytes(ProtocolTag); // 버전 확인 데이터
+            manager.NetworkConfig.ConnectionData = BuildPayload(string.Empty); // 버전 확인 데이터
 
             if (!manager.StartClient()) // 시작 실패
             {
@@ -516,12 +746,62 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
 
         private void ApproveConnection(NetworkManager.ConnectionApprovalRequest request, NetworkManager.ConnectionApprovalResponse response) // 접속 확인
         {
-            string tag = request.Payload == null ? string.Empty : Encoding.UTF8.GetString(request.Payload); // 버전
+            response.Pending = false; // 즉시 판정
+
+            if (request.ClientNetworkId == NetworkManager.ServerClientId) // 방장 자신
+            {
+                response.Approved = true; // 허용
+                response.CreatePlayerObject = true; // 몸체
+                return; // 종료
+            }
+
+            if (request.Payload == null || request.Payload.Length > MaxConnectionPayload) // 42일차: 비정상 데이터
+            {
+                response.Approved = false; // 거부
+                response.Reason = "접속 데이터가 올바르지 않습니다"; // 이유
+                return; // 종료
+            }
+
+            string payload = Encoding.UTF8.GetString(request.Payload); // 버전 [+ 암호]
+            int separator = payload.IndexOf(PayloadSeparator); // 구분
+            string tag = separator < 0 ? payload : payload.Substring(0, separator); // 버전
+            string password = separator < 0 ? string.Empty : payload.Substring(separator + 1); // 암호
 
             if (tag != ProtocolTag) // 버전 다름
             {
                 response.Approved = false; // 거부
                 response.Reason = $"게임 버전이 다릅니다 (방장 {ProtocolTag})"; // 이유
+                return; // 종료
+            }
+
+            string key = ClientKey(request.ClientNetworkId); // 42일차: 대원 식별 (Steam ID·IP)
+
+            if (key == null || bannedKeys.Contains(key)) // 식별 불가·차단
+            {
+                response.Approved = false; // 거부
+                response.Reason = key == null ? "접속자를 확인하지 못했습니다" : ReasonBanned; // 이유
+                return; // 종료
+            }
+
+            if (RoomLocked && !knownKeys.Contains(key)) // 잠금
+            {
+                response.Approved = false; // 거부
+                response.Reason = ReasonLocked; // 이유
+                return; // 종료
+            }
+
+            if (Transport == SessionTransport.Steam && !SteamLobbyService.IsMember(new CSteamID(ulong.Parse(key.Substring(6))))) // Steam 로비 멤버가 아님
+            {
+                response.Approved = false; // 거부
+                response.Reason = "Steam 방을 거쳐 들어와야 합니다"; // 이유
+                return; // 종료
+            }
+
+            if (Transport == SessionTransport.Direct && HasPassword && password != hostPassword) // 암호 틀림
+            {
+                response.Approved = false; // 거부
+                response.Reason = ReasonPassword; // 이유
+                Debug.LogWarning($"[Project I] 협동 암호 불일치 / {key}"); // 기록
                 return; // 종료
             }
 
@@ -534,7 +814,8 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
 
             response.Approved = true; // 허용
             response.CreatePlayerObject = true; // 원정대원 표시 오브젝트 생성
-            response.Pending = false; // 즉시
+            clientKeys[request.ClientNetworkId] = key; // 기록
+            knownKeys.Add(key); // 잠가도 다시 연결 허용
         }
 
         private void HandleClientConnected(ulong clientId) // 접속
@@ -563,6 +844,8 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
             {
                 GameHud.ShowNotice($"원정대원 참가 ({manager.ConnectedClientsIds.Count}/{MaxPlayers})", 3f); // 안내 (이름은 몸체 이름표)
             }
+
+            CrewChanged?.Invoke(); // 42일차: 관리 창
         }
 
         private void HandleClientDisconnected(ulong clientId) // 끊김
@@ -572,14 +855,18 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
                 if (clientId != manager.LocalClientId) // 다른 대원
                 {
                     GameHud.ShowNotice($"원정대원 한 명이 나갔습니다 ({Mathf.Max(1, manager.ConnectedClientsIds.Count - 1)}/{MaxPlayers})", 3f); // 안내
+                    NetGuard.Forget(clientId); // 42일차: 요청 기록 정리
+                    NetItemSync.ForgetClient(clientId); // 무기·열쇠 기록 정리
+                    clientKeys.Remove(clientId); // 식별 정리
                 }
 
+                CrewChanged?.Invoke(); // 관리 창
                 return; // 종료
             }
 
             if (Mode == SessionMode.Guest && (clientId == manager.LocalClientId || clientId == NetworkManager.ServerClientId)) // 내 연결 끊김
             {
-                LostConnection(string.IsNullOrEmpty(manager.DisconnectReason) ? "방장과의 연결이 끊겼습니다" : manager.DisconnectReason); // 처리
+                LostConnection(ServerReason() ?? "방장과의 연결이 끊겼습니다"); // 처리 (42일차: 방장이 보낸 이유만 표시)
             }
         }
 
@@ -587,7 +874,7 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
         {
             if (Mode == SessionMode.Guest) // 참가 중이었음
             {
-                LostConnection(string.IsNullOrEmpty(manager.DisconnectReason) ? "방에 연결하지 못했습니다" : manager.DisconnectReason); // 처리
+                LostConnection(ServerReason() ?? "방에 연결하지 못했습니다"); // 처리
             }
         }
 
@@ -610,7 +897,15 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
             }
 
             bool inGame = SceneManager.GetActiveScene().name != SceneFlowManager.MainMenuSceneName && PersistentMapLoader.Instance != null; // 게임 중
-            bool canRetry = !selfLeave && Mode == SessionMode.Guest && inGame && reconnectAttempts < MaxReconnectAttempts && (Transport == SessionTransport.Direct || SteamLobbyService.InLobby); // 다시 연결 가능
+            bool hostDecided = ServerReason() != null; // 42일차: 방장이 이유를 보냄 (닫음·내보냄·차단·잠금·암호·버전) → 다시 연결하지 않음
+            bool hostLeft = Transport == SessionTransport.Steam && SteamLobbyService.HostLeft(steamTransport.HostId); // 42일차: 방장이 Steam 로비를 떠남
+
+            if (hostLeft && !hostDecided) // 이유 없이 사라진 방장
+            {
+                reason = ReasonHostLeft; // 안내
+            }
+
+            bool canRetry = !selfLeave && !hostDecided && !hostLeft && Mode == SessionMode.Guest && inGame && reconnectAttempts < MaxReconnectAttempts && (Transport == SessionTransport.Direct || SteamLobbyService.InLobby); // 다시 연결 가능
 
             if (canRetry) // 다시 연결
             {
@@ -670,7 +965,7 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
             }
 
             manager.NetworkConfig.NetworkTransport = Transport == SessionTransport.Steam ? steamTransport : transport; // 같은 연결 방식
-            manager.NetworkConfig.ConnectionData = Encoding.UTF8.GetBytes(ProtocolTag); // 버전 확인 데이터
+            manager.NetworkConfig.ConnectionData = BuildPayload(Transport == SessionTransport.Steam ? string.Empty : joinPassword); // 버전·암호 확인 데이터
 
             if (!manager.StartClient()) // 시작 실패
             {
