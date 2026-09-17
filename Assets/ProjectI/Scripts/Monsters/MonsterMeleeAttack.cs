@@ -110,7 +110,21 @@ namespace ProjectI.Monsters // 몬스터 공통 AI 네임스페이스
             attackStartedTime = Time.time; // 공격 시작 시각 기록
             damageApplied = false; // 이번 공격 피해 미적용 상태 초기화
             attacking = true; // 공격 모션 활성화
+            ProjectI.Net.NetCombatSync.NotifyMonsterMelee(this); // 협동: 참가자 화면에 휘두르기
             return true; // 공격 시작 성공 반환
+        }
+
+        public void PlayNetworkSwing() // 협동 참가자: 피해 없이 휘두르기 연출만
+        {
+            if (attacking || data == null) // 진행 중
+            {
+                return; // 생략
+            }
+
+            target = null; // 대상 없음
+            attackStartedTime = Time.time; // 시작
+            damageApplied = true; // 피해 판정 생략
+            attacking = true; // 연출 시작
         }
 
         public void CancelAttack() // 경직·관찰·사망 등으로 현재 근접 공격 취소
@@ -148,7 +162,7 @@ namespace ProjectI.Monsters // 몬스터 공통 AI 네임스페이스
                 return; // 벽을 통과하는 근접 피해 차단
             }
 
-            PlayerDamageReceiver receiver = target.GetComponentInParent<PlayerDamageReceiver>(); // 대상 계층에서 플레이어 공통 피해 수신기 조회
+            IDamageable receiver = PlayerTargets.ReceiverOf(target); // 대상 계층의 플레이어 피해 수신기 (다른 원정대원 포함)
 
             if (receiver == null) // 플레이어 피해 대상이 아닌지 확인
             {

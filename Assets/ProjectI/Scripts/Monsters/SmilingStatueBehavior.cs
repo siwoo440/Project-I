@@ -47,6 +47,11 @@ namespace ProjectI.Monsters // 몬스터 공통 AI 네임스페이스
 
         private void Update() // 플레이어 관찰 여부에 따른 정지·추적·공격 규칙 처리
         {
+            if (ProjectI.Net.NetCombatSync.PuppetMonsters) // 협동 참가자: 위치는 방장 값
+            {
+                return; // 생략
+            }
+
             if (data == null || motor == null || meleeAttack == null) // 체력 없이 동작하는 석상 필수 기능 참조 존재 여부 확인
             {
                 return; // 규칙형 AI 처리 중단
@@ -71,7 +76,7 @@ namespace ProjectI.Monsters // 몬스터 공통 AI 네임스페이스
                 return; // 행동 처리 종료
             }
 
-            observed = IsObservedByPlayer(); // 카메라 시야각·벽 차단으로 실제 관찰 여부 계산
+            observed = IsObservedByPlayer() || PlayerTargets.IsObservedByRemote(transform.position + (Vector3.up * 1.6f), 50f, transform); // 내 카메라 또는 다른 원정대원 누구라도 보고 있으면 정지
             RefreshSmileVisual(); // 현재 관찰 여부를 미소 크기에 약하게 반영
 
             if (observed) // 웃는 석상의 일부가 플레이어 화면 안에 실제로 보이는지 확인
@@ -129,8 +134,8 @@ namespace ProjectI.Monsters // 몬스터 공통 AI 네임스페이스
             }
 
             nextPlayerLookupTime = Time.time + 0.75f; // 다음 플레이어 검색 가능 시각 설정
-            PlayerDamageReceiver receiver = UnityEngine.Object.FindFirstObjectByType<PlayerDamageReceiver>(); // 현재 활성 플레이어 피해 수신기 검색
-            playerTarget = receiver == null ? null : receiver.transform; // 플레이어 루트 Transform 저장
+            PlayerDamageReceiver receiver = UnityEngine.Object.FindFirstObjectByType<PlayerDamageReceiver>(); // 내 플레이어 (관찰 카메라)
+            playerTarget = PlayerTargets.Nearest(transform.position); // 가장 가까운 플레이어 (다른 원정대원 포함)
             playerCamera = receiver == null ? null : receiver.GetComponentInChildren<Camera>(true); // 플레이어 자식 카메라 조회
 
             if (playerCamera == null && Camera.main != null) // 플레이어 자식 카메라 검색 실패 여부 확인

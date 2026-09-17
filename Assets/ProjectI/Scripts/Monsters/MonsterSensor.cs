@@ -25,7 +25,7 @@ namespace ProjectI.Monsters // 몬스터 공통 AI 네임스페이스
         public float LastHeardAge => Time.time - lastHeardTime; // 마지막 소리 이후 경과 시간 공개
         public float LastHeardTime => lastHeardTime; // Brain이 새 소음만 한 번 처리할 수 있도록 마지막 감지 시각 공개
         public bool HasRecentNoise => data != null && Time.time - lastHeardTime <= data.InvestigateDuration; // 아직 조사할 가치가 있는 소리 존재 여부 공개
-        public float DistanceToPlayer => playerReceiver == null ? float.PositiveInfinity : Vector3.Distance(transform.position, playerReceiver.transform.position); // 플레이어까지 현재 거리 공개
+        public float DistanceToPlayer => NearestPlayerDistance(); // 가장 가까운 플레이어까지 거리 공개 (다른 원정대원 포함)
 
         private void OnEnable() // 감각 기능 활성화 처리
         {
@@ -40,6 +40,11 @@ namespace ProjectI.Monsters // 몬스터 공통 AI 네임스페이스
 
         private void Update() // 설정된 간격으로 시각 감지 갱신
         {
+            if (ProjectI.Net.NetCombatSync.PuppetMonsters) // 협동 참가자: 감지는 방장이 함
+            {
+                return; // 생략
+            }
+
             if (data == null || Time.time < nextVisionCheckTime) // 데이터 누락 또는 시각 검사 대기 여부 확인
             {
                 return; // 이번 프레임 시각 검사 생략
@@ -93,8 +98,7 @@ namespace ProjectI.Monsters // 몬스터 공통 AI 네임스페이스
                     continue; // 자기 몸체 충돌 무시
                 }
 
-                PlayerDamageReceiver player = hit.collider.GetComponentInParent<PlayerDamageReceiver>(); // 충돌 대상이 플레이어 계층인지 확인
-                return player != null && player.IsAlive; // 첫 유효 충돌이 살아있는 플레이어일 때만 시야 확보 반환
+                return PlayerTargets.IsAlivePlayer(hit.collider) && hit.collider.transform.IsChildOf(target); // 첫 유효 충돌이 그 살아있는 플레이어일 때만 시야 확보 반환
             }
 
             return false; // 첫 유효 충돌 없이 목표를 찾지 못한 상태 반환
@@ -120,23 +124,25 @@ namespace ProjectI.Monsters // 몬스터 공통 AI 네임스페이스
         private void RefreshVision() // 현재 플레이어 시각 감지 갱신
         {
             ResolvePlayer(); // 플레이어 참조 유효성 재확인
+            Transform best = null; // 가장 가까운 보이는 플레이어
+            float bestDistance = float.PositiveInfinity; // 거리
 
-            if (playerReceiver == null || !playerReceiver.IsAlive) // 유효한 살아있는 플레이어 여부 확인
+            foreach (Transform candidate in PlayerTargets.Candidates()) // 내 플레이어 + 다른 원정대원
             {
-                visibleTarget = null; // 현재 시야 대상 제거
-                return; // 시각 갱신 종료
+                float distance = (candidate.position - transform.position).sqrMagnitude; // 거리
+
+                if (distance < bestDistance && CanSeeTarget(candidate)) // 더 가깝고 보임
+                {
+                    best = candidate; // 기록
+                    bestDistance = distance; // 기록
+                }
             }
 
-            Transform target = playerReceiver.transform; // 플레이어 Transform 조회
+            visibleTarget = best; // 직접 시야 대상 (없으면 null)
 
-            if (CanSeeTarget(target)) // 거리·시야각·벽 차단을 모두 통과했는지 확인
+            if (best != null) // 보임
             {
-                visibleTarget = target; // 직접 시야 대상 저장
-                lastVisiblePosition = target.position; // 마지막 직접 확인 위치 갱신
-            }
-            else // 현재 플레이어가 직접 보이지 않는 경우 처리
-            {
-                visibleTarget = null; // 직접 시야 대상 제거
+                lastVisiblePosition = best.position; // 마지막 직접 확인 위치 갱신
             }
         }
 
@@ -158,6 +164,12 @@ namespace ProjectI.Monsters // 몬스터 공통 AI 네임스페이스
             lastHeardPosition = noise.Position; // 마지막 소음 월드 위치 저장
             lastHeardTime = Time.time; // 마지막 소음 감지 시각 저장
             lastHeardLabel = noise.Label; // F1 진단용 소음 종류 저장
+        }
+
+        private float NearestPlayerDistance() // 가장 가까운 살아 있는 플레이어까지 거리
+        {
+            Transform nearest = PlayerTargets.Nearest(transform.position); // 대상
+            return nearest == null ? float.PositiveInfinity : Vector3.Distance(transform.position, nearest.position); // 거리
         }
 
         private void ResolvePlayer() // 현재 씬 플레이어 공통 피해 대상 확보

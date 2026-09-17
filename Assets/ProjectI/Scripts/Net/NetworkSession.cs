@@ -27,7 +27,7 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
         public const string WorldStateResourcePath = "Net/NetWorldState"; // 월드 상태 프리팹
         public const int MaxPlayers = 4; // 최대 인원
         public const ushort DefaultPort = 7777; // 기본 포트
-        public const string ProtocolTag = "ProjectI-0.38"; // 접속 확인용 버전 (다르면 거부, 38일차 아이템 동기화)
+        public const string ProtocolTag = "ProjectI-0.39"; // 접속 확인용 버전 (다르면 거부, 39일차 전투·장치 동기화)
         private static NetworkSession instance; // 현재 세션
         private NetworkManager manager; // 넷코드 관리자
         private UnityTransport transport; // 연결 방식

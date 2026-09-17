@@ -13,6 +13,12 @@ namespace ProjectI.Combat // 공통 전투 시스템 네임스페이스
         {
             LastDamageInfo = damageInfo; // 마지막 피해 요청 진단 데이터 저장
 
+            if (ProjectI.Net.NetCombatSync.TryRelayDamage(damageInfo, target, out result)) // 협동 참가자: 몬스터 피해는 방장이 판정
+            {
+                StoreResult(result); // 진단 결과 저장
+                return result.Allowed && result.AppliedDamage > 0f; // 요청됨
+            }
+
             if (target == null || target.DamageTransform == null) // 유효 피해 대상 여부 확인
             {
                 result = new CombatHitResult(false, null, damageInfo.BaseDamage, 0f, false, "Target Missing", damageInfo.HitPoint); // 대상 누락 결과 생성

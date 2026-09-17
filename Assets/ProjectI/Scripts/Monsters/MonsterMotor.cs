@@ -30,6 +30,11 @@ namespace ProjectI.Monsters // 몬스터 공통 AI 네임스페이스
 
         private void Update() // 프레임별 목적지 이동과 중력 처리
         {
+            if (ProjectI.Net.NetCombatSync.PuppetMonsters) // 협동 참가자: 위치는 방장 값
+            {
+                return; // 이동 생략
+            }
+
             if (controller == null || data == null) // 이동 필수 참조 존재 여부 확인
             {
                 return; // 이동 처리 중단

@@ -3,7 +3,7 @@ using UnityEngine; // 유니티 기본 기능 참조
 
 namespace ProjectI.Power // 전력 시스템 네임스페이스
 {
-    public sealed class DistributionBoardButton : MonoBehaviour, IInteractable // 배전반과 문 옆의 단일 토글 제어 스위치
+    public sealed class DistributionBoardButton : MonoBehaviour, IInteractable, ProjectI.Net.INetworkDevice // 배전반과 문 옆의 단일 토글 제어 스위치
     {
         [SerializeField] private string displayName = "제어 스위치"; // 상호작용 안내에 표시할 스위치 이름
         [SerializeField] private DistributionBoardButtonAction action; // 스위치 실행 종류
@@ -80,6 +80,57 @@ namespace ProjectI.Power // 전력 시스템 네임스페이스
             }
 
             UpdateSwitchVisual(); // 입력 직후 레버 상태 보정
+            ProjectI.Net.NetCombatSync.NotifyDeviceChanged(this); // 협동: 모두 같은 스위치 상태
+        }
+
+        public int NetworkState // 협동 상태 (스위치 대상의 켜짐·열림)
+        {
+            get
+            {
+                switch (action)
+                {
+                    case DistributionBoardButtonAction.MainPowerToggle: return distributionBoard == null ? -1 : (distributionBoard.MainPowerRequested ? 1 : 0);
+                    case DistributionBoardButtonAction.RoomPowerToggle: return roomZone == null ? -1 : (roomZone.RequestedPower ? 1 : 0);
+                    case DistributionBoardButtonAction.DoorToggle: return poweredDoor == null ? -1 : (poweredDoor.IsOpen || poweredDoor.State == PoweredIronDoorState.Opening ? 1 : 0);
+                    default: return -1;
+                }
+            }
+        }
+
+        public void ApplyNetworkState(int state) // 협동: 스위치 대상 상태 적용
+        {
+            bool on = state == 1; // 켜짐
+
+            switch (action)
+            {
+                case DistributionBoardButtonAction.MainPowerToggle:
+                    if (distributionBoard != null && distributionBoard.MainPowerRequested != on) // 다름
+                    {
+                        distributionBoard.SetMainPowerRequested(on); // 적용
+                    }
+                    break;
+                case DistributionBoardButtonAction.RoomPowerToggle:
+                    if (roomZone != null && roomZone.RequestedPower != on) // 다름
+                    {
+                        roomZone.SetRequestedPower(on); // 적용
+                    }
+                    break;
+                case DistributionBoardButtonAction.DoorToggle:
+                    if (poweredDoor != null && NetworkState != state) // 다름
+                    {
+                        if (on) // 열기
+                        {
+                            poweredDoor.RequestOpen(); // 열기 (전력이 없으면 안 움직임)
+                        }
+                        else
+                        {
+                            poweredDoor.RequestClose(); // 닫기
+                        }
+                    }
+                    break;
+            }
+
+            UpdateSwitchVisual(); // 레버 표시
         }
 
         private void ToggleDoor() // 철제문 열림·닫힘 상태 반전

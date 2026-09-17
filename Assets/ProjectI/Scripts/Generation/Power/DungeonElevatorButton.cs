@@ -57,6 +57,7 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
             }
 
             elevator.GoToStop(stopIndex); // 이동
+            ProjectI.Net.NetCombatSync.NotifyDeviceChanged(elevator); // 협동: 모두 같은 층으로
         }
     }
 }

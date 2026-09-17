@@ -3,7 +3,7 @@ using UnityEngine; // 유니티 기본 기능 참조
 
 namespace ProjectI.Power // 전력 시스템 네임스페이스
 {
-    public sealed class GeneratorController : MonoBehaviour, IInteractable // 발전기 작동·연료·전력 공급 관리
+    public sealed class GeneratorController : MonoBehaviour, IInteractable, ProjectI.Net.INetworkDevice // 발전기 작동·연료·전력 공급 관리
     {
         [SerializeField] private string displayName = "발전기"; // 상호작용 표시 이름
         [SerializeField] private float maxFuel = 100f; // 최대 연료량
@@ -72,10 +72,24 @@ namespace ProjectI.Power // 전력 시스템 네임스페이스
             if (isRunning) // 현재 작동 중인지 확인
             {
                 StopGenerator(); // 작동 중이면 발전기 정지
+                ProjectI.Net.NetCombatSync.NotifyDeviceChanged(this); // 협동: 모두 정지
                 return; // 정지 처리 후 종료
             }
 
             StartGenerator(); // 정지 중이면 연료 확인 후 발전기 가동
+            ProjectI.Net.NetCombatSync.NotifyDeviceChanged(this); // 협동: 모두 가동
+        }
+
+        public int NetworkState => isRunning ? 1 : 0; // 협동 상태 (가동)
+
+        public void ApplyNetworkState(int state) // 협동: 가동 상태 적용 (연료는 각자 계산)
+        {
+            if (isRunning == (state == 1)) // 같음
+            {
+                return; // 생략
+            }
+
+            RestoreState(currentFuel, state == 1); // 적용
         }
 
         public void Configure(string targetDisplayName, float targetMaxFuel, float startFuel, float consumptionRate, bool startRunning, ElectricLightController[] lights, GameObject[] activeVisuals, GameObject[] inactiveVisuals, GameObject[] gaugeSegments, Transform[] movingParts, float movingPartSpeed) // 에디터 자동 구성용 발전기 설정

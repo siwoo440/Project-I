@@ -6,7 +6,7 @@ using UnityEngine; // 유니티 기본 기능 참조
 namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
 {
     [RequireComponent(typeof(Collider))] // 통로를 막는 충돌체
-    public sealed class LockedRoomDoor : MonoBehaviour, IInteractable // 열쇠를 소모해 여는 잠긴 방 문
+    public sealed class LockedRoomDoor : MonoBehaviour, IInteractable, ProjectI.Net.INetworkDevice // 열쇠를 소모해 여는 잠긴 방 문
     {
         [SerializeField] private string keyItemId = "key.basic"; // 필요한 열쇠 ItemId
         [SerializeField] private float openDuration = 0.6f; // 열림 연출 시간
@@ -52,6 +52,17 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
             ProjectI.Net.NetItemSync.NotifyDestroyed(key); // 협동: 모두의 화면에서 열쇠 제거
             Destroy(key.gameObject); // 열쇠 소모
             Open(); // 문 열기
+            ProjectI.Net.NetCombatSync.NotifyDeviceChanged(this); // 협동: 모두의 문 열기
+        }
+
+        public int NetworkState => isOpen ? 1 : 0; // 협동 상태 (열림)
+
+        public void ApplyNetworkState(int state) // 협동: 열림 적용 (잠긴 문은 다시 잠기지 않음)
+        {
+            if (state == 1) // 열림
+            {
+                Open(); // 열기
+            }
         }
 
         public void Open() // 문 열림 (테스트에서도 사용)

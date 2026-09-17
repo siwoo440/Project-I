@@ -53,7 +53,7 @@ namespace ProjectI.Traps // 함정 공통 시스템 네임스페이스
             BeginSweepDamageWindow(); // 반대 방향 이동용 새 피해 창 시작
         }
 
-        public override bool TriggerTrap(GameObject triggerSource = null) // 기존 Trigger 인터페이스 호환 유지
+        protected override bool TriggerTrapLocal(GameObject triggerSource) // 기존 Trigger 인터페이스 호환 유지
         {
             return false; // 자동 연속 왕복형이므로 외부 Trigger 요청 미사용
         }

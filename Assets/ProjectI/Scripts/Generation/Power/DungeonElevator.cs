@@ -6,7 +6,7 @@ using UnityEngine; // 유니티 기본 기능 참조
 
 namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
 {
-    public sealed class DungeonElevator : MonoBehaviour // 전력 승강기 — 여러 층을 오가며, 전기가 없으면 움직이지 않음
+    public sealed class DungeonElevator : MonoBehaviour, ProjectI.Net.INetworkDevice // 전력 승강기 — 여러 층을 오가며, 전기가 없으면 움직이지 않음
     {
         [SerializeField] private Transform car; // 움직이는 판
         [SerializeField] private float[] stopLocalY = System.Array.Empty<float>(); // 층별 정지 높이 (모듈 로컬)
@@ -59,7 +59,27 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
                 return; // 종료
             }
 
+            requestedStop = index; // 협동: 요청 층 기록
             StartCoroutine(MoveRoutine(index)); // 이동
+        }
+
+        private int requestedStop = -1; // 마지막으로 요청된 층 (-1 = 처음 층)
+
+        public int NetworkState => requestedStop < 0 ? currentStop : requestedStop; // 협동 상태 (가는·있는 층)
+
+        public void ApplyNetworkState(int state) // 협동: 같은 층으로 이동
+        {
+            if (CanMoveTo(state)) // 이동 가능
+            {
+                GoToStop(state); // 이동
+                return; // 종료
+            }
+
+            if (!isMoving && state != currentStop) // 전기가 없는 등 이동 불가 → 바로 맞춤
+            {
+                requestedStop = state; // 기록
+                SetStopImmediate(state); // 즉시
+            }
         }
 
         public void SetStopImmediate(int index) // 즉시 층 지정 (검증·초기화용)

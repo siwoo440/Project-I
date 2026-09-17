@@ -57,6 +57,11 @@ namespace ProjectI.Monsters // 몬스터 공통 AI 네임스페이스
 
         private void Update() // 프레임별 공통 상태 머신 판단
         {
+            if (ProjectI.Net.NetCombatSync.PuppetMonsters) // 협동 참가자: 방장 몬스터를 따라 움직이기만 함
+            {
+                return; // 판단 생략
+            }
+
             if (data == null || health == null || sensor == null || targetSelector == null || motor == null) // 필수 AI 참조 존재 여부 확인
             {
                 return; // AI 판단 중단
@@ -277,6 +282,11 @@ namespace ProjectI.Monsters // 몬스터 공통 AI 네임스페이스
             EnterDeadState(); // AI 사망 상태 전환
         }
 
+        public void ApplyNetworkState(MonsterState networkState) // 협동 참가자: 방장 AI 상태 표시
+        {
+            SetState(networkState); // 상태
+        }
+
         private void EnterDeadState() // 사망 상태에서 이동·공격 완전 종료
         {
             SetState(MonsterState.Dead); // 사망 상태 저장
@@ -342,16 +352,15 @@ namespace ProjectI.Monsters // 몬스터 공통 AI 네임스페이스
         private static Transform ResolvePlayerAttacker(DamageInfo damageInfo) // 피해 정보에서 플레이어 루트 Transform 추출
         {
             GameObject instigator = damageInfo.Instigator; // 우선 공격 지시자 조회
-            PlayerDamageReceiver receiver = instigator == null ? null : instigator.GetComponentInParent<PlayerDamageReceiver>(); // 공격 지시자 계층의 플레이어 피해 수신기 조회
+            Transform attacker = instigator == null ? null : PlayerTargets.RootOf(instigator.transform); // 공격 지시자 계층의 플레이어 (다른 원정대원 포함)
 
-            if (receiver != null) // 플레이어 공격 지시자 발견 여부 확인
+            if (attacker != null) // 플레이어 공격 지시자 발견 여부 확인
             {
-                return receiver.transform; // 플레이어 루트 반환
+                return attacker; // 플레이어 루트 반환
             }
 
             GameObject source = damageInfo.Source; // 실제 무기·투사체 피해 원인 조회
-            receiver = source == null ? null : source.GetComponentInParent<PlayerDamageReceiver>(); // 피해 원인 계층의 플레이어 루트 조회
-            return receiver == null ? null : receiver.transform; // 발견된 플레이어 루트 또는 없음 반환
+            return source == null ? null : PlayerTargets.RootOf(source.transform); // 발견된 플레이어 루트 또는 없음 반환
         }
     }
 }

@@ -55,6 +55,16 @@ namespace ProjectI.Monsters // 몬스터 공통 AI 네임스페이스
 
         private void Update() // 접근 감지와 변신 모션 처리
         {
+            if (ProjectI.Net.NetCombatSync.PuppetMonsters) // 협동 참가자: 변신 시작은 방장 신호
+            {
+                if (revealing) // 변신 중
+                {
+                    UpdateReveal(); // 연출만
+                }
+
+                return; // 종료
+            }
+
             if (health == null || !health.IsAlive) // 미믹 사망 또는 체력 참조 누락 여부 확인
             {
                 return; // 변신·추적 처리 중단
@@ -96,6 +106,11 @@ namespace ProjectI.Monsters // 몬스터 공통 AI 네임스페이스
             }
 
             ApplyDisguisedState(); // 설정 직후 위장 상태 적용
+        }
+
+        public void BeginNetworkReveal() // 협동 참가자: 방장 미믹이 정체를 드러냄
+        {
+            BeginReveal(null); // 변신 연출
         }
 
         private void BeginReveal(Transform threat) // 접근 또는 피격을 계기로 미믹 변신 시작
@@ -221,21 +236,19 @@ namespace ProjectI.Monsters // 몬스터 공통 AI 네임스페이스
             }
 
             nextPlayerLookupTime = Time.time + 0.75f; // 다음 전역 검색 가능 시각 설정
-            PlayerDamageReceiver receiver = UnityEngine.Object.FindFirstObjectByType<PlayerDamageReceiver>(); // 활성 플레이어 피해 수신기 검색
-            playerTarget = receiver == null ? null : receiver.transform; // 플레이어 루트 Transform 저장
+            playerTarget = PlayerTargets.Nearest(transform.position); // 가장 가까운 플레이어 (다른 원정대원 포함)
         }
 
         private static Transform ResolvePlayerAttacker(DamageInfo damageInfo) // 피해 정보에서 실제 플레이어 Transform 추출
         {
-            PlayerDamageReceiver receiver = damageInfo.Instigator == null ? null : damageInfo.Instigator.GetComponentInParent<PlayerDamageReceiver>(); // 공격 지시자 계층 플레이어 조회
+            Transform attacker = damageInfo.Instigator == null ? null : PlayerTargets.RootOf(damageInfo.Instigator.transform); // 공격 지시자 계층 플레이어 (다른 원정대원 포함)
 
-            if (receiver != null) // 공격 지시자에서 플레이어 발견 여부 확인
+            if (attacker != null) // 공격 지시자에서 플레이어 발견 여부 확인
             {
-                return receiver.transform; // 플레이어 루트 반환
+                return attacker; // 플레이어 루트 반환
             }
 
-            receiver = damageInfo.Source == null ? null : damageInfo.Source.GetComponentInParent<PlayerDamageReceiver>(); // 실제 무기·투사체 계층 플레이어 조회
-            return receiver == null ? null : receiver.transform; // 발견된 플레이어 또는 없음 반환
+            return damageInfo.Source == null ? null : PlayerTargets.RootOf(damageInfo.Source.transform); // 실제 무기·투사체 계층 플레이어 또는 없음 반환
         }
     }
 }

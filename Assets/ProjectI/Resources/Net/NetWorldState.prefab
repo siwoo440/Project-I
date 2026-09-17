@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 2950950988136175816}
   - component: {fileID: 2590484625992371321}
   - component: {fileID: 38608552957716481}
+  - component: {fileID: 1069061527513795096}
   m_Layer: 0
   m_Name: NetWorldState
   m_TagString: Untagged
@@ -86,4 +87,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2c5691fd4a78a1c459e6c47e5d927f27, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectI.Net.NetItemSync
+  ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &1069061527513795096
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4985304307497470063}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1485744c096055f49842fb1244153e81, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectI.Net.NetCombatSync
   ShowTopMostFoldoutHeaderGroup: 1

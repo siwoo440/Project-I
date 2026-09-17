@@ -17,7 +17,24 @@ namespace ProjectI.Traps // 함정 공통 시스템 네임스페이스
         public int ActivationSequence => activationSequence; // 현재 누적 작동 횟수 공개
         public virtual bool CanTrigger => state == TrapState.Ready || state == TrapState.Waiting; // 외부 Trigger 수용 가능 상태 공개
 
-        public abstract bool TriggerTrap(GameObject triggerSource = null); // 함정 종류별 실제 작동 요청
+        public bool TriggerTrap(GameObject triggerSource = null) // 함정 작동 요청 (협동: 참가자는 방장에게 요청, 방장은 작동 후 모두에게 방송)
+        {
+            if (ProjectI.Net.NetCombatSync.ShouldRequestTrap(this)) // 참가자
+            {
+                return false; // 방장 작동을 기다림
+            }
+
+            bool fired = TriggerTrapLocal(triggerSource); // 작동
+
+            if (fired) // 작동함
+            {
+                ProjectI.Net.NetCombatSync.NotifyTrapFired(this); // 방장: 모두 같은 연출 (피해는 각자 화면의 함정이 판정)
+            }
+
+            return fired; // 결과
+        }
+
+        protected abstract bool TriggerTrapLocal(GameObject triggerSource); // 함정 종류별 실제 작동
 
         protected void ConfigureBase(string targetName, TrapDamageSource targetDamageSource) // Editor Setup용 공통 참조 구성
         {

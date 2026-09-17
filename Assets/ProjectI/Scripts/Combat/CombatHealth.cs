@@ -52,6 +52,11 @@ namespace ProjectI.Combat // 공통 전투 시스템 네임스페이스
                 Died?.Invoke(); // 사망 이벤트 발생
             }
 
+            if (appliedDamage > 0f) // 체력 변화
+            {
+                ProjectI.Net.NetCombatSync.NotifyHealth(this); // 협동: 모두의 화면에 같은 체력
+            }
+
             return appliedDamage; // 실제 적용 피해량 반환
         }
 
@@ -59,6 +64,19 @@ namespace ProjectI.Combat // 공통 전투 시스템 네임스페이스
         {
             currentHealth = maxHealth; // 현재 체력을 최대값으로 복구
             HealthChanged?.Invoke(currentHealth, maxHealth); // 체력 복구 이벤트 발생
+            ProjectI.Net.NetCombatSync.NotifyHealth(this); // 협동: 모두의 화면에 같은 체력
+        }
+
+        public void SetNetworkHealth(float value) // 협동 참가자: 방장 체력 적용 (사망 이벤트 포함)
+        {
+            float previousHealth = currentHealth; // 이전
+            currentHealth = Mathf.Clamp(value, 0f, maxHealth); // 적용
+            HealthChanged?.Invoke(currentHealth, maxHealth); // 변경 이벤트
+
+            if (previousHealth > 0f && currentHealth <= 0f) // 사망
+            {
+                Died?.Invoke(); // 사망 이벤트 (쓰러짐·벽 파괴 연출)
+            }
         }
 
         private void OnValidate() // 인스펙터 체력 값 검증

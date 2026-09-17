@@ -77,7 +77,7 @@ namespace ProjectI.Traps // 함정 공통 시스템 네임스페이스
             }
         }
 
-        public override bool TriggerTrap(GameObject triggerSource = null) // 자동 주기 또는 기존 압력판이 바닥 가시를 작동시킴
+        protected override bool TriggerTrapLocal(GameObject triggerSource) // 자동 주기 또는 기존 압력판이 바닥 가시를 작동시킴
         {
             if (!CanTrigger || state != TrapState.Ready) // 이미 작동 중인지 확인
             {

@@ -86,7 +86,7 @@ namespace ProjectI.Traps // 함정 공통 시스템 네임스페이스
             }
         }
 
-        public override bool TriggerTrap(GameObject triggerSource = null) // 외부 Trigger가 자동 대기를 앞당기는 선택 기능
+        protected override bool TriggerTrapLocal(GameObject triggerSource) // 외부 Trigger가 자동 대기를 앞당기는 선택 기능
         {
             if (state != TrapState.Waiting) // 현재 자동 대기 상태인지 확인
             {

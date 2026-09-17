@@ -1,9 +1,10 @@
 using ProjectI.Interaction; // 상호작용 규약 참조
+using ProjectI.Net; // 39일차 협동 장치
 using UnityEngine; // 유니티 기본 기능 참조
 
 namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
 {
-    public sealed class DungeonBreaker : MonoBehaviour, IInteractable // 배전반 — 담당 구역의 전기를 올리고 내림
+    public sealed class DungeonBreaker : MonoBehaviour, IInteractable, INetworkDevice // 배전반 — 담당 구역의 전기를 올리고 내림
     {
         [SerializeField] private Transform lever; // 손잡이 (상태에 따라 기울어짐)
         [SerializeField] private Renderer indicator; // 표시등
@@ -57,6 +58,20 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
 
             zone.SetBreaker(!zone.BreakerOn); // 전환
             Refresh(); // 표시 반영
+            NetCombatSync.NotifyDeviceChanged(this); // 협동: 모두 같은 차단기
+        }
+
+        public int NetworkState => zone == null ? -1 : (zone.BreakerOn ? 1 : 0); // 협동 상태 (차단기)
+
+        public void ApplyNetworkState(int state) // 협동: 차단기 상태 적용
+        {
+            if (zone == null || zone.BreakerOn == (state == 1)) // 같음
+            {
+                return; // 생략
+            }
+
+            zone.SetBreaker(state == 1); // 적용
+            Refresh(); // 표시
         }
 
         private void HandlePowerChanged(DungeonPowerZone changed) // 구역 상태 변화

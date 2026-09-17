@@ -95,6 +95,21 @@ namespace ProjectI.Monsters // 몬스터 공통 AI 네임스페이스
             return true; // 공격 시작 성공 반환
         }
 
+        public void PlayNetworkArrow(Vector3 position, Vector3 velocity) // 협동 참가자: 피해 없는 화살 연출
+        {
+            if (arrowTemplate == null || velocity.sqrMagnitude < 0.01f) // 없음
+            {
+                return; // 생략
+            }
+
+            MonsterArrowProjectile arrow = Object.Instantiate(arrowTemplate, position, Quaternion.LookRotation(velocity.normalized, Vector3.up)); // 복제
+            arrow.gameObject.name = "Day17_UndeadArrow_Net"; // 이름
+            arrow.gameObject.SetActive(true); // 활성화
+            arrow.Launch(gameObject, velocity, 0f, 0f, 0f, 0); // 피해 0 (피해는 방장이 판정)
+            RefreshNockedArrow(false); // 활 위 화살 숨김
+            reloadVisualReadyTime = Time.time + (data == null ? 1f : data.AttackCooldown * 0.48f); // 새 화살 표시 시각
+        }
+
         public void CancelAttack() // 경직·시야 상실·사망 시 현재 조준 취소
         {
             aiming = false; // 조준 상태 종료
@@ -123,6 +138,7 @@ namespace ProjectI.Monsters // 몬스터 공통 AI 네임스페이스
             arrow.gameObject.SetActive(true); // 복제 화살 활성화
             attackSequence++; // 공격 식별 번호 증가
             arrow.Launch(gameObject, velocity, data.AttackDamage, data.StaggerPower, data.KnockbackForce, attackSequence); // Enemy Damage Pipeline 정보를 포함해 화살 발사
+            ProjectI.Net.NetCombatSync.NotifyArrow(this, muzzle.position, velocity); // 협동: 참가자 화면에 화살
             MonsterNoiseSystem.Emit(gameObject, muzzle.position, 8f, 0.22f, MonsterNoiseKind.Weapon, "Undead Bow Shot"); // 다른 몬스터가 들을 수 있는 작은 활 발사 소음 발생
             aiming = false; // 발사 후 조준 상태 종료
             target = null; // 발사 대상 참조 정리

@@ -40,6 +40,7 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
         public string DisplayName => $"원정대원 {PlayerNumber}"; // 표시 이름
         public Transform HandPoint => handPoint; // 손
         public Transform PocketPoint => pocketPoint; // 주머니
+        public bool IsVisibleHere => IsSpawned && visible; // 내 화면과 같은 맵에 보이는 중
 
         public static NetPlayerAvatar Find(ulong clientId) // 대원 번호로 찾기
         {
@@ -67,6 +68,7 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
             bodyScale = body == null ? Vector3.one : body.localScale; // 기본 크기
             handPoint = CreatePoint("Hand", new Vector3(0.32f, 1.05f, 0.42f)); // 손 (몸 앞 오른쪽)
             pocketPoint = CreatePoint("Pocket", new Vector3(0f, 1f, 0f)); // 주머니
+            gameObject.AddComponent<RemotePlayerTarget>(); // 39일차: 방장 몬스터가 보고 공격할 수 있는 대상
         }
 
         public override void OnNetworkSpawn() // 생성

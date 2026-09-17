@@ -4,7 +4,7 @@ using UnityEngine; // 유니티 기본 기능 참조
 
 namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
 {
-    public sealed class DungeonPowerPlant : MonoBehaviour, IInteractable // 발전기 — 던전 전체 전력을 기동·정지
+    public sealed class DungeonPowerPlant : MonoBehaviour, IInteractable, ProjectI.Net.INetworkDevice // 발전기 — 던전 전체 전력을 기동·정지
     {
         [SerializeField] private Transform flywheel; // 돌아가는 부품
         [SerializeField] private Renderer indicator; // 표시등
@@ -48,10 +48,36 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
             {
                 grid.SetPlant(false); // 정지
                 Refresh(); // 표시
+                ProjectI.Net.NetCombatSync.NotifyDeviceChanged(this); // 협동: 모두 정지
                 return; // 종료
             }
 
             StartCoroutine(StartupRoutine()); // 기동 연출
+            ProjectI.Net.NetCombatSync.NotifyDeviceChanged(this); // 협동: 모두 기동 시작
+        }
+
+        public int NetworkState => grid == null ? -1 : (IsRunning || isBusy ? 1 : 0); // 협동 상태 (가동·기동 중)
+
+        public void ApplyNetworkState(int state) // 협동: 발전기 상태 적용
+        {
+            if (grid == null) // 없음
+            {
+                return; // 생략
+            }
+
+            if (state == 1 && !IsRunning && !isBusy) // 기동
+            {
+                StartCoroutine(StartupRoutine()); // 같은 기동 연출
+                return; // 종료
+            }
+
+            if (state == 0) // 정지
+            {
+                StopAllCoroutines(); // 기동 취소
+                isBusy = false; // 해제
+                grid.SetPlant(false); // 정지
+                Refresh(); // 표시
+            }
         }
 
         public void SetRunningImmediate(bool running) // 즉시 상태 지정 (검증·초기화용)
