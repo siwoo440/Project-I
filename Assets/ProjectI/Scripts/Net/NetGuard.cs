@@ -16,6 +16,7 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
         Travel, // 마차 출발
         Snapshot, // 전체 목록 요청
         Voice, // 43일차: 음성 조각
+        Report, // 44일차: 화면 요약 보고
     }
 
     public static class NetGuard // 42일차: 방장이 참가자 요청을 검사 (값·거리·횟수) — 부정 요청이 쌓이면 자동으로 내보냄
@@ -192,6 +193,7 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
                 case NetChannel.Device: rate = 5f; burst = 10f; return; // 문·스위치
                 case NetChannel.Travel: rate = 1f; burst = 3f; return; // 종
                 case NetChannel.Voice: rate = 40f; burst = 80f; return; // 음성 (보내는 쪽은 초당 20~25번)
+                case NetChannel.Report: rate = 0.5f; burst = 3f; return; // 화면 요약 (30초마다, 자동 시험은 5초)
                 default: rate = 0.5f; burst = 3f; return; // 전체 목록 (맵 이동 때만)
             }
         }

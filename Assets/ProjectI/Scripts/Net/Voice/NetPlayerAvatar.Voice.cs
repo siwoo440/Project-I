@@ -36,6 +36,13 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
         public string VoiceKey => VoicePreferences.KeyOf(steamId.Value, DisplayName); // 음량 저장 키
         public bool IsSpeaking => IsOwner ? VoiceCapture.IsTransmitting : voice != null && voice.IsSpeaking; // 말하는 중
         public int VoicePacketsReceived { get; private set; } // 검증용
+        public static int VoicePacketsRelayed { get; private set; } // 44일차: 방장이 받은 참가자 음성 조각 수 (점검용)
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)] // 플레이 반복 대비
+        private static void ResetVoiceStatics() // 초기화
+        {
+            VoicePacketsRelayed = 0; // 집계
+        }
 
         private void CreateVoice() // Awake: 입 위치 재생기
         {
@@ -80,6 +87,7 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
                 return; // 무시
             }
 
+            VoicePacketsRelayed++; // 44일차: 집계
             RelayVoice(codec, packet); // 전달
         }
 

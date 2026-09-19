@@ -200,6 +200,7 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
             if (IsOwner) // 내 것
             {
                 SendLocalState(); // 전송
+                UpdateConsistencyReport(); // 44일차: 화면 요약 보고 (참가자)
                 return; // 종료
             }
 

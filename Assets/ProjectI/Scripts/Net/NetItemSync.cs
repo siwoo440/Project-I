@@ -335,6 +335,14 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
             return false; // 없음
         }
 
+        public static void ForceResync() // 44일차: 방장 — 모든 참가자가 아이템 전체 목록을 다시 받게 함 (불일치 치료)
+        {
+            if (Instance != null && Instance.IsSpawned && Instance.IsServer) // 방장
+            {
+                Instance.resyncSerial.Value++; // 참가자가 바뀐 번호를 보고 다시 요청
+            }
+        }
+
         public static void ForgetClient(ulong clientId) // 42일차: 나간 대원 기록 정리
         {
             if (Instance == null) // 없음

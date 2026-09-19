@@ -181,6 +181,12 @@ namespace ProjectI.Settings // 게임 설정 네임스페이스
                 return; // 해상도·전체 화면 생략
             }
 
+            if (Array.Exists(Environment.GetCommandLineArgs(), arg => arg.StartsWith("-coopAuto", StringComparison.OrdinalIgnoreCase))) // 44일차: 자동 협동 시험은 작은 창
+            {
+                Screen.SetResolution(960, 540, FullScreenMode.Windowed); // 창 모드
+                return; // 저장된 해상도 무시
+            }
+
             Vector2Int size = Resolution; // 해상도
             Screen.SetResolution(size.x, size.y, fullscreen ? FullScreenMode.FullScreenWindow : FullScreenMode.Windowed); // 적용
         }

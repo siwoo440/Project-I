@@ -8,7 +8,7 @@ using UnityEngine; // 유니티 기본 기능 참조
 
 namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
 {
-    public sealed class DungeonDoor : MonoBehaviour, IInteractable // 출입구에 놓이는 여닫이문 (F로 열고 닫음)
+    public sealed class DungeonDoor : MonoBehaviour, IInteractable, INetworkDevice // 출입구에 놓이는 여닫이문 (F로 열고 닫음 · 44일차: 협동 전체 상태에 포함)
     {
         [SerializeField] private Transform leaf; // 문짝
         [SerializeField] private float openAngle = 95f; // 열렸을 때 각도
@@ -78,6 +78,13 @@ namespace ProjectI.Dungeon // 절차적 던전 런타임 네임스페이스
 
             SoundPlayer.PlayAt(isOpen ? SoundId.DoorClose : SoundId.DoorOpen, transform.position + Vector3.up, 0.8f); // 문 소리
             StartCoroutine(SwingRoutine(!isOpen)); // 연출 시작
+        }
+
+        public int NetworkState => isOpen ? 1 : 0; // 44일차: 협동 전체 상태 (늦게 들어온 대원·불일치 치료)
+
+        public void ApplyNetworkState(int state) // 44일차: 전체 상태로 받은 열림
+        {
+            ApplyNetworkState(state == 1); // 적용
         }
 
         public void ApplyNetworkState(bool open) // 37일차: 방장이 확정한 문 상태 적용 (모든 대원)

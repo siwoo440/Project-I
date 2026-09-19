@@ -624,6 +624,10 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
             {
                 denied = "열쇠 없음"; // 이유
             }
+            else if (behaviour is DungeonDoor) // 44일차: 던전 문은 문 요청 경로(열쇠 확인)로만 바꿈
+            {
+                denied = "문은 장치로 바꿀 수 없음"; // 이유
+            }
 
             if (denied != null) // 거절
             {
@@ -719,6 +723,19 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
                 return; // 무시
             }
 
+            SendFullState(rpcParams.Receive.SenderClientId); // 전송
+        }
+
+        public static void PushFullStateTo(ulong clientId) // 44일차: 방장 — 그 대원에게 체력·장치·문 전체 상태 보내기 (불일치 치료)
+        {
+            if (IsAuthority && clientId != NetworkManager.ServerClientId) // 방장
+            {
+                Instance.SendFullState(clientId); // 전송
+            }
+        }
+
+        private void SendFullState(ulong receiver) // 체력·장치 전체 상태 전송
+        {
             RefreshRegistry(true); // 목록
             List<NetValueEntry> health = new List<NetValueEntry>(); // 체력
             List<NetValueEntry> deviceStates = new List<NetValueEntry>(); // 장치
@@ -741,7 +758,7 @@ namespace ProjectI.Net // 협동 네트워크 네임스페이스
                 }
             }
 
-            FullStateRpc(health.ToArray(), deviceStates.ToArray(), RpcTarget.Single(rpcParams.Receive.SenderClientId, RpcTargetUse.Temp)); // 전송
+            FullStateRpc(health.ToArray(), deviceStates.ToArray(), RpcTarget.Single(receiver, RpcTargetUse.Temp)); // 전송
         }
 
         [Rpc(SendTo.SpecifiedInParams, InvokePermission = RpcInvokePermission.Server)]
